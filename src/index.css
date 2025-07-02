@@ -1,0 +1,40 @@
+
+
+header {
+  border: none !important;
+  margin-bottom: 0 !important;
+}
+
+
+
+
+
+/* Logo más grande y redondeado */
+.logo-img {
+  height: 100px;
+  width: auto;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+
+/* Fondo amarillo de toda la vista */
+body {
+  background-color: #ffc107; /* color Bootstrap amarillo */
+  margin: 0;
+  padding: 0;
+}
+
+/* Tarjetas más pequeñas y centradas */
+.catalogo-card {
+  max-width: 300px;
+  margin: 0 auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 12px;
+}
+
+.catalogo-img {
+  height: 160px;
+  object-fit: contain;
+  padding: 1rem;
+}
