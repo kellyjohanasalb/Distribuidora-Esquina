@@ -21,8 +21,7 @@ const Catalogo = () => {
             { id: 3, nombre: 'Crema Dental Menta', precio: 3200, rubro: 'Aseo', imagen: '/imagenes/colinos.png' },
             { id: 4, nombre: 'Libreta Cuadro Grande', precio: 6800, rubro: 'Papelería', imagen: '/imagenes/libretas.png' },
             { id: 5, nombre: 'Jabón en Barra', precio: 2900, rubro: 'Aseo', imagen: '/imagenes/JABPN PAN.png' },
-           { id: 6, nombre: 'Acetaminofén 500mg', precio: 2500, rubro: 'Farmacia', imagen: '/imagenes/adetaminofen.jpg' },
-
+            { id: 6, nombre: 'Acetaminofén 500mg', precio: 2500, rubro: 'Farmacia', imagen: '/imagenes/adetaminofen.jpg' },
             { id: 7, nombre: 'Cepillo Duro', precio: 3100, rubro: 'Aseo', imagen: '/imagenes/CEPILLO.png' },
             { id: 8, nombre: 'Toalla Facial', precio: 7900, rubro: 'Aseo', imagen: '/imagenes/TOALLA.png' },
         ];
@@ -52,11 +51,11 @@ const Catalogo = () => {
                     <div className="row align-items-center g-3">
                         {/* Logo */}
                         <div className="col-12 col-md-3 text-center text-md-start">
-<img
-  src="/logo-distruidora/logo-esquina.png"
-  alt="Distribuidora Esquina"
-  className="logo-img"
-/>
+                            <img
+                                src="/logo-distruidora/logo-esquina.png"
+                                alt="Distribuidora Esquina"
+                                className="logo-img"
+                            />
 
                         </div>
 
