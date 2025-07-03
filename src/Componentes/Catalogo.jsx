@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+/* import 'bootstrap/dist/css/bootstrap.min.css'; */
 import '../index.css';
 
 const Catalogo = () => {
@@ -16,14 +16,16 @@ const Catalogo = () => {
     const rubrosMock = ['Aseo', 'Papelería', 'Farmacia'];
 
     const productosMock = [
-      { id: 1, nombre: 'Papel Higiénico', precio: 4200, rubro: 'Aseo', imagen: '/imagenes/papel-higienico.jpeg' },
-      { id: 2, nombre: 'Shampoo Anticaspa', precio: 8500, rubro: 'Aseo', imagen: '/imagenes/shampoo-anticaspa.png' },
-      { id: 3, nombre: 'Crema Dental Menta', precio: 3200, rubro: 'Aseo', imagen: '/imagenes/crema-dental.png' },
+      { id: 1, nombre: 'Papel Higiénico', precio: 4200, rubro: 'Aseo', imagen: '/imagenes/papel-higienico.png' },
+      { id: 2, nombre: 'Shampoo Anticaspa', precio: 8500, rubro: 'Aseo', imagen: '/imagenes/shampo.png' },
+      { id: 3, nombre: 'Crema Dental Menta', precio: 3200, rubro: 'Aseo', imagen: '/imagenes/colinos.png' },
       { id: 4, nombre: 'Libreta Cuadro Grande', precio: 6800, rubro: 'Papelería', imagen: '/imagenes/libretas.png' },
-      { id: 5, nombre: 'Jabón en Barra', precio: 2900, rubro: 'Aseo', imagen: '/imagenes/jabon-pan.png' },
+      { id: 5, nombre: 'Jabón en Barra', precio: 2900, rubro: 'Aseo', imagen: '/imagenes/Jabon-esencial.png' },
       { id: 6, nombre: 'Acetaminofén 500mg', precio: 2500, rubro: 'Farmacia', imagen: '/imagenes/acetaminofen.jpg' },
-      { id: 7, nombre: 'Cepillo Duro', precio: 3100, rubro: 'Aseo', imagen: '/imagenes/cepillo.png' },
+      { id: 7, nombre: 'Cepillo', precio: 3100, rubro: 'Aseo', imagen: '/imagenes/cepillo.png' },
       { id: 8, nombre: 'Toalla Facial', precio: 7900, rubro: 'Aseo', imagen: '/imagenes/toalla.png' },
+      { id: 9, nombre: 'Brocha de Afeitar', precio: 5500, rubro: 'Aseo', imagen: '/imagenes/brocha-afeitar.png' },
+      { id: 9, nombre: 'Jabón Corporal', precio: 2500, rubro: 'Aseo', imagen: '/imagenes/jabon-palmolive.png' },
     ];
 
     setRubros(rubrosMock);
@@ -52,7 +54,7 @@ const Catalogo = () => {
 
             <div className="col-12 col-md-3 text-center text-md-start">
               <img
-                src="/logo-distruidora/logo-esquina.png"
+                src="/logo-distruidora/logo.png"
                 alt="Distribuidora Esquina"
                 className="logo-img"
                 onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
