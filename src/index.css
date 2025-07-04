@@ -5,7 +5,9 @@ header {
   margin-bottom: 0 !important;
 }
 
-
+.bg-custom-header {
+  background-color: #f7dc6f;
+}
 
 
 
@@ -20,7 +22,7 @@ header {
 
 /* Fondo amarillo de toda la vista */
 body {
-  background-color: #ffc107; /* color Bootstrap amarillo */
+  background-color: #f7dc6f; /* color Bootstrap amarillo */
   margin: 0;
   padding: 0;
 }

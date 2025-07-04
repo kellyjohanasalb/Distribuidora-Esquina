@@ -44,7 +44,7 @@ const Catalogo = () => {
   return (
     <>
       {/* Header principal */}
-      <header className="bg-warning py-4 shadow-sm w-100">
+      <header className="bg-custom-header py-4 shadow-sm w-100">
         <div className="container">
           <div className="row align-items-center g-3">
             <div className="col-12 col-md-3 text-center text-md-start">
@@ -58,7 +58,7 @@ const Catalogo = () => {
             </div>
 
             <div className="col-12 col-md-3 text-center">
-              <h2 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h2>
+              <h5 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h5>
             </div>
 
             <div className="col-12 col-md-6">
