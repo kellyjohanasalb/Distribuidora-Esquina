@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '../index.css';
-import useCatalogo from '../hooks/useCatalogo';
+import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';
+import '../index.css';
 
 const Catalogo = () => {
   const {
