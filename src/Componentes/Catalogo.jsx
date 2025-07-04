@@ -1,186 +1,168 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-/* import 'bootstrap/dist/css/bootstrap.min.css'; */
+import 'bootstrap/dist/css/bootstrap.min.css';
 import '../index.css';
+import useCatalogo from '../hooks/useCatalogo';
+import Select from 'react-select';
 
 const Catalogo = () => {
-  const [productos, setProductos] = useState([]);
-  const [rubros, setRubros] = useState([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroRubro, setFiltroRubro] = useState('');
-  const [visibleCount, setVisibleCount] = useState(6);
-  const observerRef = useRef(null);
+  const {
+    productos,
+    rubros,
+    busqueda,
+    filtroRubro,
+    handleBusquedaChange,
+    handleRubroChange,
+    fetchProductos,
+    hasNextPage,
+    isLoading,
+  } = useCatalogo();
 
-  const IMAGEN_POR_DEFECTO = '/imagenes/placeholder.png';
+  const IMAGEN_POR_DEFECTO = 'https://via.placeholder.com/150';
 
-  useEffect(() => {
-    const rubrosMock = ['Aseo', 'Papelería', 'Farmacia'];
+  const opcionesProductos = productos.map(p => ({
+    value: p.idArticulo,
+    label: p.descripcion,
+  }));
 
-    const productosMock = [
-      { id: 1, nombre: 'Papel Higiénico', precio: 4200, rubro: 'Aseo', imagen: '/imagenes/papel-higienico.png' },
-      { id: 2, nombre: 'Shampoo Anticaspa', precio: 8500, rubro: 'Aseo', imagen: '/imagenes/shampo.png' },
-      { id: 3, nombre: 'Crema Dental Menta', precio: 3200, rubro: 'Aseo', imagen: '/imagenes/colinos.png' },
-      { id: 4, nombre: 'Libreta Cuadro Grande', precio: 6800, rubro: 'Papelería', imagen: '/imagenes/libretas.png' },
-      { id: 5, nombre: 'Jabón en Barra', precio: 2900, rubro: 'Aseo', imagen: '/imagenes/Jabon-esencial.png' },
-      { id: 6, nombre: 'Acetaminofén 500mg', precio: 2500, rubro: 'Farmacia', imagen: '/imagenes/acetaminofen.jpg' },
-      { id: 7, nombre: 'Cepillo', precio: 3100, rubro: 'Aseo', imagen: '/imagenes/cepillo.png' },
-      { id: 8, nombre: 'Toalla Facial', precio: 7900, rubro: 'Aseo', imagen: '/imagenes/toalla.png' },
-      { id: 9, nombre: 'Brocha de Afeitar', precio: 5500, rubro: 'Aseo', imagen: '/imagenes/brocha-afeitar.png' },
-      { id: 10, nombre: 'Jabón Corporal', precio: 2500, rubro: 'Aseo', imagen: '/imagenes/jabon-palmolive.png' }, // Corregido ID duplicado
-    ];
+  const opcionesRubros = rubros.map(r => ({
+    value: r.id.toString(),
+    label: r.descripcion,
+  }));
 
-    setRubros(rubrosMock);
-    setProductos(productosMock);
-  }, []);
+  const rubroActivo = rubros.find(r => r.id.toString() === filtroRubro);
+  const nombreRubro = rubroActivo?.descripcion || 'Todos los productos';
 
-  const observer = useCallback((node) => {
-    if (observerRef.current) observerRef.current.disconnect();
-    observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setTimeout(() => setVisibleCount((prev) => prev + 2), 500);
-      }
-    });
-    if (node) observerRef.current.observe(node);
-  }, []);
-
-  // Filtrar productos
-  const productosFiltrados = productos
-    .filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
-    .filter((p) => (filtroRubro ? p.rubro === filtroRubro : true));
-
-  // Agrupar productos por rubro
-  const productosAgrupados = productosFiltrados.reduce((grupos, producto) => {
-    const rubro = producto.rubro;
-    if (!grupos[rubro]) {
-      grupos[rubro] = [];
+  // 🔁 Agrupar productos por rubro
+  const productosPorRubro = {};
+  productos.forEach(producto => {
+    const nombre = rubros.find(r => r.id === producto.idRubro)?.descripcion || 'Otros';
+    if (!productosPorRubro[nombre]) {
+      productosPorRubro[nombre] = [];
     }
-    grupos[rubro].push(producto);
-    return grupos;
-  }, {});
-
-  // Ordenar rubros alfabéticamente
-  const rubrosOrdenados = Object.keys(productosAgrupados).sort();
-
-  // Colores para cada rubro basados en el logo (verde principal y tonos neutros)
-  const coloresRubro = {
-    'Aseo': 'bg-success',        // Verde principal del logo
-    'Papelería': 'bg-secondary', // Gris/neutro
-    'Farmacia': 'bg-dark'        // Verde oscuro/negro
-  };
-
-  // Contar productos visibles por rubro
-  let contadorVisible = 0;
+    productosPorRubro[nombre].push(producto);
+  });
 
   return (
     <>
+      {/* Header principal */}
       <header className="bg-warning py-4 shadow-sm w-100">
         <div className="container">
           <div className="row align-items-center g-3">
-
             <div className="col-12 col-md-3 text-center text-md-start">
               <img
                 src="/logo-distruidora/logo.png"
                 alt="Distribuidora Esquina"
-                className="logo-img"
+                className="logo-img mb-2"
+                style={{ maxWidth: '130px', height: 'auto' }}
                 onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
               />
             </div>
 
             <div className="col-12 col-md-3 text-center">
-              <h1 className="text-success fw-bold fs-4 m-0">Catálogo</h1>
+              <h2 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h2>
             </div>
 
-            <div className="col-12 col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="🔍 Buscar productos"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
-            </div>
+            <div className="col-12 col-md-6">
+              <div className="d-flex gap-2 flex-wrap justify-content-md-end justify-content-center">
+                <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+                  <Select
+                    options={opcionesProductos}
+                    onInputChange={(inputValue) =>
+                      handleBusquedaChange({ target: { value: inputValue } })
+                    }
+                    onChange={(selected) =>
+                      handleBusquedaChange({ target: { value: selected?.label || '' } })
+                    }
+                    value={busqueda ? { value: '', label: busqueda } : null}
+                    placeholder="🔍 Buscar productos"
+                    classNamePrefix="react-select"
+                    isClearable
+                  />
+                </div>
 
-            <div className="col-12 col-md-3">
-              <select
-                className="form-select"
-                value={filtroRubro}
-                onChange={(e) => setFiltroRubro(e.target.value)}
-              >
-                <option value="">Todos los rubros</option>
-                {rubros.map((rubro) => (
-                  <option key={rubro} value={rubro}>{rubro}</option>
-                ))}
-              </select>
+                <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+                  <Select
+                    options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
+                    onChange={(selected) =>
+                      handleRubroChange({ target: { value: selected?.value || '' } })
+                    }
+                    value={
+                      opcionesRubros.find(o => o.value === filtroRubro) || {
+                        value: '',
+                        label: 'Todos los rubros'
+                      }
+                    }
+                    placeholder="🎯 Filtrar por rubro"
+                    classNamePrefix="react-select"
+                  />
+                </div>
+              </div>
             </div>
-
           </div>
         </div>
       </header>
 
-      <div className="container mt-4">
-        {rubrosOrdenados.length === 0 ? (
-          <p className="text-center text-muted">No se encontraron productos.</p>
-        ) : (
-          rubrosOrdenados.map((rubro) => {
-            const productosDelRubro = productosAgrupados[rubro];
-            const productosVisibles = productosDelRubro.slice(0, Math.max(0, visibleCount - contadorVisible));
-            contadorVisible += productosVisibles.length;
+      {/* Catálogo título y contador */}
+      <section className="container my-3">
+        <div className="d-flex justify-content-between align-items-center px-2">
+          <h2 className="text-success fw-bold fs-2 m-0">Catálogo</h2>
+          <span className="text-muted small">
+            {nombreRubro} ({productos.length})
+          </span>
+        </div>
+      </section>
 
-            if (productosVisibles.length === 0) return null;
+      {/* Productos agrupados por rubro */}
+      <main className="container my-3">
+        {Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
+          <div key={rubro} className="mb-5">
+            {/* Encabezado del rubro */}
+            <div className="row mb-3">
+              <div className="col-12">
+                <div className="border-bottom pb-2 mb-2">
+  <h5 className="mb-0 fw-semibold text-success d-flex align-items-center ">
+  <span>{rubro}</span>
+  <span className="badge bg-light text-dark ms-2">
+    {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
+  </span>
+</h5>
+                </div>
+              </div>
+            </div>
 
-            return (
-              <div key={rubro} className="mb-5">
-                {/* Encabezado del rubro */}
-                <div className="row mb-3">
-                  <div className="col-12">
-                    <div className={`p-3 rounded-3 text-white ${coloresRubro[rubro] || 'bg-secondary'}`}>
-                      <h2 className="mb-0 fw-bold">
-                        {rubro}
-                        <span className="badge bg-light text-dark ms-2">
-                          {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
-                        </span>
-                      </h2>
+            {/* Cards por rubro */}
+            <div className="row">
+              {productosDelRubro.map((producto) => (
+                <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
+                  <div className="card h-100">
+                    <img
+                      src={producto.imagen || IMAGEN_POR_DEFECTO}
+                      className="card-img-top"
+                      alt={producto.descripcion}
+                    />
+                    <div className="card-body text-center">
+                      <h5 className="card-title fw-bold">{producto.descripcion}</h5>
+                      <p className="card-text fs-5 text-dark">${producto.precioVenta}</p>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        ))}
 
-                {/* Productos del rubro */}
-                <div className="row">
-                  {productosVisibles.map((producto, idx) => {
-                    const isLastInGroup = idx === productosVisibles.length - 1;
-                    const isLastOverall = contadorVisible >= visibleCount;
-                    
-                    return (
-                      <div
-                        key={producto.id}
-                        ref={isLastInGroup && isLastOverall ? observer : null}
-                        className="col-md-6 mb-4"
-                      >
-                        <div className="card h-100 catalogo-card">
-                          <img
-                            src={producto.imagen || IMAGEN_POR_DEFECTO}
-                            alt={producto.nombre}
-                            className="catalogo-img"
-                            onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
-                          />
-                          <div className="card-body d-flex flex-column justify-content-center text-center p-3">
-                            <h5 className="card-title fw-semibold">{producto.nombre}</h5>
-                            <p className="card-text text-success fs-5 fw-bold">
-                              ${producto.precio.toLocaleString()}
-                            </p>
-                            <small className={`badge ${coloresRubro[producto.rubro] || 'bg-secondary'} text-white`}>
-                              {producto.rubro}
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })
+        {/* Botón para cargar más productos */}
+        {hasNextPage && (
+          <div className="col-12 text-center mt-4">
+            <button
+              onClick={() => fetchProductos()}
+              className="btn btn-success"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Cargando...' : 'Ver más productos'}
+            </button>
+          </div>
         )}
-      </div>
+      </main>
     </>
   );
 };
