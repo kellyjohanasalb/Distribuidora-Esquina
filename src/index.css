@@ -46,16 +46,23 @@ header {
 
 .bg-custom-header {
   background-color: var(--amarillo-bg);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* ========================
-   🖼️ LOGO
+   🖼️ LOGO Y TÍTULO
 ======================== */
 .logo-img {
-  height: 100px;
+  height: 120px;
   width: auto;
-  border-radius: 20px;
+  border-radius: 16px;
   object-fit: cover;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0;
 }
 
 /* ========================
@@ -106,4 +113,15 @@ header {
   .product-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
+}
+
+/* ========================
+   🎯 REACT SELECT AJUSTES
+======================== */
+.react-select__control {
+  min-height: 36px;
+}
+
+.react-select__placeholder {
+  font-size: 0.875rem;
 }

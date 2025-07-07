@@ -31,7 +31,6 @@ const Catalogo = () => {
   const rubroActivo = rubros.find(r => r.id.toString() === filtroRubro);
   const nombreRubro = rubroActivo?.descripcion || 'Todos los productos';
 
-  // 🔁 Agrupar productos por rubro
   const productosPorRubro = {};
   productos.forEach(producto => {
     const nombre = rubros.find(r => r.id === producto.idRubro)?.descripcion || 'Otros';
@@ -43,27 +42,23 @@ const Catalogo = () => {
 
   return (
     <>
-      {/* Header principal */}
-      <header className="bg-custom-header py-4 shadow-sm w-100">
+      {/* Header principal compacto */}
+      <header className="bg-custom-header shadow-sm w-100">
         <div className="container">
-          <div className="row align-items-center g-3">
-            <div className="col-12 col-md-3 text-center text-md-start">
+          <div className="row align-items-center g-3 py-2">
+            <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
               <img
                 src="/logo-distruidora/logo.png"
                 alt="Distribuidora Esquina"
-                className="logo-img mb-2"
-                style={{ maxWidth: '130px', height: 'auto' }}
+                className="logo-img"
                 onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
               />
+              <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
             </div>
 
-            <div className="col-12 col-md-3 text-center">
-              <h1 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h1>
-            </div>
-
-            <div className="col-12 col-md-6">
+            <div className="col-12 col-md-8">
               <div className="d-flex gap-2 flex-wrap justify-content-md-end justify-content-center">
-                <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+                <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={opcionesProductos}
                     onInputChange={(inputValue) =>
@@ -79,7 +74,7 @@ const Catalogo = () => {
                   />
                 </div>
 
-                <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+                <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
                     onChange={(selected) =>
@@ -88,7 +83,7 @@ const Catalogo = () => {
                     value={
                       opcionesRubros.find(o => o.value === filtroRubro) || {
                         value: '',
-                        label: 'Todos los rubros'
+                        label: 'Todos los rubros',
                       }
                     }
                     placeholder="🎯 Filtrar por rubro"
@@ -115,21 +110,19 @@ const Catalogo = () => {
       <main className="container my-3">
         {Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
           <div key={rubro} className="mb-5">
-            {/* Encabezado del rubro */}
             <div className="row mb-3">
               <div className="col-12">
                 <div className="border-bottom pb-2 mb-2">
-  <h5 className="mb-0 fw-semibold text-success d-flex align-items-center ">
-  <span>{rubro}</span>
-  <span className="badge bg-light text-dark ms-2">
-    {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
-  </span>
-</h5>
+                  <h5 className="mb-0 fw-semibold text-success d-flex align-items-center">
+                    <span>{rubro}</span>
+                    <span className="badge bg-light text-dark ms-2">
+                      {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
+                    </span>
+                  </h5>
                 </div>
               </div>
             </div>
 
-            {/* Cards por rubro */}
             <div className="row">
               {productosDelRubro.map((producto) => (
                 <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
@@ -150,7 +143,6 @@ const Catalogo = () => {
           </div>
         ))}
 
-        {/* Botón para cargar más productos */}
         {hasNextPage && (
           <div className="col-12 text-center mt-4">
             <button
