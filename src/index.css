@@ -1,17 +1,56 @@
+/* ========================
+   🟡 VARIABLES Y BASE
+======================== */
+:root {
+  --amarillo-bg: #f7dc6f;
+  --sombra-card: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
+body {
+  background-color: var(--amarillo-bg);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
 
+/* ========================
+   📦 CONTENEDORES
+======================== */
+.container,
+.container-fluid {
+  max-width: 100%;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.main-content {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1200px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ========================
+   🔝 ENCABEZADO
+======================== */
 header {
   border: none !important;
   margin-bottom: 0 !important;
 }
 
 .bg-custom-header {
-  background-color: #f7dc6f;
+  background-color: var(--amarillo-bg);
 }
 
-
-
-/* Logo más grande y redondeado */
+/* ========================
+   🖼️ LOGO
+======================== */
 .logo-img {
   height: 100px;
   width: auto;
@@ -19,19 +58,13 @@ header {
   object-fit: cover;
 }
 
-
-/* Fondo amarillo de toda la vista */
-body {
-  background-color: #f7dc6f; /* color Bootstrap amarillo */
-  margin: 0;
-  padding: 0;
-}
-
-/* Tarjetas más pequeñas y centradas */
+/* ========================
+   📋 CATÁLOGO
+======================== */
 .catalogo-card {
   max-width: 300px;
   margin: 0 auto;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--sombra-card);
   border-radius: 12px;
 }
 
@@ -39,4 +72,38 @@ body {
   height: 160px;
   object-fit: contain;
   padding: 1rem;
+}
+
+/* ========================
+   🧩 GRID DE PRODUCTOS
+======================== */
+.product-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* ========================
+   📱 RESPONSIVE
+======================== */
+@media screen and (orientation: portrait) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (orientation: landscape) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    max-width: 1024px;
+    padding: 32px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
 }

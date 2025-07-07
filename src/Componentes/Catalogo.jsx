@@ -58,7 +58,7 @@ const Catalogo = () => {
             </div>
 
             <div className="col-12 col-md-3 text-center">
-              <h5 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h5>
+              <h1 className="text-success fw-bold fs-4 m-0">Distribuidora Esquina</h1>
             </div>
 
             <div className="col-12 col-md-6">
