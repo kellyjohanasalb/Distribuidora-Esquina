@@ -40,6 +40,9 @@ const Catalogo = () => {
     productosPorRubro[nombre].push(producto);
   });
 
+  // 💡 Nuevo: condición para mostrar mensaje sin resultados
+  const noHayResultados = !isLoading && productos.length === 0;
+
   return (
     <>
       {/* Header principal compacto */}
@@ -106,42 +109,49 @@ const Catalogo = () => {
         </div>
       </section>
 
-      {/* Productos agrupados por rubro */}
+      {/* Productos o mensaje sin resultados */}
       <main className="container my-3">
-        {Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
-          <div key={rubro} className="mb-5">
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="border-bottom pb-2 mb-2">
-                  <h5 className="mb-0 fw-semibold text-success d-flex align-items-center">
-                    <span>{rubro}</span>
-                    <span className="badge bg-light text-dark ms-2">
-                      {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
-                    </span>
-                  </h5>
-                </div>
-              </div>
-            </div>
-
-            <div className="row">
-              {productosDelRubro.map((producto) => (
-                <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
-                  <div className="card h-100">
-                    <img
-                      src={producto.imagen || IMAGEN_POR_DEFECTO}
-                      className="card-img-top"
-                      alt={producto.descripcion}
-                    />
-                    <div className="card-body text-center">
-                      <h5 className="card-title fw-bold">{producto.descripcion}</h5>
-                      <p className="card-text fs-5 text-dark">${producto.precioVenta}</p>
-                    </div>
+        {noHayResultados ? (
+          <div className="text-center text-muted py-5">
+            <h5> No se encontraron resultados.</h5>
+          </div>
+        ) : (
+          Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
+            <div key={rubro} className="mb-5">
+              <div className="row mb-3">
+                <div className="col-12">
+                  <div className="border-bottom pb-2 mb-2">
+                    <h5 className="mb-0 fw-semibold text-success d-flex align-items-center">
+                      <span>{rubro}</span>
+                      <span className="badge bg-light text-dark ms-2">
+                        {productosDelRubro.length} producto
+                        {productosDelRubro.length !== 1 ? 's' : ''}
+                      </span>
+                    </h5>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="row">
+                {productosDelRubro.map((producto) => (
+                  <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
+                    <div className="card h-100">
+                      <img
+                        src={producto.imagen || IMAGEN_POR_DEFECTO}
+                        className="card-img-top"
+                        alt={producto.descripcion}
+                      />
+                      <div className="card-body text-center">
+                        <h5 className="card-title fw-bold">{producto.descripcion}</h5>
+                        <p className="card-text fs-5 text-dark">${producto.precioVenta}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         {hasNextPage && (
           <div className="col-12 text-center mt-4">
