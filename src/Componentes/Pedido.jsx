@@ -1,97 +1,475 @@
-import React, { useState } from 'react';
-import { Button, Table, Form } from 'react-bootstrap';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import React, { useState, useEffect } from 'react';
+import { usePedido } from '../Hooks/usePedido.js';
+import useCatalogo from '../Hooks/useCatalogo.js';
+import Select from 'react-select';
+import '../index.css';
 
-const Pedido = () => {
-  const [startDate, setStartDate] = useState(new Date());
+const DistribuidoraEsquina = () => {
+  const [imagenModal, setImagenModal] = useState(null);
+
+ const {
+  pedido,
+  agregarProducto,
+  actualizarProducto,
+  enviarPedido,
+  eliminarProducto,
+  observacionGeneral, // ← agregá esto
+  guardarObservacionGeneral, // ← y esto también
+} = usePedido();
+
+  const {
+    productos,
+    rubros,
+    busqueda,
+    filtroRubro,
+    handleBusquedaChange,
+    handleRubroChange,
+    fetchProductos,
+    hasNextPage,
+    isLoading,
+  } = useCatalogo();
+
+  const [fechaPedido, setFechaPedido] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+
+  const agregarAlPedido = (item) => {
+    agregarProducto({
+      id: item.idArticulo,
+      idArticulo: item.idArticulo,
+      codigo: item.codigo,
+      articulo: item.descripcion,
+      cantidad: 1,
+      observacion: '',
+    });
+
+    // Limpiar el campo de búsqueda para cerrar el modal
+    handleBusquedaChange({ target: { value: '' } });
+  };
+
+  const opcionesRubros = rubros.map((r) => ({
+    value: r.idRubro,
+    label: r.nombre,
+  }));
+
+
+  const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
   return (
-    <div style={{ backgroundColor: 'var(--amarillo-bg)', minHeight: '100vh' }}>
-      {/* 🟡 Encabezado */}
-      <header className="bg-custom-header shadow-sm w-100 mb-4">
-        <div className="container">
-          <div className="row align-items-center g-3 py-2">
-            <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
-              <img
-                src="/logo-distruidora/logo.png"
-                alt="Distribuidora Esquina"
-                className="logo-img"
-              />
-              <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
+    <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
+      {/* HEADER */}
+      <header className="bg-warning shadow-sm mb-4">
+        <div className="container-fluid py-3">
+          <div className="row align-items-center">
+            <div className="col-12 col-md-6">
+              <div className="d-flex align-items-center">
+                <img
+                  src="/logo-distruidora/logo.png"
+                  alt="Distribuidora Esquina"
+                  className="me-3 rounded shadow"
+                  style={{ width: '120px', height: '120px' }}
+                />
+                <div>
+                  <h1 className="h4 mb-0 text-white fw-bold">Distribuidora</h1>
+                  <small className="text-white-50 fw-semibold">ESQUINA</small>
+                </div>
+              </div>
+            </div>
+            <div className="col-12 col-md-6 mt-2 mt-md-0">
+              <div className="d-flex align-items-center justify-content-md-end">
+                <div className="d-flex align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-1 me-3">
+                  <span className="me-2">👤</span>
+                  <small className="text-white fw-semibold">Cliente</small>
+                </div>
+                <div
+                  className="rounded-circle overflow-hidden"
+                  style={{ width: '40px', height: '40px' }}
+                >
+                  <img
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+                    alt="Usuario"
+                    className="w-100 h-100"
+                    style={{ objectFit: 'cover' }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* 🔍 Filtros */}
-      <div className="container mb-4">
-        <div className="row g-3 align-items-start">
-          {/* Búsqueda + Rubros */}
-          <div className="col-12 col-md-8">
-            <div className="d-flex flex-column gap-2">
-              <Form.Control
-                type="text"
-                placeholder="🔍 Buscar productos"
-                className="w-100"
-                style={{ fontSize: '0.9rem' }}
-              />
-              <Form.Select
-                className="w-100"
-                style={{ fontSize: '0.9rem' }}
-              >
-                <option>Todos los rubros</option>
-                <option>Bebidas</option>
-                <option>Snacks</option>
-              </Form.Select>
+      {/* MAIN CONTENT */}
+      <div className="container-fluid px-4">
+        {/* Título */}
+        <div className="mb-4">
+          <h2 className="h3 text-dark fw-bold mb-2">Nuevos Pedidos</h2>
+          <div className="bg-success rounded" style={{ width: '80px', height: '4px' }}></div>
+        </div>
+
+        {/* Search and Filters Card */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <div className="row g-3">
+              {/* Buscador */}
+              <div className="col-12 ">
+                <div className="position-relative">
+                  <span
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                    style={{ fontSize: '1.2rem' }}
+                  >
+                    🔍
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control ps-5"
+                    placeholder="Buscar productos..."
+                    value={busqueda}
+                    onChange={handleBusquedaChange}
+                  />
+
+                  {busqueda.length >= 2 && productos.length > 0 && (
+                    <div
+                      className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
+                      style={{
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      <table className="table table-bordered table-sm mb-0">
+                        <thead className="table-light">
+                          <tr>
+                            <th>Código</th>
+                            <th>Artículo</th>
+                            <th>Unitario</th>
+                            <th className="text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productos.map((item) => (
+                            <tr key={item.idArticulo}>
+                              <td>{item.idArticulo}</td> {/* ✔ Código */}
+                              <td>{item.descripcion}</td>
+                              <td>${parseFloat(item.precioVenta).toFixed(2)}</td> {/* ✔ Precio */}
+                              <td className="text-center">
+                                <div className="d-flex justify-content-center gap-2">
+                                  <button
+                                    className="btn btn-sm btn-info"
+                                    onClick={() => setImagenModal(item.imagen)}
+                                  >
+                                    Ver Imagen
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-success"
+                                    onClick={() => agregarAlPedido(item)}
+                                  >
+                                    Agregar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+
+                      </table>
+                      {hasNextPage && (
+                        <button
+                          className="btn btn-link mt-2"
+                          onClick={() => fetchProductos(false)}
+                        >
+                          Ver más...
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </div>
+
+              {/* Rubros */}
+              <div className="col-12 col-md-4">
+                <div style={{ minWidth: '160px', maxWidth: '100%' }}>
+                  <Select
+                    options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
+                    onChange={(selected) =>
+                      handleRubroChange({ target: { value: selected?.value || '' } })
+                    }
+                    value={
+                      opcionesRubros.find((o) => o.value === filtroRubro) || {
+                        value: '',
+                        label: 'Todos los rubros',
+                      }
+                    }
+                    placeholder="🎯 Filtrar por rubro"
+                    classNamePrefix="react-select"
+                  />
+                </div>
+              </div>
+
+
+              {/* Fecha */}
+              <div className="col-12 col-md-3">
+                <div className="position-relative">
+                  <span
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                    style={{ fontSize: '1.2rem' }}
+                  >
+                    📅
+                  </span>
+                  <input
+                    type="date"
+                    className="form-control ps-5"
+                    value={fechaPedido}
+                    onChange={(e) => setFechaPedido(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              {/* Botón Añadir */}
+              <div className="col-12 col-md-2">
+                <button className="btn btn-success w-100 d-flex align-items-center justify-content-center">
+                  <span className="me-2">➕</span>
+                  Añadir
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Fecha + Botón */}
-          <div className="col-12 col-md-4 d-flex flex-column gap-2 align-items-md-end align-items-center">
-            <DatePicker
-              selected={startDate}
-              onChange={(date) => setStartDate(date)}
-              className="form-control"
-              dateFormat="dd/MM/yyyy"
-              style={{ fontSize: '0.9rem' }}
-            />
-            <Button
-              variant="success"
-              className="w-100 w-md-auto"
-              style={{ fontSize: '0.9rem', padding: '6px 12px' }}
-            >
-              Añadir
-            </Button>
+        {/* Lista de productos agregados */}
+        {pedido.length > 0 && (
+          <div className="card shadow-sm mb-4">
+            <div className="card-body">
+              <h5 className="fw-bold mb-3">Artículos agregados</h5>
+              <table className="table table-bordered table-sm">
+                <thead className="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Artículo</th>
+                    <th>Cantidad</th>
+                    <th>Observación</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pedido.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.idArticulo}</td>
+                      <td>{item.articulo}</td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <button
+                            className="btn btn-sm btn-outline-secondary me-1"
+                            onClick={() =>
+                              actualizarProducto(item.id, {
+                                cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
+                              })
+                            }
+                          >
+                            –
+                          </button>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="form-control form-control-sm text-center"
+                            style={{ width: '60px' }}
+                            value={item.cantidad}
+                            onChange={(e) => {
+                              const valor = e.target.value;
+                              if (/^\d*$/.test(valor)) {
+                                actualizarProducto(item.id, {
+                                  cantidad: valor === '' ? '' : parseInt(valor),
+                                });
+                              }
+                            }}
+                            onBlur={(e) => {
+                              // Si quedó vacío, lo devuelve a 1
+                              const valor = parseInt(e.target.value);
+                              actualizarProducto(item.id, { cantidad: isNaN(valor) || valor <= 0 ? 1 : valor });
+                            }}
+                          />
+                          <button
+                            className="btn btn-sm btn-outline-secondary ms-1"
+                            onClick={() =>
+                              actualizarProducto(item.id, {
+                                cantidad: item.cantidad + 1,
+                              })
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          value={item.observacion}
+                          onChange={(e) =>
+                            actualizarProducto(item.id, {
+                              observacion: e.target.value,
+                            })
+                          }
+                        />
+                      </td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <button className="btn btn-sm btn-info">Ver Imagen</button>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => eliminarProducto(item.id)}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+{/* Observación General */}
+<div className="card shadow-sm mb-4">
+  <div className="card-body">
+    <h5 className="fw-bold mb-3">Observación General</h5>
+    <textarea
+      className="form-control"
+      rows={3}
+      placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
+      value={observacionGeneral}
+      onChange={(e) => guardarObservacionGeneral(e.target.value)}
+    />
+  </div>
+</div>
+
+{/* Botones de acción */}
+<div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  {/* Deshacer */}
+  <div>
+    <button
+      className="btn btn-outline-danger fw-semibold px-3 py-2"
+      onClick={() => {
+        setPedido([]);
+        setObservacionGeneral('');
+      }}
+    >
+      ❌ Deshacer
+    </button>
+  </div>
+  {/* Guardar y Enviar */}
+  <div className="d-flex gap-2">
+    <button
+      className="btn btn-outline-primary fw-semibold px-3 py-2"
+      onClick={() => console.log('Guardar pedido')}
+    >
+      💾 Guardar
+    </button>
+    <button
+      className="btn btn-outline-success fw-semibold px-3 py-2"
+      onClick={() => console.log('Enviar pedido')}
+    >
+      📤 Enviar
+    </button>
+  </div>
+</div>
+
+
+        {/* Summary */}
+        <div className="card shadow-sm mt-4">
+          <div className="card-body">
+            <div className="row align-items-center">
+              <div className="col-12 col-md-6">
+                <div className="text-center text-md-start">
+                  <p className="text-muted mb-1">Total de productos:</p>
+                  <h3 className="text-success fw-bold mb-0">{totalProductos}</h3>
+                </div>
+              </div>
+              <div className="col-12 col-md-6 mt-3 mt-md-0">
+                <div className="text-center text-md-end">
+                  <button
+                    className="btn btn-warning btn-lg px-4 fw-semibold"
+                    onClick={enviarPedido}
+                  >
+                    <span className="me-2">🛒</span>
+                    Finalizar Pedido
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 📋 Tabla de productos */}
-      <div className="container">
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Artículo</th>
-              <th>Cantidad</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Mapea los productos aquí */}
-          </tbody>
-        </Table>
-      </div>
+      {/* Navegación inferior */}
+      <nav className="fixed-bottom mb-4 bg-transparent">
+        <div className="d-flex justify-content-around align-items-center">
+          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            🔍 <span className="fw-semibold text-white">Catálogo</span>
+          </button>
+          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            ➕ <span className="fw-semibold text-white">Pedido</span>
+          </button>
+          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            📄 <span className="fw-semibold text-white">Órdenes</span>
+          </button>
+        </div>
+      </nav>
 
-      {/* 🚀 Navegación inferior */}
-      <div className="d-flex justify-content-around mt-5">
-        <Button variant="secondary">Catálogo</Button>
-        <Button variant="primary">Pedido Nuevo</Button>
-        <Button variant="warning">Órdenes</Button>
-      </div>
+      <div style={{ height: '80px' }}></div>
+
+
+      {imagenModal && (
+        <div
+          className="modal fade show"
+          tabIndex="-1"
+          style={{
+            display: 'block',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 1050,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+          }}
+          onClick={() => setImagenModal(null)}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content border-0 rounded shadow">
+              <div className="modal-header border-0">
+                <h5 className="modal-title fw-bold">Visor de Imagen</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setImagenModal(null)}
+                ></button>
+              </div>
+              <div className="modal-body text-center">
+                <img
+                  src={imagenModal}
+                  alt="Producto"
+                  className="img-fluid rounded shadow"
+                  style={{ maxHeight: '70vh' }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Pedido;
+
+
+export default DistribuidoraEsquina;

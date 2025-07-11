@@ -1,9 +1,12 @@
+// src/Pages/Catalogo.jsx
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';
 import '../index.css';
 
 const Catalogo = () => {
+  
+
   const {
     productos,
     rubros,
@@ -16,7 +19,7 @@ const Catalogo = () => {
     isLoading,
   } = useCatalogo();
 
-  const IMAGEN_POR_DEFECTO = 'https://via.placeholder.com/150';
+  const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
   const opcionesProductos = productos.map(p => ({
     value: p.idArticulo,
@@ -34,18 +37,14 @@ const Catalogo = () => {
   const productosPorRubro = {};
   productos.forEach(producto => {
     const nombre = rubros.find(r => r.id === producto.idRubro)?.descripcion || 'Otros';
-    if (!productosPorRubro[nombre]) {
-      productosPorRubro[nombre] = [];
-    }
+    if (!productosPorRubro[nombre]) productosPorRubro[nombre] = [];
     productosPorRubro[nombre].push(producto);
   });
 
-  // 💡 Nuevo: condición para mostrar mensaje sin resultados
   const noHayResultados = !isLoading && productos.length === 0;
 
   return (
     <>
-      {/* Header principal compacto */}
       <header className="bg-custom-header shadow-sm w-100">
         <div className="container">
           <div className="row align-items-center g-3 py-2">
@@ -64,12 +63,8 @@ const Catalogo = () => {
                 <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={opcionesProductos}
-                    onInputChange={(inputValue) =>
-                      handleBusquedaChange({ target: { value: inputValue } })
-                    }
-                    onChange={(selected) =>
-                      handleBusquedaChange({ target: { value: selected?.label || '' } })
-                    }
+                    onInputChange={(inputValue) => handleBusquedaChange({ target: { value: inputValue } })}
+                    onChange={(selected) => handleBusquedaChange({ target: { value: selected?.label || '' } })}
                     value={busqueda ? { value: '', label: busqueda } : null}
                     placeholder="🔍 Buscar productos"
                     classNamePrefix="react-select"
@@ -80,9 +75,7 @@ const Catalogo = () => {
                 <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
-                    onChange={(selected) =>
-                      handleRubroChange({ target: { value: selected?.value || '' } })
-                    }
+                    onChange={(selected) => handleRubroChange({ target: { value: selected?.value || '' } })}
                     value={
                       opcionesRubros.find(o => o.value === filtroRubro) || {
                         value: '',
@@ -99,21 +92,17 @@ const Catalogo = () => {
         </div>
       </header>
 
-      {/* Catálogo título y contador */}
       <section className="container my-3">
         <div className="d-flex justify-content-between align-items-center px-2">
           <h2 className="text-success fw-bold fs-2 m-0">Catálogo</h2>
-          <span className="text-muted small">
-            {nombreRubro} ({productos.length})
-          </span>
+          <span className="text-muted small">{nombreRubro} ({productos.length})</span>
         </div>
       </section>
 
-      {/* Productos o mensaje sin resultados */}
       <main className="container my-3">
         {noHayResultados ? (
           <div className="text-center text-muted py-5">
-            <h5> No se encontraron resultados.</h5>
+            <h5>No se encontraron resultados.</h5>
           </div>
         ) : (
           Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
@@ -124,8 +113,7 @@ const Catalogo = () => {
                     <h5 className="mb-0 fw-semibold text-success d-flex align-items-center">
                       <span>{rubro}</span>
                       <span className="badge bg-light text-dark ms-2">
-                        {productosDelRubro.length} producto
-                        {productosDelRubro.length !== 1 ? 's' : ''}
+                        {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
                       </span>
                     </h5>
                   </div>
@@ -135,14 +123,17 @@ const Catalogo = () => {
               <div className="row">
                 {productosDelRubro.map((producto) => (
                   <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
-                    <div className="card h-100">
+                    <div className="card h-100 catalogo-card">
                       <img
                         src={producto.imagen || IMAGEN_POR_DEFECTO}
-                        className="card-img-top"
                         alt={producto.descripcion}
+                        className="card-img-top catalogo-img"
                       />
                       <div className="card-body text-center">
                         <h5 className="card-title fw-bold">{producto.descripcion}</h5>
+                        {producto.detalle1 && (
+                          <p className="card-subtitle text-muted small">{producto.detalle1}</p>
+                        )}
                         <p className="card-text fs-5 text-dark">${producto.precioVenta}</p>
                       </div>
                     </div>

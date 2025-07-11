@@ -1,3 +1,4 @@
+// src/Hooks/useCatalogo.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -12,13 +13,13 @@ const useCatalogo = () => {
 
   useEffect(() => {
     fetchRubros();
-    resetProductos(); // cargar los primeros productos
+    resetProductos();
   }, [busqueda, filtroRubro]);
 
   const fetchRubros = async () => {
     try {
       const response = await axios.get('https://remito-send-back.vercel.app/api/rubros');
-      setRubros(response.data); // [{ id, descripcion }]
+      setRubros(response.data);
     } catch (error) {
       console.error('Error al obtener rubros', error);
     }
@@ -28,7 +29,7 @@ const useCatalogo = () => {
     setProductos([]);
     setCursor('');
     setHasNextPage(true);
-    await fetchProductos(true); // primer batch
+    await fetchProductos(true);
   };
 
   const fetchProductos = async (initial = false) => {
@@ -66,7 +67,7 @@ const useCatalogo = () => {
     filtroRubro,
     handleBusquedaChange,
     handleRubroChange,
-    fetchProductos, // para cargar más
+    fetchProductos,
     hasNextPage,
     isLoading
   };
