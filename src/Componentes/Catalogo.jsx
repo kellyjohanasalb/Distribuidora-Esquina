@@ -2,6 +2,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';
+import { Link } from 'react-router-dom';
 import '../index.css';
 
 const Catalogo = () => {
@@ -49,12 +50,15 @@ const Catalogo = () => {
         <div className="container">
           <div className="row align-items-center g-3 py-2">
             <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
-              <img
-                src="/logo-distruidora/logo.png"
-                alt="Distribuidora Esquina"
-                className="logo-img"
-                onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
-              />
+             <Link to="/pedido">
+  <img
+    src="/logo-distruidora/logo.png"
+    alt="Distribuidora Esquina"
+    className="logo-img"
+    onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
+    style={{ cursor: 'pointer' }}
+  />
+</Link>
               <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
             </div>
 

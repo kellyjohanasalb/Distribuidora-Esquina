@@ -36,12 +36,13 @@ const useCatalogo = () => {
     if (!hasNextPage || isLoading) return;
     setIsLoading(true);
 
-    const params = {
-      limit: 20,
-      description: busqueda.length >= 2 ? busqueda : undefined,
-      rubro: filtroRubro ? Number(filtroRubro) : undefined,
-      cursor: initial ? undefined : cursor
-    };
+   const params = {
+  limit: 20,
+  description: busqueda.length >= 2 ? busqueda : undefined,
+  ...(filtroRubro !== '' && !isNaN(Number(filtroRubro)) && { rubro: Number(filtroRubro) }),
+  cursor: initial ? undefined : cursor
+};
+
 
     try {
       const response = await axios.get('https://remito-send-back.vercel.app/api/products/catalog', { params });
@@ -58,7 +59,9 @@ const useCatalogo = () => {
   };
 
   const handleBusquedaChange = (e) => setBusqueda(e.target.value);
-  const handleRubroChange = (e) => setFiltroRubro(e.target.value);
+  const handleRubroChange = (e) => {
+    setFiltroRubro(String(e.target.value)); // siempre string
+  };
 
   return {
     productos,

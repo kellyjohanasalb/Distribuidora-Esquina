@@ -7,15 +7,15 @@ import '../index.css';
 const DistribuidoraEsquina = () => {
   const [imagenModal, setImagenModal] = useState(null);
 
- const {
-  pedido,
-  agregarProducto,
-  actualizarProducto,
-  enviarPedido,
-  eliminarProducto,
-  observacionGeneral, // ← agregá esto
-  guardarObservacionGeneral, // ← y esto también
-} = usePedido();
+  const {
+    pedido,
+    agregarProducto,
+    actualizarProducto,
+    enviarPedido,
+    eliminarProducto,
+    observacionGeneral, // ← agregá esto
+    guardarObservacionGeneral, // ← y esto también
+  } = usePedido();
 
   const {
     productos,
@@ -34,17 +34,29 @@ const DistribuidoraEsquina = () => {
     return today.toISOString().split('T')[0];
   });
 
+  // ✅ CORRECCIÓN 1: Verificar duplicados y sumar cantidades
   const agregarAlPedido = (item) => {
-    agregarProducto({
-      id: item.idArticulo,
-      idArticulo: item.idArticulo,
-      codigo: item.codigo,
-      articulo: item.descripcion,
-      cantidad: 1,
-      observacion: '',
-    });
+    // Verificar si el producto ya existe en el pedido
+    const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
 
-    // Limpiar el campo de búsqueda para cerrar el modal
+    if (productoExistente) {
+      // Si existe, sumar la cantidad (cumple requerimiento)
+      actualizarProducto(productoExistente.id, {
+        cantidad: productoExistente.cantidad + 1
+      });
+    } else {
+      // Si no existe, agregarlo normalmente (mantiene funcionalidad actual)
+      agregarProducto({
+        id: item.idArticulo,
+        idArticulo: item.idArticulo,
+        codigo: item.codigo,
+        articulo: item.descripcion,
+        cantidad: 1,
+        observacion: '',
+      });
+    }
+
+    // Mantener la limpieza del buscador (no tocar)
     handleBusquedaChange({ target: { value: '' } });
   };
 
@@ -53,13 +65,12 @@ const DistribuidoraEsquina = () => {
     label: r.nombre,
   }));
 
-
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
       {/* HEADER */}
-      <header className="bg-warning shadow-sm mb-4">
+      <header className="shadow-sm mb-4" style={{ backgroundColor: '#f7dc6f' }}>
         <div className="container-fluid py-3">
           <div className="row align-items-center">
             <div className="col-12 col-md-6">
@@ -71,17 +82,23 @@ const DistribuidoraEsquina = () => {
                   style={{ width: '120px', height: '120px' }}
                 />
                 <div>
-                  <h1 className="h4 mb-0 text-white fw-bold">Distribuidora</h1>
-                  <small className="text-white-50 fw-semibold">ESQUINA</small>
+                  <h1 className="h4 mb-0 fw-bold text-success">Distribuidora</h1>
+                  <small className="fw-semibold text-success">ESQUINA</small>
                 </div>
               </div>
             </div>
             <div className="col-12 col-md-6 mt-2 mt-md-0">
               <div className="d-flex align-items-center justify-content-md-end">
-                <div className="d-flex align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-1 me-3">
-                  <span className="me-2">👤</span>
-                  <small className="text-white fw-semibold">Cliente</small>
+                {/* CLIENTE */}
+                <div
+                  className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
+                  style={{ backgroundColor: '#298143' }}
+                >
+                  <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
+                  <small className="fw-semibold text-white">Cliente</small>
                 </div>
+
+                {/* FOTO DE USUARIO */}
                 <div
                   className="rounded-circle overflow-hidden"
                   style={{ width: '40px', height: '40px' }}
@@ -209,7 +226,6 @@ const DistribuidoraEsquina = () => {
                 </div>
               </div>
 
-
               {/* Fecha */}
               <div className="col-12 col-md-3">
                 <div className="position-relative">
@@ -245,141 +261,159 @@ const DistribuidoraEsquina = () => {
           <div className="card shadow-sm mb-4">
             <div className="card-body">
               <h5 className="fw-bold mb-3">Artículos agregados</h5>
-              <table className="table table-bordered table-sm">
-                <thead className="table-light">
-                  <tr>
-                    <th>Código</th>
-                    <th>Artículo</th>
-                    <th>Cantidad</th>
-                    <th>Observación</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pedido.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.idArticulo}</td>
-                      <td>{item.articulo}</td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <button
-                            className="btn btn-sm btn-outline-secondary me-1"
-                            onClick={() =>
-                              actualizarProducto(item.id, {
-                                cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
-                              })
-                            }
-                          >
-                            –
-                          </button>
+              <div className="table-responsive">
+                <table className="table table-bordered table-sm">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Código</th>
+                      <th>Artículo</th>
+                      <th>Cantidad</th>
+                      <th>Observación</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pedido.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.idArticulo}</td>
+                        <td>{item.articulo}</td>
+                        <td>
+                          <div className="d-flex flex-wrap align-items-center justify-content-center">
+                            <button
+                              className="btn btn-sm btn-outline-secondary me-1 mb-1"
+                              onClick={() =>
+                                actualizarProducto(item.id, {
+                                  cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
+                                })
+                              }
+                              disabled={item.cantidad <= 1}
+                            >
+                              –
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              className="form-control form-control-sm text-center mb-1 input-cantidad"
+                              style={{ width: '70px' }}
+                              value={item.cantidad === 0 ? "" : item.cantidad}
+                              onChange={(e) => {
+                                const valor = e.target.value;
+
+                                // Permite el valor vacío momentáneamente
+                                if (valor === "") {
+                                  actualizarProducto(item.id, { cantidad: 0 });
+                                  return;
+                                }
+
+                                const numero = parseInt(valor);
+                                if (!isNaN(numero) && numero >= 1) {
+                                  actualizarProducto(item.id, { cantidad: numero });
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const valor = parseInt(e.target.value);
+                                actualizarProducto(item.id, {
+                                  cantidad: isNaN(valor) || valor < 1 ? 1 : valor
+                                });
+                              }}
+                            />
+                            <button
+                              className="btn btn-sm btn-outline-secondary ms-1 mb-1"
+                              onClick={() =>
+                                actualizarProducto(item.id, {
+                                  cantidad: item.cantidad + 1,
+                                })
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+                        <td>
                           <input
                             type="text"
-                            inputMode="numeric"
-                            className="form-control form-control-sm text-center"
-                            style={{ width: '60px' }}
-                            value={item.cantidad}
-                            onChange={(e) => {
-                              const valor = e.target.value;
-                              if (/^\d*$/.test(valor)) {
-                                actualizarProducto(item.id, {
-                                  cantidad: valor === '' ? '' : parseInt(valor),
-                                });
-                              }
-                            }}
-                            onBlur={(e) => {
-                              // Si quedó vacío, lo devuelve a 1
-                              const valor = parseInt(e.target.value);
-                              actualizarProducto(item.id, { cantidad: isNaN(valor) || valor <= 0 ? 1 : valor });
-                            }}
-                          />
-                          <button
-                            className="btn btn-sm btn-outline-secondary ms-1"
-                            onClick={() =>
+                            className="form-control form-control-sm"
+                            value={item.observacion}
+                            onChange={(e) =>
                               actualizarProducto(item.id, {
-                                cantidad: item.cantidad + 1,
+                                observacion: e.target.value,
                               })
                             }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
-                          value={item.observacion}
-                          onChange={(e) =>
-                            actualizarProducto(item.id, {
-                              observacion: e.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <button className="btn btn-sm btn-info">Ver Imagen</button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => eliminarProducto(item.id)}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          />
+                        </td>
+                        <td>
+                          <div className="d-flex gap-2 flex-wrap justify-content-center">
+                            <button className="btn btn-sm btn-info">Ver Imagen</button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => {
+                                if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
+                                  eliminarProducto(item.id);
+                                }
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
-{/* Observación General */}
-<div className="card shadow-sm mb-4">
-  <div className="card-body">
-    <h5 className="fw-bold mb-3">Observación General</h5>
-    <textarea
-      className="form-control"
-      rows={3}
-      placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
-      value={observacionGeneral}
-      onChange={(e) => guardarObservacionGeneral(e.target.value)}
-    />
-  </div>
-</div>
 
-{/* Botones de acción */}
-<div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  {/* Deshacer */}
-  <div>
-    <button
-      className="btn btn-outline-danger fw-semibold px-3 py-2"
-      onClick={() => {
-        setPedido([]);
-        setObservacionGeneral('');
-      }}
-    >
-      ❌ Deshacer
-    </button>
-  </div>
-  {/* Guardar y Enviar */}
-  <div className="d-flex gap-2">
-    <button
-      className="btn btn-outline-primary fw-semibold px-3 py-2"
-      onClick={() => console.log('Guardar pedido')}
-    >
-      💾 Guardar
-    </button>
-    <button
-      className="btn btn-outline-success fw-semibold px-3 py-2"
-      onClick={() => console.log('Enviar pedido')}
-    >
-      📤 Enviar
-    </button>
-  </div>
-</div>
+        {/* Observación General */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h5 className="fw-bold mb-3">Observación General</h5>
+            <textarea
+              className="form-control"
+              rows={3}
+              placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
+              value={observacionGeneral}
+              onChange={(e) => guardarObservacionGeneral(e.target.value)}
+            />
+          </div>
+        </div>
 
+        {/* Botones de acción */}
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          {/* Deshacer */}
+          <div>
+            {/* ✅ CORRECCIÓN 3: Botón deshacer corregido */}
+            <button
+              className="btn btn-outline-danger fw-semibold px-3 py-2"
+              onClick={() => {
+                if (window.confirm("¿Deshacer todo el pedido?")) {
+                  // Usar las funciones que ya tienes disponibles
+                  pedido.forEach(item => eliminarProducto(item.id));
+                  guardarObservacionGeneral('');
+                }
+              }}
+            >
+              ❌ Deshacer
+            </button>
+          </div>
+          {/* Guardar y Enviar */}
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-outline-primary fw-semibold px-3 py-2"
+              onClick={() => console.log('Guardar pedido')}
+            >
+              💾 Guardar
+            </button>
+            <button
+              className="btn btn-outline-success fw-semibold px-3 py-2"
+              onClick={() => console.log('Enviar pedido')}
+            >
+              📤 Enviar
+            </button>
+          </div>
+        </div>
 
         {/* Summary */}
         <div className="card shadow-sm mt-4">
@@ -423,7 +457,6 @@ const DistribuidoraEsquina = () => {
       </nav>
 
       <div style={{ height: '80px' }}></div>
-
 
       {imagenModal && (
         <div
@@ -469,7 +502,5 @@ const DistribuidoraEsquina = () => {
     </div>
   );
 };
-
-
 
 export default DistribuidoraEsquina;
