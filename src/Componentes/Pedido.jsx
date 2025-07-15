@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { usePedido } from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';
@@ -26,7 +26,6 @@ const DistribuidoraEsquina = () => {
     handleRubroChange,
     fetchProductos,
     hasNextPage,
-    isLoading,
   } = useCatalogo();
 
   const [fechaPedido, setFechaPedido] = useState(() => {
