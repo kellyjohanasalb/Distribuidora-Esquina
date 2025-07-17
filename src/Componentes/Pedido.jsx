@@ -450,9 +450,9 @@ const DistribuidoraEsquina = () => {
           <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             ➕ <span className="fw-semibold text-white">Pedido</span>
           </button>
-          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+          <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             📄 <span className="fw-semibold text-white">Órdenes</span>
-          </button>
+          </Link>
         </div>
       </nav>
 
