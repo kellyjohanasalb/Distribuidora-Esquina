@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useState } from 'react';
 import { usePedido } from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js';
@@ -400,7 +401,7 @@ const DistribuidoraEsquina = () => {
           {/* Guardar y Enviar */}
           <div className="d-flex gap-2">
             <button
-              className="btn btn-outline-primary fw-semibold px-3 py-2"
+              className="btn btn-outline-success fw-semibold px-3 py-2"
               onClick={() => console.log('Guardar pedido')}
             >
               💾 Guardar
@@ -443,9 +444,9 @@ const DistribuidoraEsquina = () => {
       {/* Navegación inferior */}
       <nav className="fixed-bottom mb-4 bg-transparent">
         <div className="d-flex justify-content-around align-items-center">
-          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+          <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             🔍 <span className="fw-semibold text-white">Catálogo</span>
-          </button>
+          </Link>
           <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             ➕ <span className="fw-semibold text-white">Pedido</span>
           </button>
