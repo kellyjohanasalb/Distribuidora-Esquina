@@ -25,11 +25,11 @@ const DistribuidoraEsquina = () => {
 
   const {
     productos,
-    rubros,
+    /*  rubros, */
     busqueda,
-    filtroRubro,
+    /*   filtroRubro, */
     handleBusquedaChange,
-    handleRubroChange,
+    /*  handleRubroChange, */
     fetchProductos,
     hasNextPage,
   } = useCatalogo();
@@ -97,11 +97,11 @@ const DistribuidoraEsquina = () => {
 
     handleBusquedaChange({ target: { value: '' } });
   };
-
-  const opcionesRubros = rubros.map((r) => ({
-    value: r.idRubro,
-    label: r.nombre,
-  }));
+  /* 
+    const opcionesRubros = rubros.map((r) => ({
+      value: r.idRubro,
+      label: r.nombre,
+    })); */
 
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
@@ -113,7 +113,7 @@ const DistribuidoraEsquina = () => {
   };
 
   // Función para guardar pedido (estado pendiente)
-  const guardarPedidoPendiente = async () => {
+  const guardarPedidoPendiente = () => {
     if (pedido.length === 0) {
       alert("Debe agregar al menos un producto al pedido.");
       return;
@@ -126,67 +126,6 @@ const DistribuidoraEsquina = () => {
 
     const productosMapeados = pedido.map(p => {
       const producto = {
-        id: p.idArticulo,
-        cantidad: p.cantidad,
-      };
-      if (p.observacion?.trim()) {
-        producto.observation = p.observacion.trim();
-      }
-      return producto;
-    });
-
-    const body = {
-  clientName: clienteNombre.trim(),
-  products: productosMapeados, // ✅ esto es lo que espera tu backend
-  fechaAlta: new Date(fechaHoraPedido).toISOString(),
-};
-
-    if (observacionGeneral?.trim()) {
-      body.observation = observacionGeneral.trim();
-    }
-
-    try {
-      await guardarPedido(body);
-      alert("Pedido guardado con éxito.");
-      limpiarPedido();
-      setClienteNombre('');
-      guardarObservacionGeneral('');
-    } catch (error) {
-      console.error("Error al guardar pedido:", error);
-      alert("Error al guardar el pedido:\n" + (error.response?.data?.message || error.message));
-    }
-  };
-
-  // Función para enviar pedido (estado enviado)
-  const enviarPedido = async () => {
-  if (!puedeEnviar()) {
-    if (!isOnline) {
-      alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
-      return;
-    }
-    if (!esPedidoValido()) {
-      alert("El pedido no es válido. Verifique los datos ingresados.");
-      return;
-    }
-    return;
-  }
-
-  const confirmacion = window.confirm(
-    `¿Está seguro que desea enviar este pedido?\n\n` +
-    `Cliente: ${clienteNombre}\n` +
-    `Productos: ${totalProductos}\n` +
-    `Fecha: ${new Date(fechaHoraPedido).toLocaleString()}\n\n` +
-    `Una vez enviado, el pedido no podrá ser editado.`
-  );
-
-  if (!confirmacion) return;
-
-  setIsEnviando(true);
-
-  const productosMapeados = pedido
-    .filter(p => typeof p.idArticulo === 'string' && p.idArticulo.length >= 1 && p.idArticulo.length <= 15)
-    .map(p => {
-      const producto = {
         idArticulo: p.idArticulo,
         cantidad: p.cantidad,
       };
@@ -196,32 +135,97 @@ const DistribuidoraEsquina = () => {
       return producto;
     });
 
-  const body = {
-    clientName: clienteNombre.trim(),
-    products: productosMapeados, // ✅ corregido
-    fechaAlta: new Date(fechaHoraPedido).toISOString(),
+    const body = {
+      clientName: clienteNombre.trim(),
+      products: productosMapeados,
+      fechaAlta: new Date(fechaHoraPedido).toISOString(),
+    };
+
+    if (observacionGeneral?.trim()) {
+      body.observation = observacionGeneral.trim();
+    }
+
+    try {
+      // 🧠 Guardar en localStorage
+      const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+      pedidosGuardados.push(body);
+      localStorage.setItem("pedidosPendientes", JSON.stringify(pedidosGuardados));
+
+      alert("✅ Pedido guardado localmente como pendiente.");
+      limpiarPedido();
+      setClienteNombre('');
+      guardarObservacionGeneral('');
+    } catch (error) {
+      console.error("❌ Error al guardar pedido local:", error);
+      alert("Error al guardar el pedido local:\n" + error.message);
+    }
   };
 
-  if (observacionGeneral?.trim()) {
-    body.observation = observacionGeneral.trim();
-  }
+  // Función para enviar pedido (estado enviado)
+  const enviarPedido = async () => {
+    if (!puedeEnviar()) {
+      if (!isOnline) {
+        alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
+        return;
+      }
+      if (!esPedidoValido()) {
+        alert("El pedido no es válido. Verifique los datos ingresados.");
+        return;
+      }
+      return;
+    }
 
-  console.log("🧾 Body del pedido:", JSON.stringify(body, null, 2));
+    const confirmacion = window.confirm(
+      `¿Está seguro que desea enviar este pedido?\n\n` +
+      `Cliente: ${clienteNombre}\n` +
+      `Productos: ${totalProductos}\n` +
+      `Fecha: ${new Date(fechaHoraPedido).toLocaleString()}\n\n` +
+      `Una vez enviado, el pedido no podrá ser editado.`
+    );
 
-  try {
-    await guardarPedido(body);
-    alert("¡Pedido enviado con éxito!\n\nEl pedido ha sido registrado como procesado y cerrado.");
-    limpiarPedido();
-    setClienteNombre('');
-    guardarObservacionGeneral('');
-    navigate('/', { replace: true });
-  } catch (error) {
-    console.error("❌ Error al enviar pedido:", error);
-    alert("Error al enviar el pedido:\n" + (error.response?.data?.message || error.message));
-  } finally {
-    setIsEnviando(false);
-  }
-};
+    if (!confirmacion) return;
+
+    setIsEnviando(true);
+
+    const productosMapeados = pedido
+      .filter(p => typeof p.idArticulo === 'string' && p.idArticulo.length >= 1 && p.idArticulo.length <= 15)
+      .map(p => {
+        const producto = {
+          idArticulo: p.idArticulo,
+          cantidad: p.cantidad,
+        };
+        if (p.observacion?.trim()) {
+          producto.observation = p.observacion.trim();
+        }
+        return producto;
+      });
+
+    const body = {
+      clientName: clienteNombre.trim(),
+      products: productosMapeados, // ✅ corregido
+      fechaAlta: new Date(fechaHoraPedido).toISOString(),
+    };
+
+    if (observacionGeneral?.trim()) {
+      body.observation = observacionGeneral.trim();
+    }
+
+    console.log("🧾 Body del pedido:", JSON.stringify(body, null, 2));
+
+    try {
+      await guardarPedido(body);
+      alert("¡Pedido enviado con éxito!\n\nEl pedido ha sido registrado como procesado y cerrado.");
+      limpiarPedido();
+      setClienteNombre('');
+      guardarObservacionGeneral('');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error("❌ Error al enviar pedido:", error);
+      alert("Error al enviar el pedido:\n" + (error.response?.data?.message || error.message));
+    } finally {
+      setIsEnviando(false);
+    }
+  };
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
@@ -296,129 +300,102 @@ const DistribuidoraEsquina = () => {
         {/* Search and Filters Card */}
         <div className="card shadow-sm mb-4">
           <div className="card-body">
-            <div className="row g-3">
-              {/* Buscador */}
-              <div className="col-12">
-                <div className="position-relative">
-                  <span
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3"
-                    style={{ fontSize: '1.2rem' }}
-                  >
-                    🔍
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control ps-5"
-                    placeholder="Buscar productos..."
-                    value={busqueda}
-                    onChange={handleBusquedaChange}
-                  />
+            {/* Buscador */}
+            <div className="mb-3 position-relative">
+              <span
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                style={{ fontSize: '1.2rem' }}
+              >
+                🔍
+              </span>
+              <input
+                type="text"
+                className="form-control ps-5"
+                placeholder="Buscar productos..."
+                value={busqueda}
+                onChange={handleBusquedaChange}
+              />
 
-                  {busqueda.length >= 2 && productos.length > 0 && (
-                    <div
-                      className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
-                      style={{
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                      }}
+              {busqueda.length >= 2 && productos.length > 0 && (
+                <div
+                  className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
+                  style={{
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  <table className="table table-bordered table-sm mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Código</th>
+                        <th>Artículo</th>
+                        <th>Unitario</th>
+                        <th className="text-center">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productos.map((item) => (
+                        <tr key={item.idArticulo}>
+                          <td>{item.idArticulo}</td>
+                          <td>{item.descripcion}</td>
+                          <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
+                          <td className="text-center">
+                            <div className="d-flex justify-content-center gap-2">
+                              <button
+                                className="btn btn-sm btn-info"
+                                onClick={() => setImagenModal(item.imagen)}
+                              >
+                                Ver Imagen
+                              </button>
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => agregarAlPedido(item)}
+                              >
+                                Agregar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {hasNextPage && (
+                    <button
+                      className="btn btn-link mt-2"
+                      onClick={() => fetchProductos(false)}
                     >
-                      <table className="table table-bordered table-sm mb-0">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Código</th>
-                            <th>Artículo</th>
-                            <th>Unitario</th>
-                            <th className="text-center">Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {productos.map((item) => (
-                            <tr key={item.idArticulo}>
-                              <td>{item.idArticulo}</td>
-                              <td>{item.descripcion}</td>
-                              <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
-                              <td className="text-center">
-                                <div className="d-flex justify-content-center gap-2">
-                                  <button
-                                    className="btn btn-sm btn-info"
-                                    onClick={() => setImagenModal(item.imagen)}
-                                  >
-                                    Ver Imagen
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-success"
-                                    onClick={() => agregarAlPedido(item)}
-                                  >
-                                    Agregar
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {hasNextPage && (
-                        <button
-                          className="btn btn-link mt-2"
-                          onClick={() => fetchProductos(false)}
-                        >
-                          Ver más...
-                        </button>
-                      )}
-                    </div>
+                      Ver más...
+                    </button>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Fecha y Añadir */}
+            <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap">
+              <div className="position-relative">
+                <span
+                  className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                  style={{ fontSize: '1.2rem', zIndex: 2 }}
+                >
+                  📅
+                </span>
+                <input
+                  type="datetime-local"
+                  className="form-control ps-5"
+                  value={fechaHoraPedido}
+                  onChange={(e) => setFechaHoraPedido(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                />
               </div>
 
-              {/* Rubros */}
-              <div className="col-12 col-md-4">
-                <div style={{ minWidth: '160px', maxWidth: '100%' }}>
-                  <Select
-                    options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
-                    onChange={(selected) =>
-                      handleRubroChange({ target: { value: selected?.value || '' } })
-                    }
-                    value={
-                      opcionesRubros.find((o) => o.value === filtroRubro) || {
-                        value: '',
-                        label: 'Todos los rubros',
-                      }
-                    }
-                    placeholder="🎯 Filtrar por rubro"
-                    classNamePrefix="react-select"
-                  />
-                </div>
-              </div>
-
-              {/* Fecha y Hora con Bootstrap */}
-              <div className="col-12 col-md-4">
-                <div className="position-relative">
-                  <span
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3"
-                    style={{ fontSize: '1.2rem', zIndex: 2 }}
-                  >
-                    📅
-                  </span>
-                  <input
-                    type="datetime-local"
-                    className="form-control ps-5"
-                    value={fechaHoraPedido}
-                    onChange={(e) => setFechaHoraPedido(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                </div>
-              </div>
-
-              {/* Botón Añadir */}
-              <div className="col-12 col-md-2">
-                <button className="btn btn-success w-100 d-flex align-items-center justify-content-center">
-                  <span className="me-2">➕</span>
-                  Añadir
-                </button>
-              </div>
+              <button className="btn btn-success d-flex align-items-center">
+                <span className="me-2">➕</span>
+                Añadir
+              </button>
             </div>
           </div>
         </div>
@@ -541,29 +518,33 @@ const DistribuidoraEsquina = () => {
         )}
 
         {/* Observación General */}
-        <div className='card-1'>
-          <div className="card-body">
-            <h5 className="fw-bold mb-3">Observación General</h5>
-            <textarea
-              className="form-control"
-              rows={1}
-              placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
-              value={observacionGeneral}
-              maxLength={512}
-              onChange={(e) => guardarObservacionGeneral(e.target.value)}
-              style={{ minHeight: '60px', resize: 'vertical', }}
-            />
-            {observacionGeneral && (
-              <small className="text-muted">
-                {observacionGeneral.length}/512
-              </small>
-            )}
+        <div className="row">
+          <div className="col-12 col-md-6">
+            <div className="card-1">
+              <div className="card-body">
+                <h5 className="fw-bold mb-3">Observación General</h5>
+                <textarea
+                  className="form-control"
+                  rows={1}
+                  placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
+                  value={observacionGeneral}
+                  maxLength={512}
+                  onChange={(e) => guardarObservacionGeneral(e.target.value)}
+                  style={{ minHeight: '60px', resize: 'vertical' }}
+                />
+                {observacionGeneral && (
+                  <small className="text-muted">
+                    {observacionGeneral.length}/512
+                  </small>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Información de validación */}
         {!esPedidoValido() && pedido.length > 0 && (
-          <div className="alert alert-warning" role="alert">
+          <div className="alert alert-warning mt-4" role="alert">
             <strong>Revise los siguientes puntos para poder enviar:</strong>
             <ul className="mb-0 mt-2">
               {!clienteNombre.trim() && <li>Ingrese el nombre del cliente</li>}
