@@ -1,21 +1,26 @@
-import { Link } from 'react-router-dom';
-import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { usePedido } from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';
 import '../index.css';
 
 const DistribuidoraEsquina = () => {
+  const navigate = useNavigate();
   const [imagenModal, setImagenModal] = useState(null);
+  const [clienteNombre, setClienteNombre] = useState('');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isEnviando, setIsEnviando] = useState(false);
 
   const {
     pedido,
     agregarProducto,
     actualizarProducto,
-    enviarPedido,
     eliminarProducto,
-    observacionGeneral, // ← agregá esto
-    guardarObservacionGeneral, // ← y esto también
+    observacionGeneral,
+    guardarObservacionGeneral,
+    limpiarPedido,
+    guardarPedido,
   } = usePedido();
 
   const {
@@ -29,23 +34,57 @@ const DistribuidoraEsquina = () => {
     hasNextPage,
   } = useCatalogo();
 
-  const [fechaPedido, setFechaPedido] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+  // Componente de fecha y hora con Bootstrap
+  const [fechaHoraPedido, setFechaHoraPedido] = useState(() => {
+    const now = new Date();
+    // Formato YYYY-MM-DDTHH:MM para datetime-local
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   });
 
-  // ✅ CORRECCIÓN 1: Verificar duplicados y sumar cantidades
+  // Detectar estado de conexión
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Validar si el pedido es válido
+  const esPedidoValido = () => {
+    return (
+      pedido.length > 0 &&
+      clienteNombre.trim().length >= 1 &&
+      clienteNombre.trim().length <= 128 &&
+      pedido.every(p => p.cantidad >= 1 && p.cantidad <= 9999) &&
+      (!observacionGeneral || (observacionGeneral.length >= 1 && observacionGeneral.length <= 512)) &&
+      pedido.every(p => !p.observacion || (p.observacion.length >= 1 && p.observacion.length <= 512))
+    );
+  };
+
+  // Verificar si el botón enviar debe estar habilitado
+  const puedeEnviar = () => {
+    return isOnline && esPedidoValido() && !isEnviando;
+  };
+
   const agregarAlPedido = (item) => {
-    // Verificar si el producto ya existe en el pedido
     const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
 
     if (productoExistente) {
-      // Si existe, sumar la cantidad (cumple requerimiento)
       actualizarProducto(productoExistente.id, {
         cantidad: productoExistente.cantidad + 1
       });
     } else {
-      // Si no existe, agregarlo normalmente (mantiene funcionalidad actual)
       agregarProducto({
         id: item.idArticulo,
         idArticulo: item.idArticulo,
@@ -56,7 +95,6 @@ const DistribuidoraEsquina = () => {
       });
     }
 
-    // Mantener la limpieza del buscador (no tocar)
     handleBusquedaChange({ target: { value: '' } });
   };
 
@@ -66,6 +104,124 @@ const DistribuidoraEsquina = () => {
   }));
 
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
+
+  const handleChange = (e) => {
+    const valor = e.target.value;
+    if (valor.length <= 128) {
+      setClienteNombre(valor);
+    }
+  };
+
+  // Función para guardar pedido (estado pendiente)
+  const guardarPedidoPendiente = async () => {
+    if (pedido.length === 0) {
+      alert("Debe agregar al menos un producto al pedido.");
+      return;
+    }
+
+    if (!clienteNombre.trim()) {
+      alert("Por favor, ingresá el nombre del cliente.");
+      return;
+    }
+
+    const productosMapeados = pedido.map(p => {
+      const producto = {
+        id: p.idArticulo,
+        cantidad: p.cantidad,
+      };
+      if (p.observacion?.trim()) {
+        producto.observation = p.observacion.trim();
+      }
+      return producto;
+    });
+
+    const body = {
+  clientName: clienteNombre.trim(),
+  products: productosMapeados, // ✅ esto es lo que espera tu backend
+  fechaAlta: new Date(fechaHoraPedido).toISOString(),
+};
+
+    if (observacionGeneral?.trim()) {
+      body.observation = observacionGeneral.trim();
+    }
+
+    try {
+      await guardarPedido(body);
+      alert("Pedido guardado con éxito.");
+      limpiarPedido();
+      setClienteNombre('');
+      guardarObservacionGeneral('');
+    } catch (error) {
+      console.error("Error al guardar pedido:", error);
+      alert("Error al guardar el pedido:\n" + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // Función para enviar pedido (estado enviado)
+  const enviarPedido = async () => {
+  if (!puedeEnviar()) {
+    if (!isOnline) {
+      alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
+      return;
+    }
+    if (!esPedidoValido()) {
+      alert("El pedido no es válido. Verifique los datos ingresados.");
+      return;
+    }
+    return;
+  }
+
+  const confirmacion = window.confirm(
+    `¿Está seguro que desea enviar este pedido?\n\n` +
+    `Cliente: ${clienteNombre}\n` +
+    `Productos: ${totalProductos}\n` +
+    `Fecha: ${new Date(fechaHoraPedido).toLocaleString()}\n\n` +
+    `Una vez enviado, el pedido no podrá ser editado.`
+  );
+
+  if (!confirmacion) return;
+
+  setIsEnviando(true);
+
+  const productosMapeados = pedido
+    .filter(p => typeof p.idArticulo === 'string' && p.idArticulo.length >= 1 && p.idArticulo.length <= 15)
+    .map(p => {
+      const producto = {
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+      };
+      if (p.observacion?.trim()) {
+        producto.observation = p.observacion.trim();
+      }
+      return producto;
+    });
+
+  const body = {
+    clientName: clienteNombre.trim(),
+    products: productosMapeados, // ✅ corregido
+    fechaAlta: new Date(fechaHoraPedido).toISOString(),
+  };
+
+  if (observacionGeneral?.trim()) {
+    body.observation = observacionGeneral.trim();
+  }
+
+  console.log("🧾 Body del pedido:", JSON.stringify(body, null, 2));
+
+  try {
+    await guardarPedido(body);
+    alert("¡Pedido enviado con éxito!\n\nEl pedido ha sido registrado como procesado y cerrado.");
+    limpiarPedido();
+    setClienteNombre('');
+    guardarObservacionGeneral('');
+    navigate('/', { replace: true });
+  } catch (error) {
+    console.error("❌ Error al enviar pedido:", error);
+    alert("Error al enviar el pedido:\n" + (error.response?.data?.message || error.message));
+  } finally {
+    setIsEnviando(false);
+  }
+};
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
@@ -89,13 +245,26 @@ const DistribuidoraEsquina = () => {
             </div>
             <div className="col-12 col-md-6 mt-2 mt-md-0">
               <div className="d-flex align-items-center justify-content-md-end">
+                {/* Estado de conexión */}
+                <div className={`badge ${isOnline ? 'bg-success' : 'bg-danger'} me-3`}>
+                  {isOnline ? '🟢 En línea' : '🔴 Sin conexión'}
+                </div>
+
                 {/* CLIENTE */}
                 <div
                   className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
                   style={{ backgroundColor: '#298143' }}
                 >
                   <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
-                  <small className="fw-semibold text-white">Cliente</small>
+                  <input
+                    type="text"
+                    value={clienteNombre}
+                    onChange={handleChange}
+                    placeholder="Nombre cliente"
+                    className="form-control form-control-sm border-0 bg-transparent text-white"
+                    style={{ width: '150px' }}
+                    maxLength={128}
+                  />
                 </div>
 
                 {/* FOTO DE USUARIO */}
@@ -129,7 +298,7 @@ const DistribuidoraEsquina = () => {
           <div className="card-body">
             <div className="row g-3">
               {/* Buscador */}
-              <div className="col-12 ">
+              <div className="col-12">
                 <div className="position-relative">
                   <span
                     className="position-absolute top-50 start-0 translate-middle-y ms-3"
@@ -168,9 +337,9 @@ const DistribuidoraEsquina = () => {
                         <tbody>
                           {productos.map((item) => (
                             <tr key={item.idArticulo}>
-                              <td>{item.idArticulo}</td> {/* ✔ Código */}
+                              <td>{item.idArticulo}</td>
                               <td>{item.descripcion}</td>
-                              <td>${parseFloat(item.precioVenta).toFixed(2)}</td> {/* ✔ Precio */}
+                              <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
                               <td className="text-center">
                                 <div className="d-flex justify-content-center gap-2">
                                   <button
@@ -190,7 +359,6 @@ const DistribuidoraEsquina = () => {
                             </tr>
                           ))}
                         </tbody>
-
                       </table>
                       {hasNextPage && (
                         <button
@@ -202,7 +370,6 @@ const DistribuidoraEsquina = () => {
                       )}
                     </div>
                   )}
-
                 </div>
               </div>
 
@@ -226,21 +393,21 @@ const DistribuidoraEsquina = () => {
                 </div>
               </div>
 
-              {/* Fecha */}
-              <div className="col-12 col-md-3">
+              {/* Fecha y Hora con Bootstrap */}
+              <div className="col-12 col-md-4">
                 <div className="position-relative">
                   <span
                     className="position-absolute top-50 start-0 translate-middle-y ms-3"
-                    style={{ fontSize: '1.2rem' }}
+                    style={{ fontSize: '1.2rem', zIndex: 2 }}
                   >
                     📅
                   </span>
                   <input
-                    type="date"
+                    type="datetime-local"
                     className="form-control ps-5"
-                    value={fechaPedido}
-                    onChange={(e) => setFechaPedido(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    value={fechaHoraPedido}
+                    onChange={(e) => setFechaHoraPedido(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
                   />
                 </div>
               </div>
@@ -293,27 +460,27 @@ const DistribuidoraEsquina = () => {
                             <input
                               type="number"
                               min="1"
+                              max="9999"
                               className="form-control form-control-sm text-center mb-1 input-cantidad"
                               style={{ width: '70px' }}
                               value={item.cantidad === 0 ? "" : item.cantidad}
                               onChange={(e) => {
                                 const valor = e.target.value;
 
-                                // Permite el valor vacío momentáneamente
                                 if (valor === "") {
                                   actualizarProducto(item.id, { cantidad: 0 });
                                   return;
                                 }
 
                                 const numero = parseInt(valor);
-                                if (!isNaN(numero) && numero >= 1) {
+                                if (!isNaN(numero) && numero >= 1 && numero <= 9999) {
                                   actualizarProducto(item.id, { cantidad: numero });
                                 }
                               }}
                               onBlur={(e) => {
                                 const valor = parseInt(e.target.value);
                                 actualizarProducto(item.id, {
-                                  cantidad: isNaN(valor) || valor < 1 ? 1 : valor
+                                  cantidad: isNaN(valor) || valor < 1 ? 1 : Math.min(valor, 9999)
                                 });
                               }}
                             />
@@ -321,9 +488,10 @@ const DistribuidoraEsquina = () => {
                               className="btn btn-sm btn-outline-secondary ms-1 mb-1"
                               onClick={() =>
                                 actualizarProducto(item.id, {
-                                  cantidad: item.cantidad + 1,
+                                  cantidad: Math.min(item.cantidad + 1, 9999),
                                 })
                               }
+                              disabled={item.cantidad >= 9999}
                             >
                               +
                             </button>
@@ -334,12 +502,19 @@ const DistribuidoraEsquina = () => {
                             type="text"
                             className="form-control form-control-sm"
                             value={item.observacion}
+                            maxLength={512}
                             onChange={(e) =>
                               actualizarProducto(item.id, {
                                 observacion: e.target.value,
                               })
                             }
+                            placeholder="Observación (opcional)"
                           />
+                          {item.observacion && (
+                            <small className="text-muted">
+                              {item.observacion.length}/512
+                            </small>
+                          )}
                         </td>
                         <td>
                           <div className="d-flex gap-2 flex-wrap justify-content-center">
@@ -365,55 +540,40 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-
         {/* Observación General */}
-        <div className="card shadow-sm mb-4">
+        <div className='card-1'>
           <div className="card-body">
             <h5 className="fw-bold mb-3">Observación General</h5>
             <textarea
               className="form-control"
-              rows={3}
+              rows={1}
               placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
               value={observacionGeneral}
+              maxLength={512}
               onChange={(e) => guardarObservacionGeneral(e.target.value)}
+              style={{ minHeight: '60px', resize: 'vertical', }}
             />
+            {observacionGeneral && (
+              <small className="text-muted">
+                {observacionGeneral.length}/512
+              </small>
+            )}
           </div>
         </div>
 
-        {/* Botones de acción */}
-        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-          {/* Deshacer */}
-          <div>
-            {/* ✅ CORRECCIÓN 3: Botón deshacer corregido */}
-            <button
-              className="btn btn-outline-danger fw-semibold px-3 py-2"
-              onClick={() => {
-                if (window.confirm("¿Deshacer todo el pedido?")) {
-                  // Usar las funciones que ya tienes disponibles
-                  pedido.forEach(item => eliminarProducto(item.id));
-                  guardarObservacionGeneral('');
-                }
-              }}
-            >
-              ❌ Deshacer
-            </button>
+        {/* Información de validación */}
+        {!esPedidoValido() && pedido.length > 0 && (
+          <div className="alert alert-warning" role="alert">
+            <strong>Revise los siguientes puntos para poder enviar:</strong>
+            <ul className="mb-0 mt-2">
+              {!clienteNombre.trim() && <li>Ingrese el nombre del cliente</li>}
+              {clienteNombre.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
+              {pedido.some(p => p.cantidad < 1 || p.cantidad > 9999) && <li>Las cantidades deben estar entre 1 y 9999</li>}
+              {observacionGeneral && observacionGeneral.length > 512 && <li>La observación general no puede exceder 512 caracteres</li>}
+              {pedido.some(p => p.observacion && p.observacion.length > 512) && <li>Las observaciones de productos no pueden exceder 512 caracteres</li>}
+            </ul>
           </div>
-          {/* Guardar y Enviar */}
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-success fw-semibold px-3 py-2"
-              onClick={() => console.log('Guardar pedido')}
-            >
-              💾 Guardar
-            </button>
-            <button
-              className="btn btn-outline-success fw-semibold px-3 py-2"
-              onClick={() => console.log('Enviar pedido')}
-            >
-              📤 Enviar
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Summary */}
         <div className="card shadow-sm mt-4">
@@ -426,18 +586,58 @@ const DistribuidoraEsquina = () => {
                 </div>
               </div>
               <div className="col-12 col-md-6 mt-3 mt-md-0">
-                <div className="text-center text-md-end">
+                <div className="d-flex justify-content-center justify-content-md-end">
                   <button
-                    className="btn btn-warning btn-lg px-4 fw-semibold"
-                    onClick={enviarPedido}
+                    className="btn btn-outline-danger fw-semibold px-5 py-2"
+                    onClick={() => {
+                      if (window.confirm("¿Deshacer todo el pedido?")) {
+                        pedido.forEach(item => eliminarProducto(item.id));
+                        guardarObservacionGeneral('');
+                        setClienteNombre('');
+                      }
+                    }}
                   >
-                    <span className="me-2">🛒</span>
-                    Finalizar Pedido
+                    ❌ Deshacer
                   </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Botones de acción */}
+        <div className="d-flex justify-content-end align-items-center my-4 gap-3">
+          <button
+            className="btn btn-outline-success fw-semibold px-4 py-2"
+            onClick={guardarPedidoPendiente}
+            disabled={pedido.length === 0 || !clienteNombre.trim()}
+          >
+            💾 Guardar
+          </button>
+
+          <button
+            className={`btn fw-semibold px-4 py-2 ${puedeEnviar() ? 'btn-outline-success' : 'btn-outline-success'}`}
+            onClick={enviarPedido}
+            disabled={!puedeEnviar()}
+            title={
+              !isOnline
+                ? "Sin conexión a internet"
+                : !esPedidoValido()
+                  ? "Pedido no válido"
+                  : "Enviar pedido"
+            }
+          >
+            {isEnviando ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                📤 Enviar
+              </>
+            )}
+          </button>
         </div>
       </div>
 
