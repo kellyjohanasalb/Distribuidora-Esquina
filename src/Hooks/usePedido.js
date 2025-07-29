@@ -8,7 +8,7 @@ export function usePedido() {
   const [observacionGeneral, setObservacionGeneral] = useState("");
   const [observacionCliente, setObservacionCliente] = useState("");
 
-
+  // Agregar producto
   const agregarProducto = (producto) => {
     const yaExiste = pedido.find((p) => p.id === producto.id);
     if (yaExiste) {
@@ -20,16 +20,19 @@ export function usePedido() {
     }
   };
 
+  // Actualizar producto
   const actualizarProducto = (id, cambios) => {
     setPedido((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...cambios } : p))
     );
   };
 
+  // Eliminar producto
   const eliminarProducto = (id) => {
     setPedido((prev) => prev.filter((p) => p.id !== id));
   };
 
+  // Limpiar pedido
   const limpiarPedido = () => {
     setPedido([]);
     setCliente("");
@@ -37,75 +40,45 @@ export function usePedido() {
     setObservacionCliente("");
   };
 
-  const guardarCliente = (nombre) => {
-    setCliente(nombre);
-  };
+  // Setters para datos del cliente y observaciones
+  const guardarCliente = (nombre) => setCliente(nombre);
+  const guardarObservacionGeneral = (texto) => setObservacionGeneral(texto);
+  const guardarObservacionCliente = (texto) => setObservacionCliente(texto);
 
-  const guardarObservacionGeneral = (texto) => {
-    setObservacionGeneral(texto);
-  };
+  // Generar ID dinámico para pedido
+  const generarIdPedido = () => Date.now(); // Ejemplo: 1722245563000
 
-  const guardarObservacionCliente = (texto) => {
-    setObservacionCliente(texto);
-  };
-
-  // ✅ URL del backend en Vercel
-  const baseURL = import.meta.env.VITE_BACKEND_URL;
-
-  // Función auxiliar para construir el cuerpo del pedido
-const construirBodyPedido = () => {
-  return {
-    clientName: cliente.trim(),
-    products: pedido.map((p) => {
-      const producto = {
+  // Guardar pedido
+  const guardarPedido = async (bodyPersonalizado = null) => {
+    const body = bodyPersonalizado || {
+      idPedido: generarIdPedido(),
+      clientName: cliente.trim(),
+      fechaPedido: new Date().toISOString(),
+      observation: observacionGeneral?.trim() || "Sin observaciones",
+      seen: false,
+      productos: pedido.map((p) => ({
         idArticulo: p.idArticulo,
         cantidad: p.cantidad,
-      };
-      if (p.observacion?.trim()) {
-        producto.observation = p.observacion.trim();
-      }
-      return producto;
-    }),
-    ...(observacionGeneral?.trim() && { observation: observacionGeneral.trim() }),
-    fechaAlta: new Date().toISOString(),
-  };
-};
+        observation: p.observacion?.trim() || "Sin observaciones",
+        descripcion: p.articulo,
+      })),
+    };
 
-// Función principal para guardar el pedido
-const guardarPedido = async (bodyPersonalizado = null) => {
-  const body = bodyPersonalizado || construirBodyPedido();
+    console.log("📦 Enviando body:", JSON.stringify(body, null, 2));
 
-  console.log("📦 Body que se envía al backend:", JSON.stringify(body, null, 2));
-
-  try {
-    const res = await axios.post(`${baseURL}/api/pedidos`, body, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
-
-    if (res.status === 200 || res.status === 201) {
-      console.log('✅ Pedido guardado exitosamente:', res.data);
+    try {
+      const res = await axios.post(
+        `https://remito-send-back.vercel.app/api/pedidos`,
+        body,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      console.log("✅ Pedido guardado:", res.data);
       return res;
-    } else {
-      throw new Error(`Error HTTP: ${res.status}`);
-    }
-  } catch (error) {
-    console.error("❌ Error al guardar el pedido:", error);
-
-    if (error.code === 'ECONNREFUSED') {
-      throw new Error('No se puede conectar al servidor.');
-    } else if (error.response) {
-      throw new Error(`Error del servidor: ${error.response.status} - ${error.response.data?.message || 'Error desconocido'}`);
-    } else if (error.request) {
-      throw new Error('No se recibió respuesta del servidor.');
-    } else {
+    } catch (error) {
+      console.error("❌ Error al guardar el pedido:", error);
       throw error;
     }
-  }
-};
-
+  };
 
   return {
     pedido,

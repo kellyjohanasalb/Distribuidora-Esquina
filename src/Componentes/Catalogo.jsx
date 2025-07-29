@@ -1,4 +1,4 @@
-// src/Pages/Catalogo.jsx
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import Select from 'react-select';

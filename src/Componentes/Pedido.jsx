@@ -1,8 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePedido } from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js';
-import Select from 'react-select';
 import '../index.css';
 
 const DistribuidoraEsquina = () => {
@@ -11,6 +10,9 @@ const DistribuidoraEsquina = () => {
   const [clienteNombre, setClienteNombre] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isEnviando, setIsEnviando] = useState(false);
+  const [mostrarAñadir, setMostrarAñadir] = useState(false);
+  const modalRef = useRef(null);
+  const modalContainerRef = useRef(null);
 
   const {
     pedido,
@@ -25,11 +27,9 @@ const DistribuidoraEsquina = () => {
 
   const {
     productos,
-    /*  rubros, */
+    rubros,
     busqueda,
-    /*   filtroRubro, */
     handleBusquedaChange,
-    /*  handleRubroChange, */
     fetchProductos,
     hasNextPage,
   } = useCatalogo();
@@ -37,7 +37,6 @@ const DistribuidoraEsquina = () => {
   // Componente de fecha y hora con Bootstrap
   const [fechaHoraPedido, setFechaHoraPedido] = useState(() => {
     const now = new Date();
-    // Formato YYYY-MM-DDTHH:MM para datetime-local
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
@@ -45,6 +44,45 @@ const DistribuidoraEsquina = () => {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   });
+
+  // Detectar clics fuera del modal para cerrarlo
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setMostrarAñadir(false);
+      }
+    };
+
+    if (mostrarAñadir) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [mostrarAñadir]);
+
+  // Scroll infinito para cargar más productos
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!modalContainerRef.current || !hasNextPage) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = modalContainerRef.current;
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        fetchProductos(false);
+      }
+    };
+
+    if (mostrarAñadir && modalContainerRef.current) {
+      modalContainerRef.current.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (modalContainerRef.current) {
+        modalContainerRef.current.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [mostrarAñadir, hasNextPage, fetchProductos]);
 
   // Detectar estado de conexión
   useEffect(() => {
@@ -97,11 +135,12 @@ const DistribuidoraEsquina = () => {
 
     handleBusquedaChange({ target: { value: '' } });
   };
-  /* 
-    const opcionesRubros = rubros.map((r) => ({
-      value: r.idRubro,
-      label: r.nombre,
-    })); */
+
+  // Función para añadir y cerrar el modal
+  const agregarYCerrar = (item) => {
+    agregarAlPedido(item);
+    setMostrarAñadir(false);
+  };
 
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
@@ -146,7 +185,6 @@ const DistribuidoraEsquina = () => {
     }
 
     try {
-      // 🧠 Guardar en localStorage
       const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
       pedidosGuardados.push(body);
       localStorage.setItem("pedidosPendientes", JSON.stringify(pedidosGuardados));
@@ -202,15 +240,13 @@ const DistribuidoraEsquina = () => {
 
     const body = {
       clientName: clienteNombre.trim(),
-      products: productosMapeados, // ✅ corregido
+      products: productosMapeados,
       fechaAlta: new Date(fechaHoraPedido).toISOString(),
     };
 
     if (observacionGeneral?.trim()) {
       body.observation = observacionGeneral.trim();
     }
-
-    console.log("🧾 Body del pedido:", JSON.stringify(body, null, 2));
 
     try {
       await guardarPedido(body);
@@ -297,110 +333,203 @@ const DistribuidoraEsquina = () => {
           <div className="bg-success rounded" style={{ width: '80px', height: '4px' }}></div>
         </div>
 
-        {/* Search and Filters Card */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-body">
-            {/* Buscador */}
-            <div className="mb-3 position-relative">
-              <span
-                className="position-absolute top-50 start-0 translate-middle-y ms-3"
-                style={{ fontSize: '1.2rem' }}
-              >
-                🔍
-              </span>
-              <input
-                type="text"
-                className="form-control ps-5"
-                placeholder="Buscar productos..."
-                value={busqueda}
-                onChange={handleBusquedaChange}
-              />
+        {/* Buscador */}
+        <div className="mb-3 position-relative">
+          <span
+            className="position-absolute top-50 start-0 translate-middle-y ms-3"
+            style={{ fontSize: '1.2rem' }}
+          >
+            🔍
+          </span>
+          <input
+            type="text"
+            className="form-control ps-5"
+            placeholder="Buscar productos..."
+            value={busqueda}
+            onChange={handleBusquedaChange}
+          />
 
-              {busqueda.length >= 2 && productos.length > 0 && (
-                <div
-                  className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
-                  style={{
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    maxHeight: '300px',
-                    overflowY: 'auto',
-                  }}
+          {busqueda.length >= 2 && productos.length > 0 && (
+            <div
+              className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
+              style={{
+                top: '100%',
+                left: 0,
+                right: 0,
+                maxHeight: '300px',
+                overflowY: 'auto',
+                zIndex: 1000
+              }}
+            >
+              <table className="table table-bordered table-sm mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Artículo</th>
+                    <th>Unitario</th>
+                    <th className="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productos.map((item) => (
+                    <tr key={item.idArticulo}>
+                      <td>{item.idArticulo}</td>
+                      <td>{item.descripcion}</td>
+                      <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <button
+                            className="btn btn-sm btn-info"
+                            onClick={() => setImagenModal(item.imagen)}
+                          >
+                            Ver Imagen
+                          </button>
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => agregarAlPedido(item)}
+                          >
+                            Agregar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {hasNextPage && (
+                <button
+                  className="btn btn-link mt-2"
+                  onClick={() => fetchProductos(false)}
                 >
-                  <table className="table table-bordered table-sm mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Código</th>
-                        <th>Artículo</th>
-                        <th>Unitario</th>
-                        <th className="text-center">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {productos.map((item) => (
-                        <tr key={item.idArticulo}>
-                          <td>{item.idArticulo}</td>
-                          <td>{item.descripcion}</td>
-                          <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
-                          <td className="text-center">
-                            <div className="d-flex justify-content-center gap-2">
-                              <button
-                                className="btn btn-sm btn-info"
-                                onClick={() => setImagenModal(item.imagen)}
-                              >
-                                Ver Imagen
-                              </button>
-                              <button
-                                className="btn btn-sm btn-success"
-                                onClick={() => agregarAlPedido(item)}
-                              >
-                                Agregar
-                              </button>
-                            </div>
-                          </td>
+                  Ver más...
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Fecha y Añadir SIN FONDO BLANCO */}
+        <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap mb-4">
+          <div className="position-relative">
+            <span
+              className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              style={{ fontSize: "1.2rem", zIndex: 2 }}
+            >
+              📅
+            </span>
+            <input
+              type="datetime-local"
+              className="form-control ps-5"
+              value={fechaHoraPedido}
+              onChange={(e) => setFechaHoraPedido(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+            />
+          </div>
+
+          <button
+            className="btn btn-success d-flex align-items-center"
+            onClick={() => setMostrarAñadir(!mostrarAñadir)}
+          >
+            <span className="me-2">➕</span>
+            Añadir
+          </button>
+        </div>
+
+        {/* MODAL FLOTANTE PARA AÑADIR PRODUCTOS */}
+        {mostrarAñadir && (
+          <div 
+            ref={modalRef}
+            className="position-absolute bg-white shadow rounded mt-2 p-3 z-3"
+            style={{
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'hidden',
+              zIndex: 1050,
+              border: '2px solid #298143'
+            }}
+          >
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold text-success m-0">Seleccionar Productos</h5>
+              <button 
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => setMostrarAñadir(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+            
+            <div 
+              ref={modalContainerRef}
+              style={{ maxHeight: '70vh', overflowY: 'auto' }}
+            >
+              {Object.entries(
+                productos.reduce((acc, p) => {
+                  const rubroNombre =
+                    rubros.find((r) => r.id === p.idRubro)?.descripcion || "Otros";
+                  if (!acc[rubroNombre]) acc[rubroNombre] = [];
+                  acc[rubroNombre].push(p);
+                  return acc;
+                }, {})
+              ).map(([rubro, items]) => (
+                <div key={rubro} className="mb-4">
+                  <h6 className="fw-bold text-success border-bottom pb-1">
+                    {rubro}
+                  </h6>
+
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-sm">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Código</th>
+                          <th>Artículo</th>
+                          <th>Unitario</th>
+                          <th className="text-center">Acciones</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {hasNextPage && (
-                    <button
-                      className="btn btn-link mt-2"
-                      onClick={() => fetchProductos(false)}
-                    >
-                      Ver más...
-                    </button>
-                  )}
+                      </thead>
+                      <tbody>
+                        {items.map((item) => (
+                          <tr key={item.idArticulo}>
+                            <td>{item.idArticulo}</td>
+                            <td>{item.descripcion}</td>
+                            <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
+                            <td className="text-center">
+                              <div className="d-flex justify-content-center gap-2">
+                                <button
+                                  className="btn btn-sm btn-info"
+                                  onClick={() => setImagenModal(item.imagen)}
+                                >
+                                  Ver Imagen
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-success"
+                                  onClick={() => agregarYCerrar(item)}
+                                >
+                                  Añadir
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+              {hasNextPage && (
+                <div className="text-center mt-3">
+                  <div className="spinner-border text-success" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Fecha y Añadir */}
-            <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap">
-              <div className="position-relative">
-                <span
-                  className="position-absolute top-50 start-0 translate-middle-y ms-3"
-                  style={{ fontSize: '1.2rem', zIndex: 2 }}
-                >
-                  📅
-                </span>
-                <input
-                  type="datetime-local"
-                  className="form-control ps-5"
-                  value={fechaHoraPedido}
-                  onChange={(e) => setFechaHoraPedido(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-              </div>
-
-              <button className="btn btn-success d-flex align-items-center">
-                <span className="me-2">➕</span>
-                Añadir
-              </button>
-            </div>
           </div>
-        </div>
+        )}
 
-        {/* Lista de productos agregados */}
+        {/* Lista de productos agregados CON FONDO BLANCO */}
         {pedido.length > 0 && (
           <div className="card shadow-sm mb-4">
             <div className="card-body">
@@ -495,7 +624,15 @@ const DistribuidoraEsquina = () => {
                         </td>
                         <td>
                           <div className="d-flex gap-2 flex-wrap justify-content-center">
-                            <button className="btn btn-sm btn-info">Ver Imagen</button>
+                            <button 
+                              className="btn btn-sm btn-info"
+                              onClick={() => {
+                                const producto = productos.find(p => p.idArticulo === item.idArticulo);
+                                if (producto) setImagenModal(producto.imagen);
+                              }}
+                            >
+                              Ver Imagen
+                            </button>
                             <button
                               className="btn btn-sm btn-danger"
                               onClick={() => {
@@ -517,27 +654,30 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-        {/* Observación General */}
-        <div className="row">
-          <div className="col-12 col-md-6">
-            <div className="card-1">
-              <div className="card-body">
-                <h5 className="fw-bold mb-3">Observación General</h5>
-                <textarea
-                  className="form-control"
-                  rows={1}
-                  placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
-                  value={observacionGeneral}
-                  maxLength={512}
-                  onChange={(e) => guardarObservacionGeneral(e.target.value)}
-                  style={{ minHeight: '60px', resize: 'vertical' }}
-                />
-                {observacionGeneral && (
-                  <small className="text-muted">
-                    {observacionGeneral.length}/512
-                  </small>
-                )}
-              </div>
+         {/* Observación General - ANCHO AJUSTADO */}
+        <div className="mb-4">
+          <h5 className="fw-bold mb-3">Observación General</h5>
+          <div className="row">
+            <div className="col-12 col-md-8 col-lg-6"> {/* Contenedor con ancho ajustado */}
+              <textarea
+                className="form-control"
+                rows={2}
+                placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
+                value={observacionGeneral}
+                maxLength={512}
+                onChange={(e) => guardarObservacionGeneral(e.target.value)}
+                style={{ 
+                  minHeight: '60px', 
+                  resize: 'vertical',
+                  backgroundColor: '#E3E3E3', // Fondo amarillo
+                  border: '1px solid #ced4da' // Borde sutil
+                }}
+              />
+              {observacionGeneral && (
+                <small className="text-muted">
+                  {observacionGeneral.length}/512
+                </small>
+              )}
             </div>
           </div>
         </div>
@@ -556,31 +696,29 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-        {/* Summary */}
-        <div className="card shadow-sm mt-4">
-          <div className="card-body">
-            <div className="row align-items-center">
-              <div className="col-12 col-md-6">
-                <div className="text-center text-md-start">
-                  <p className="text-muted mb-1">Total de productos:</p>
-                  <h3 className="text-success fw-bold mb-0">{totalProductos}</h3>
-                </div>
+        {/* Summary SIN FONDO BLANCO */}
+        <div className="mb-4 bg-body-secondary ">
+          <div className="row align-items-center">
+            <div className="col-12 col-md-6">
+              <div className="text-center text-md-start border-5">
+                <p className="text-muted mb-1">Total de productos:</p>
+                <h3 className="text-success fw-bold mb-0">{totalProductos}</h3>
               </div>
-              <div className="col-12 col-md-6 mt-3 mt-md-0">
-                <div className="d-flex justify-content-center justify-content-md-end">
-                  <button
-                    className="btn btn-outline-danger fw-semibold px-5 py-2"
-                    onClick={() => {
-                      if (window.confirm("¿Deshacer todo el pedido?")) {
-                        pedido.forEach(item => eliminarProducto(item.id));
-                        guardarObservacionGeneral('');
-                        setClienteNombre('');
-                      }
-                    }}
-                  >
-                    ❌ Deshacer
-                  </button>
-                </div>
+            </div>
+            <div className="col-12 col-md-6 mt-3 mt-md-0">
+              <div className="d-flex justify-content-center justify-content-md-end">
+                <button
+                  className="btn btn-outline-danger fw-semibold px-5 py-2"
+                  onClick={() => {
+                    if (window.confirm("¿Deshacer todo el pedido?")) {
+                      limpiarPedido();
+                      setClienteNombre('');
+                      guardarObservacionGeneral('');
+                    }
+                  }}
+                >
+                  ❌ Deshacer
+                </button>
               </div>
             </div>
           </div>
