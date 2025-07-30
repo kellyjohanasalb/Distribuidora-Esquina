@@ -34,15 +34,16 @@ const DistribuidoraEsquina = () => {
     hasNextPage,
   } = useCatalogo();
 
-  // Componente de fecha y hora con Bootstrap
-  const [fechaHoraPedido, setFechaHoraPedido] = useState(() => {
+  // Fecha automática NO EDITABLE
+  const [fechaFormateada] = useState(() => {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return now.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   });
 
   // Detectar clics fuera del modal para cerrarlo
@@ -177,7 +178,7 @@ const DistribuidoraEsquina = () => {
     const body = {
       clientName: clienteNombre.trim(),
       products: productosMapeados,
-      fechaAlta: new Date(fechaHoraPedido).toISOString(),
+      fechaAlta: new Date().toISOString(),
     };
 
     if (observacionGeneral?.trim()) {
@@ -217,7 +218,7 @@ const DistribuidoraEsquina = () => {
       `¿Está seguro que desea enviar este pedido?\n\n` +
       `Cliente: ${clienteNombre}\n` +
       `Productos: ${totalProductos}\n` +
-      `Fecha: ${new Date(fechaHoraPedido).toLocaleString()}\n\n` +
+      `Fecha: ${fechaFormateada}\n\n` +
       `Una vez enviado, el pedido no podrá ser editado.`
     );
 
@@ -241,7 +242,7 @@ const DistribuidoraEsquina = () => {
     const body = {
       clientName: clienteNombre.trim(),
       products: productosMapeados,
-      fechaAlta: new Date(fechaHoraPedido).toISOString(),
+      fechaAlta: new Date().toISOString(),
     };
 
     if (observacionGeneral?.trim()) {
@@ -327,10 +328,15 @@ const DistribuidoraEsquina = () => {
 
       {/* MAIN CONTENT */}
       <div className="container-fluid px-4">
-        {/* Título */}
-        <div className="mb-4">
-          <h2 className="h3 text-dark fw-bold mb-2">Nuevos Pedidos</h2>
-          <div className="bg-success rounded" style={{ width: '80px', height: '4px' }}></div>
+        {/* Título y fecha */}
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+          <div>
+            <h2 className="h3 text-dark fw-bold mb-2">Nuevos Pedidos</h2>
+            <div className="bg-success rounded" style={{ width: '80px', height: '4px' }}></div>
+          </div>
+          <div className="text-muted fw-medium mt-2 mt-md-0">
+            {fechaFormateada}
+          </div>
         </div>
 
         {/* Buscador */}
@@ -408,24 +414,8 @@ const DistribuidoraEsquina = () => {
           )}
         </div>
 
-        {/* Fecha y Añadir SIN FONDO BLANCO */}
-        <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap mb-4">
-          <div className="position-relative">
-            <span
-              className="position-absolute top-50 start-0 translate-middle-y ms-3"
-              style={{ fontSize: "1.2rem", zIndex: 2 }}
-            >
-              📅
-            </span>
-            <input
-              type="datetime-local"
-              className="form-control ps-5"
-              value={fechaHoraPedido}
-              onChange={(e) => setFechaHoraPedido(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-            />
-          </div>
-
+        {/* Botón Añadir */}
+        <div className="d-flex justify-content-end mb-4">
           <button
             className="btn btn-success d-flex align-items-center"
             onClick={() => setMostrarAñadir(!mostrarAñadir)}
@@ -654,39 +644,43 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-         {/* Observación General - ANCHO AJUSTADO */}
+        {/* Observación General */}
         <div className="mb-4">
-          <h5 className="fw-bold mb-3">Observación General</h5>
+          <div className="d-flex align-items-center mb-2">
+            <h5 className="mb-0 me-2">Observación General</h5>
+          </div>
           <div className="row">
-            <div className="col-12 col-md-8 col-lg-6"> {/* Contenedor con ancho ajustado */}
+            <div className="col-12 col-md-20 col-lg-6">
               <textarea
-                className="form-control"
+                className="form-control rounded-0 border-0 border-bottom"
                 rows={2}
-                placeholder="Agregá instrucciones, comentarios o notas para este pedido..."
+                placeholder="Instrucciones, comentarios o notas para este pedido..."
                 value={observacionGeneral}
                 maxLength={512}
                 onChange={(e) => guardarObservacionGeneral(e.target.value)}
                 style={{ 
                   minHeight: '60px', 
                   resize: 'vertical',
-                  backgroundColor: '#E3E3E3', // Fondo amarillo
-                  border: '1px solid #ced4da' // Borde sutil
+                  backgroundColor: '#F0F0F0',
+                  borderBottom: '2px solid #298143 !important'
                 }}
               />
-              {observacionGeneral && (
-                <small className="text-muted">
-                  {observacionGeneral.length}/512
-                </small>
-              )}
+              <div className="d-flex justify-content-end">
+                {observacionGeneral && (
+                  <small className="text-muted">
+                    {observacionGeneral.length}/512 caracteres
+                  </small>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Información de validación */}
         {!esPedidoValido() && pedido.length > 0 && (
-          <div className="alert alert-warning mt-4" role="alert">
-            <strong>Revise los siguientes puntos para poder enviar:</strong>
-            <ul className="mb-0 mt-2">
+          <div className="alert alert-warning " role="alert">
+            <h9>Revise los siguientes puntos para poder enviar:</h9>
+            <ul className="mb-0 ">
               {!clienteNombre.trim() && <li>Ingrese el nombre del cliente</li>}
               {clienteNombre.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
               {pedido.some(p => p.cantidad < 1 || p.cantidad > 9999) && <li>Las cantidades deben estar entre 1 y 9999</li>}
@@ -696,11 +690,10 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-        {/* Summary SIN FONDO BLANCO */}
-        <div className="mb-4 bg-body-secondary ">
+        <div className="mb-4">
           <div className="row align-items-center">
             <div className="col-12 col-md-6">
-              <div className="text-center text-md-start border-5">
+              <div className="text-center text-md-start">
                 <p className="text-muted mb-1">Total de productos:</p>
                 <h3 className="text-success fw-bold mb-0">{totalProductos}</h3>
               </div>
