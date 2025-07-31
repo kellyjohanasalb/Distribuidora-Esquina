@@ -45,13 +45,10 @@ export function usePedido() {
   const guardarObservacionGeneral = (texto) => setObservacionGeneral(texto);
   const guardarObservacionCliente = (texto) => setObservacionCliente(texto);
 
-  // Generar ID dinámico para pedido
-  const generarIdPedido = () => Date.now(); // Ejemplo: 1722245563000
-
   // Guardar pedido
   const guardarPedido = async (bodyPersonalizado = null) => {
     const body = bodyPersonalizado || {
-      idPedido: generarIdPedido(),
+      id: Date.now(), // Cambiado a 'id'
       clientName: cliente.trim(),
       fechaPedido: new Date().toISOString(),
       observation: observacionGeneral?.trim() || "Sin observaciones",

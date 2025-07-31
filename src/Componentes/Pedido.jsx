@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { usePedido } from '../Hooks/usePedido.js';
+import { useOrdenes } from '../Hooks/useOrdenes.js';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import '../index.css';
 
@@ -13,6 +14,7 @@ const DistribuidoraEsquina = () => {
   const [mostrarAñadir, setMostrarAñadir] = useState(false);
   const modalRef = useRef(null);
   const modalContainerRef = useRef(null);
+
 
   const {
     pedido,
@@ -152,8 +154,11 @@ const DistribuidoraEsquina = () => {
     }
   };
 
-  // Función para guardar pedido (estado pendiente)
-  const guardarPedidoPendiente = () => {
+  const { generarIdUnico } = useOrdenes();
+
+ 
+ // Función modificada para guardar pedido (estado pendiente) con ID único
+  const guardarPedidoPendiente = async () => {
     if (pedido.length === 0) {
       alert("Debe agregar al menos un producto al pedido.");
       return;
@@ -164,33 +169,57 @@ const DistribuidoraEsquina = () => {
       return;
     }
 
-    const productosMapeados = pedido.map(p => {
-      const producto = {
-        idArticulo: p.idArticulo,
-        cantidad: p.cantidad,
+   try {
+      // Generar ID único autoincremental
+      const idPedido = await generarIdUnico();
+
+      // Calcular total (usa precio si existe, sino cuenta solo cantidades)
+      const total = pedido.reduce((acc, p) => {
+        // Buscar el producto en el catálogo para obtener el precio
+        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+        const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 0;
+        return acc + (precio * p.cantidad);
+      }, 0);
+
+      const productosMapeados = pedido.map(p => {
+        const producto = {
+          idArticulo: p.idArticulo,
+          cantidad: p.cantidad,
+        };
+        if (p.observacion?.trim()) {
+          producto.observation = p.observacion.trim();
+        }
+        return producto;
+      });
+
+      const body = {
+        idPedido, // ID único autoincremental
+        clientName: clienteNombre.trim(),
+        products: productosMapeados,
+        fechaAlta: new Date().toISOString(),
+        total, // Total calculado con precios reales
+        observation: observacionGeneral?.trim() || "Sin observaciones",
+        status: "Pendiente"
       };
-      if (p.observacion?.trim()) {
-        producto.observation = p.observacion.trim();
-      }
-      return producto;
-    });
 
-    const body = {
-      clientName: clienteNombre.trim(),
-      products: productosMapeados,
-      fechaAlta: new Date().toISOString(),
-    };
-
-    if (observacionGeneral?.trim()) {
-      body.observation = observacionGeneral.trim();
-    }
-
-    try {
+      // Verificar localStorage actual
       const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+
+      // Verificar que no exista el ID (doble seguridad)
+      if (pedidosGuardados.some(p => p.idPedido === idPedido)) {
+        alert("⚠️ Ya existe un pedido con este ID. Intente nuevamente.");
+        return;
+      }
+
       pedidosGuardados.push(body);
       localStorage.setItem("pedidosPendientes", JSON.stringify(pedidosGuardados));
 
-      alert("✅ Pedido guardado localmente como pendiente.");
+      alert(`✅ Pedido guardado localmente con ID: ${idPedido}\nTotal: ${new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(total)}`);
+      
       limpiarPedido();
       setClienteNombre('');
       guardarObservacionGeneral('');
@@ -199,7 +228,6 @@ const DistribuidoraEsquina = () => {
       alert("Error al guardar el pedido local:\n" + error.message);
     }
   };
-
   // Función para enviar pedido (estado enviado)
   const enviarPedido = async () => {
     if (!puedeEnviar()) {

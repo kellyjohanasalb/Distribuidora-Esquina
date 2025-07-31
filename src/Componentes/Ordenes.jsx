@@ -1,95 +1,101 @@
-import React, { useState } from 'react';
-import { Check, Package, FileText, Send, X, Wifi, WifiOff } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useOrdenes } from '../Hooks/useOrdenes';
 
 const OrdersView = () => {
-    const [orders, setOrders] = useState([
-        {
-            id: 23001,
-            name: "Juliana Restrepo",
-            value: 3456789,
-            status: "Pendiente"
-        },
-        {
-            id: 12356,
-            name: "Carlos Martinez",
-            value: 2100000,
-            status: "Pendiente"
-        },
-        {
-            id: 15684,
-            name: "Felipe Tobón",
-            value: 9235985,
-            status: "Enviado"
-        }
-    ]);
+    const {
+        ordenes,
+        loading,
+        error,
+        cargarOrdenes,
+        enviarPedidoBackend,
+        enviarTodosPendientes
+    } = useOrdenes();
 
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
-    const [isConnected, setIsConnected] = useState(true);
+    const [isConnected, setIsConnected] = useState(navigator.onLine);
+
+    // Detectar cambios en la conexión
+    useEffect(() => {
+        const handleOnline = () => setIsConnected(true);
+        const handleOffline = () => setIsConnected(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
             currency: 'COP',
             minimumFractionDigits: 0
-        }).format(value);
+        }).format(value || 0);
     };
 
     const handleSendOrder = (order) => {
+        if (!isConnected) {
+            setAlert({
+                show: true,
+                type: 'error',
+                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.'
+            });
+            return;
+        }
         setSelectedOrder(order);
         setShowModal(true);
     };
 
-    const confirmSendOrder = async () => {
-        if (!selectedOrder) return;
+   const confirmSendOrder = async () => {
+    if (!selectedOrder) return;
 
-        setIsLoading(true);
+    setIsLoading(true);
 
-        try {
-            // Simular llamada al backend
-            await new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    if (isConnected && Math.random() > 0.2) { // 80% success rate
-                        resolve();
-                    } else {
-                        reject(new Error('Error de conexión'));
-                    }
-                }, 1500);
-            });
+    try {
+        await enviarPedidoBackend(selectedOrder);
 
-            // Actualizar estado del pedido
-            setOrders(prevOrders =>
-                prevOrders.map(order =>
-                    order.id === selectedOrder.id
-                        ? { ...order, status: 'Enviado' }
-                        : order
-                )
-            );
+        setAlert({
+            show: true,
+            type: 'success',
+            message: `✅ Pedido #${selectedOrder.id} enviado exitosamente`
+        });
 
-            setAlert({
-                show: true,
-                type: 'success',
-                message: `Pedido #${selectedOrder.id} enviado exitosamente`
-            });
+        await cargarOrdenes();
 
-        } catch (error) {
+    } catch (error) {
+        // Mensaje simplificado para el usuario
+        setAlert({
+            show: true,
+            type: 'error',
+            message: `❌ No se pudo enviar el pedido #${selectedOrder.id}. Por favor, intente nuevamente.`
+        });
+    } finally {
+        setIsLoading(false);
+        setShowModal(false);
+        setSelectedOrder(null);
+    }
+};
+
+    const sendAllPending = async () => {
+        if (!isConnected) {
             setAlert({
                 show: true,
                 type: 'error',
-                message: 'Error al enviar el pedido. Intente nuevamente.'
+                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.'
             });
-        } finally {
-            setIsLoading(false);
-            setShowModal(false);
-            setSelectedOrder(null);
+            return;
         }
-    };
 
-    const sendAllPending = async () => {
-        const pendingOrders = orders.filter(order => order.status === 'Pendiente');
+        const pendingOrders = ordenes.filter(order => order.status === 'Pendiente');
 
         if (pendingOrders.length === 0) {
             setAlert({
@@ -102,46 +108,56 @@ const OrdersView = () => {
 
         setIsLoading(true);
 
-        try {
-            // Simular envío masivo
-            await new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    if (isConnected && Math.random() > 0.3) {
-                        resolve();
-                    } else {
-                        reject(new Error('Error de conexión'));
-                    }
-                }, 2000);
-            });
+         try {
+        const resultado = await enviarTodosPendientes();
 
-            setOrders(prevOrders =>
-                prevOrders.map(order =>
-                    order.status === 'Pendiente'
-                        ? { ...order, status: 'Enviado' }
-                        : order
-                )
-            );
+        setAlert({
+            show: true,
+            type: resultado.errores > 0 ? 'warning' : 'success',
+            message: resultado.mensaje
+        });
 
-            setAlert({
-                show: true,
-                type: 'success',
-                message: `${pendingOrders.length} pedidos enviados exitosamente`
-            });
+        await cargarOrdenes();
 
-        } catch (error) {
-            setAlert({
-                show: true,
-                type: 'error',
-                message: 'Error al enviar los pedidos. Intente nuevamente.'
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    } catch (error) {
+        // Mensaje simplificado para el usuario
+        setAlert({
+            show: true,
+            type: 'error',
+            message: '❌ Error al enviar los pedidos. Por favor, intente nuevamente.'
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     const dismissAlert = () => {
         setAlert({ show: false, type: '', message: '' });
     };
+
+    // Separar órdenes por estado para contadores
+    const ordenesPendientes = ordenes.filter(o => o.status === 'Pendiente');
+    const ordenesEnviadas = ordenes.filter(o => o.status === 'Enviado');
+
+    // Ordenar todas las órdenes: pendientes primero, luego enviadas, y dentro de cada grupo por id descendente
+    const todasOrdenes = [...ordenes].sort((a, b) => {
+        if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
+        if (a.status !== 'Pendiente' && b.status === 'Pendiente') return 1;
+        return b.id - a.id;
+    });
+
+    if (loading && ordenes.length === 0) {
+        return (
+            <div className="min-vh-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: '#f7dc6f' }}>
+                <div className="text-center">
+                    <div className="spinner-border text-success" role="status">
+                        <span className="visually-hidden">Cargando...</span>
+                    </div>
+                    <p className="mt-2 text-success fw-semibold">Cargando órdenes...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#f7dc6f' }}>
@@ -149,13 +165,13 @@ const OrdersView = () => {
                 <div className="row justify-content-center">
                     <div className="col-12">
                         <div
-  className="card shadow-lg border-0"
-  style={{
-    backgroundColor: '#f7dc6f',
-    borderRadius: '0',
-    minHeight: '100vh'
-  }}
->
+                            className="card shadow-lg border-0"
+                            style={{
+                                backgroundColor: '#f7dc6f',
+                                borderRadius: '0',
+                                minHeight: '100vh'
+                            }}
+                        >
 
                             <div className="card-header py-2 py-md-3" style={{ backgroundColor: '#f7dc6f', borderRadius: '15px 15px 0 0' }}>
                                 <div className="row align-items-center">
@@ -169,9 +185,26 @@ const OrdersView = () => {
                                     </div>
                                     <div className="col">
                                         <h1 className="mb-0 text-success fw-bold fs-6 fs-md-5">Estados de órdenes</h1>
+                                        <div className="row mt-2">
+                                            <div className="col-auto">
+                                                <span className="badge bg-warning text-dark me-2">
+                                                    Pendientes: {ordenesPendientes.length}
+                                                </span>
+                                            </div>
+                                            <div className="col-auto">
+                                                <span className="badge bg-success">
+                                                    Enviadas: {ordenesEnviadas.length}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="col-auto">
                                         <div className="d-flex align-items-center">
+                                            {/* Estado de conexión */}
+                                            <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
+                                                {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
+                                            </div>
+
                                             {/* CLIENTE */}
                                             <div
                                                 className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
@@ -198,127 +231,175 @@ const OrdersView = () => {
                                 </div>
                             </div>
 
-                            <div className="card-body p-2 p-md-3">
+                            <div className="card-body p-2 p-md-3 pb-5">
                                 {/* Alertas */}
-                                {alert.show && (
-                                    <div className={`alert alert-${alert.type === 'success' ? 'success' : alert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show`} role="alert">
-                                        <div className="d-flex align-items-center">
-                                            {alert.type === 'success' && <Check className="me-2" size={20} />}
-                                            {alert.type === 'error' && <X className="me-2" size={20} />}
-                                            <small>{alert.message}</small>
-                                        </div>
-                                        <button type="button" className="btn-close" onClick={dismissAlert}></button>
-                                    </div>
-                                )}
+                               {alert.show && (
+    <div 
+        className={`alert alert-${alert.type === 'success' ? 'success' : alert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show d-flex`} 
+        role="alert"
+        style={{ maxWidth: '100%' }}
+    >
+        <div className="d-flex align-items-center flex-grow-1">
+            {alert.type === 'success' && <Check className="me-2" size={20} />}
+            {alert.type === 'error' && <X className="me-2" size={20} />}
+            <div className="text-break" style={{ maxWidth: '85%' }}>
+                {alert.message}
+            </div>
+        </div>
+        <button 
+            type="button" 
+            className="btn-close ms-2" 
+            onClick={dismissAlert}
+            aria-label="Cerrar"
+        ></button>
+    </div>
+)}
 
-                                {/* Vista móvil - Cards */}
+                                {/* Vista móvil - Cards para todas las órdenes */}
                                 <div className="d-block d-md-none">
-                                    {orders.map((order) => (
-                                        <div key={order.id} className={`card mb-3 ${order.status === 'Enviado' ? 'border-success bg-light' : 'border-warning'}`}>
-                                            <div className="card-body p-3">
-                                                <div className="row align-items-center">
-                                                    <div className="col-12 mb-2">
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
-                                                            <span className={`badge ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'} px-2 py-1`}>
-                                                                {order.status}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-12 mb-2">
-                                                        <div className="text-muted small">Cliente:</div>
-                                                        <div className="fw-semibold">{order.name}</div>
-                                                    </div>
-                                                    <div className="col-12 mb-2">
-                                                        <div className="text-muted small">Valor:</div>
-                                                        <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
-                                                    </div>
-                                                    {order.status === 'Pendiente' && (
-                                                        <div className="col-12">
-                                                            <button
-                                                                className="btn btn-success btn-sm w-100"
-                                                                onClick={() => handleSendOrder(order)}
-                                                                disabled={isLoading}
-                                                            >
-                                                                <Send size={16} className="me-1" />
-                                                                Enviar
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                    <h6 className="fw-bold text-warning mb-3">📋 TODOS LOS PEDIDOS</h6>
 
-                                {/* Vista desktop - Tabla */}
-                                <div className="d-none d-md-block">
-                                    <div className="table-responsive">
-                                        <table className="table table-borderless">
-                                            <thead>
-                                                <tr className="text-muted">
-                                                    <th>Código</th>
-                                                    <th>Nombre</th>
-                                                    <th>Valor</th>
-                                                    <th>Estado</th>
-                                                    <th>Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {orders.map((order) => (
-                                                    <tr key={order.id} className={order.status === 'Enviado' ? 'table-success' : ''}>
-                                                        <td className="fw-bold">{order.id}</td>
-                                                        <td>{order.name}</td>
-                                                        <td>{formatCurrency(order.value)}</td>
-                                                        <td>
-                                                            <span className={`badge ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'} px-3 py-2`}>
-                                                                {order.status}
-                                                            </span>
-                                                        </td>
-                                                        <td>
+                                    {todasOrdenes.length > 0 ? (
+                                        todasOrdenes.map((order) => (
+                                            <div
+                                                key={order.id}
+                                                className={`card mb-3 ${order.status === 'Pendiente' ? 'border-warning' : 'border-success bg-light'}`}
+                                            >
+                                                <div className="card-body p-3">
+                                                    <div className="row align-items-center">
+                                                        <div className="col-12 mb-2">
+                                                            <div className="d-flex justify-content-between align-items-center">
+                                                                <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
+                                                                <span className={`badge px-2 py-1 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-12 mb-2">
+                                                            <div className="text-muted small">Cliente:</div>
+                                                            <div className="fw-semibold">{order.name}</div>
+                                                        </div>
+                                                        <div className="col-12 mb-2">
+                                                            <div className="text-muted small">Valor:</div>
+                                                            <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
+                                                        </div>
+                                                        <div className="col-12">
                                                             {order.status === 'Pendiente' && (
                                                                 <button
-                                                                    className="btn btn-success btn-sm px-3"
+                                                                    className="btn btn-success btn-sm w-100"
                                                                     onClick={() => handleSendOrder(order)}
-                                                                    disabled={isLoading}
+                                                                    disabled={isLoading || !isConnected}
                                                                 >
                                                                     <Send size={16} className="me-1" />
                                                                     Enviar
                                                                 </button>
                                                             )}
-                                                        </td>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        !loading && (
+                                            <div className="text-center py-5">
+                                                <Package size={64} className="text-muted mb-3" />
+                                                <h5 className="text-muted">No hay órdenes disponibles</h5>
+                                                <p className="text-muted">Los pedidos aparecerán aquí una vez que sean creados.</p>
+                                                <Link to="/pedido" className="btn btn-success">
+                                                    Crear nuevo pedido
+                                                </Link>
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+
+                                {/* Vista desktop - Tabla única para todas las órdenes */}
+                                <div className="d-none d-md-block">
+                                    <h5 className="fw-bold text-warning mb-3">📋 TODOS LOS PEDIDOS</h5>
+                                    {todasOrdenes.length > 0 ? (
+                                        <div className="table-responsive">
+                                            <table className="table table-borderless">
+                                                <thead>
+                                                    <tr className="text-muted">
+                                                        <th>Código</th>
+                                                        <th>Nombre</th>
+                                                        <th>Valor</th>
+                                                        <th>Estado</th>
+                                                        <th>Acciones</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                </thead>
+                                                <tbody>
+                                                    {todasOrdenes.map((order) => (
+                                                        <tr
+                                                            key={order.id}
+                                                            className={order.status === 'Enviado' ? 'table-success' : ''}
+                                                        >
+                                                            <td className="fw-bold">{order.id}</td>
+                                                            <td>{order.name}</td>
+                                                            <td>{formatCurrency(order.value)}</td>
+                                                            <td>
+                                                                <span className={`badge px-3 py-2 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                {order.status === 'Pendiente' && (
+                                                                    <button
+                                                                        className="btn btn-success btn-sm px-3"
+                                                                        onClick={() => handleSendOrder(order)}
+                                                                        disabled={isLoading || !isConnected}
+                                                                    >
+                                                                        <Send size={16} className="me-1" />
+                                                                        Enviar
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        !loading && (
+                                            <div className="text-center py-5">
+                                                <Package size={64} className="text-muted mb-3" />
+                                                <h5 className="text-muted">No hay órdenes disponibles</h5>
+                                                <p className="text-muted">Los pedidos aparecerán aquí una vez que sean creados.</p>
+                                                <Link to="/pedido" className="btn btn-success">
+                                                    Crear nuevo pedido
+                                                </Link>
+                                            </div>
+                                        )
+                                    )}
                                 </div>
 
                                 {/* Botón enviar pendientes */}
-                                <div className="d-flex justify-content-center mt-3">
-                                    <button
-                                        className="btn btn-success px-4 py-2 w-100 w-md-auto"
-                                        style={{ maxWidth: '300px' }}
-                                        onClick={sendAllPending}
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Enviando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Send size={18} className="me-2" />
-                                                Enviar Pendientes
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
+                                {ordenesPendientes.length > 0 && (
+                                    <div className="d-flex justify-content-center mt-3 mb-5">
+                                        <button
+                                            className="btn btn-success px-4 py-2 w-100 w-md-auto"
+                                            style={{ maxWidth: '300px' }}
+                                            onClick={sendAllPending}
+                                            disabled={isLoading || !isConnected}
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                    Enviando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send size={18} className="me-2" />
+                                                    Enviar Todos los Pendientes ({ordenesPendientes.length})
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Navegación inferior */}
-                            <nav className="fixed-bottom mb-4 bg-transparent">
+                            <nav className="fixed-bottom mb-4 bg-transparent" style={{ zIndex: 100 }}>
                                 <div className="d-flex justify-content-around align-items-center">
                                     <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
                                         🔍 <span className="fw-semibold text-white">Catálogo</span>
@@ -389,11 +470,12 @@ const OrdersView = () => {
             {showModal && <div className="modal-backdrop fade show"></div>}
 
             {/* Toggle de conexión para pruebas */}
-            <div className="position-fixed" style={{ bottom: '15px', right: '15px', zIndex: 1000 }}>
+            <div className="position-fixed" style={{ bottom: '100px', right: '15px', zIndex: 1000 }}>
                 <button
                     className={`btn btn-sm ${isConnected ? 'btn-success' : 'btn-danger'}`}
                     onClick={() => setIsConnected(!isConnected)}
                     style={{ width: '40px', height: '40px' }}
+                    title={isConnected ? 'Simular desconexión' : 'Simular conexión'}
                 >
                     {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
                 </button>
