@@ -95,39 +95,70 @@ export function useOrdenes() {
     try {
       setLoading(true);
       
-      // Usar los datos originales si están disponibles
-      const datosParaEnvio = orden.originalData || {
-        idPedido: orden.id,
-        clientName: orden.name,
-        products: orden.products || [],
-        fechaAlta: orden.fechaAlta || new Date().toISOString(),
-        observation: orden.observation || "Sin observaciones",
-        total: orden.value || 0
+      // LIMPIAR PAYLOAD: Solo enviar campos que acepta el backend
+      const datosParaEnvio = {
+        clientName: orden.originalData.clientName,
+        products: orden.originalData.products,
+        fechaAlta: orden.originalData.fechaAlta || new Date().toISOString()
       };
 
-      // Enviar al backend
-      await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio, {
+      // Solo agregar observation si existe y no está vacía
+      if (orden.originalData.observation && orden.originalData.observation.trim() !== "" && orden.originalData.observation.trim() !== "Sin observaciones") {
+        datosParaEnvio.observation = orden.originalData.observation.trim();
+      }
+
+      console.log("📤 Enviando payload limpio:", datosParaEnvio);
+      
+      // Enviar al backend (sin ID, total, status)
+      const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio, {
         headers: { "Content-Type": "application/json" }
       });
 
-      // Eliminar del localStorage
+      console.log("✅ Respuesta del backend:", response.data);
+
+      // Obtener el ID asignado por el backend
+      const nuevoId = response.data.idPedido || response.data.id;
+
+      // Eliminar del localStorage usando el ID local
       const pendientes = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-      const pendientesFiltrados = pendientes.filter(p => (p.idPedido || p.id) !== orden.id);
+      const pendientesFiltrados = pendientes.filter(p => 
+        (p.idPedido || p.id) !== orden.id
+      );
       localStorage.setItem("pedidosPendientes", JSON.stringify(pendientesFiltrados));
 
-      // Actualizar estado local
+      // Actualizar estado con el nuevo ID del backend
       setOrdenes(prev => 
         prev.map(o => 
           o.id === orden.id 
-            ? { ...o, status: "Enviado", originalData: undefined }
+            ? { 
+                ...response.data,
+                id: nuevoId,
+                status: "Enviado",
+                name: response.data.clientName,
+                value: response.data.total || 0
+              } 
             : o
         )
       );
 
-      return { success: true };
+      return { success: true, nuevoId };
     } catch (err) {
       console.error("❌ Error enviando pedido:", err);
-      throw new Error(err.response?.data?.message || err.message || "Error al enviar pedido");
+      console.error("❌ Respuesta completa:", err.response);
+      
+      // Mensaje de error más específico
+      let errorMessage = "Error al enviar pedido";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 400) {
+        errorMessage = "Datos del pedido inválidos. Verifique la información.";
+      } else if (err.response?.status === 500) {
+        errorMessage = "Error interno del servidor. Intente más tarde.";
+      } else if (err.message.includes("Network Error")) {
+        errorMessage = "Error de conexión. Verifique su internet.";
+      }
+      
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -142,43 +173,39 @@ export function useOrdenes() {
         throw new Error("No hay pedidos pendientes para enviar");
       }
 
+      console.log(`📤 Enviando ${pendientes.length} pedidos pendientes...`);
+
       let enviados = 0;
       let errores = [];
 
       for (const pedido of pendientes) {
         try {
+          console.log(`📤 Enviando pedido ID: ${pedido.id}...`);
           await enviarPedidoBackend(pedido);
           enviados++;
+          console.log(`✅ Pedido ${pedido.id} enviado exitosamente`);
         } catch (error) {
+          console.error(`❌ Error enviando pedido ${pedido.id}:`, error);
           errores.push({ id: pedido.id, error: error.message });
         }
       }
 
-      if (errores.length > 0) {
-        console.warn("Algunos pedidos no se pudieron enviar:", errores);
-      }
+      // Recargar órdenes después del envío masivo
+      await cargarOrdenes();
 
-      // Limpiar localStorage de todos los enviados exitosamente
-      if (enviados > 0) {
-        const idsEnviados = pendientes
-          .filter((_, index) => !errores.some(e => e.id === pendientes[index].id))
-          .map(p => p.id);
-        
-        const pendientesRestantes = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-        const pendientesFiltrados = pendientesRestantes.filter(
-          p => !idsEnviados.includes(p.idPedido || p.id)
-        );
-        localStorage.setItem("pedidosPendientes", JSON.stringify(pendientesFiltrados));
-      }
+      const mensaje = enviados > 0 
+        ? `✅ ${enviados} pedidos enviados exitosamente${errores.length > 0 ? `. ${errores.length} con errores.` : '.'}`
+        : `❌ No se pudo enviar ningún pedido. ${errores.length} errores.`;
 
       return { 
-        success: true, 
+        success: enviados > 0, 
         enviados, 
         errores: errores.length,
-        mensaje: `${enviados} pedidos enviados exitosamente${errores.length > 0 ? `, ${errores.length} con errores` : ''}`
+        mensaje,
+        detalleErrores: errores
       };
     } catch (err) {
-      console.error("❌ Error enviando pedidos:", err);
+      console.error("❌ Error enviando pedidos masivo:", err);
       throw err;
     } finally {
       setLoading(false);

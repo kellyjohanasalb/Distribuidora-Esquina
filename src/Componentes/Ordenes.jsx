@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -42,6 +41,7 @@ const OrdersView = () => {
         }).format(value || 0);
     };
 
+    // FUNCIÓN PARA ENVIAR PEDIDO INDIVIDUAL
     const handleSendOrder = (order) => {
         if (!isConnected) {
             setAlert({
@@ -55,37 +55,55 @@ const OrdersView = () => {
         setShowModal(true);
     };
 
-   const confirmSendOrder = async () => {
-    if (!selectedOrder) return;
+    // CONFIRMAR ENVÍO DE PEDIDO INDIVIDUAL
+    const confirmSendOrder = async () => {
+        if (!selectedOrder) return;
 
-    setIsLoading(true);
+        setIsLoading(true);
 
-    try {
-        await enviarPedidoBackend(selectedOrder);
+        try {
+            const { nuevoId } = await enviarPedidoBackend(selectedOrder);
 
-        setAlert({
-            show: true,
-            type: 'success',
-            message: `✅ Pedido #${selectedOrder.id} enviado exitosamente`
-        });
+            setAlert({
+                show: true,
+                type: 'success',
+                message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}`
+            });
 
-        await cargarOrdenes();
+            await cargarOrdenes();
 
-    } catch (error) {
-        // Mensaje simplificado para el usuario
-        setAlert({
-            show: true,
-            type: 'error',
-            message: `❌ No se pudo enviar el pedido #${selectedOrder.id}. Por favor, intente nuevamente.`
-        });
-    } finally {
-        setIsLoading(false);
-        setShowModal(false);
-        setSelectedOrder(null);
-    }
-};
+        } catch (error) {
+            // Mensajes de error en español
+            let errorMessage = '❌ Error al enviar el pedido. Por favor, intente nuevamente.';
+            
+            if (error.message.includes("Failed to fetch") || error.message.includes("Network Error")) {
+                errorMessage = '❌ Error de conexión con el servidor. Verifique su conexión a internet.';
+            } else if (error.message.includes("validation") || error.message.includes("invalid")) {
+                errorMessage = '❌ Los datos del pedido son inválidos. Revise la información.';
+            } else if (error.message.includes("timeout")) {
+                errorMessage = '❌ El servidor tardó demasiado en responder. Intente nuevamente.';
+            } else if (error.message.includes("401") || error.message.includes("unauthorized")) {
+                errorMessage = '❌ No tiene permisos para realizar esta acción.';
+            } else if (error.message.includes("500")) {
+                errorMessage = '❌ Error interno del servidor. Contacte al administrador.';
+            } else if (error.message) {
+                errorMessage = `❌ ${error.message}`;
+            }
 
-    const sendAllPending = async () => {
+            setAlert({
+                show: true,
+                type: 'error',
+                message: errorMessage
+            });
+        } finally {
+            setIsLoading(false);
+            setShowModal(false);
+            setSelectedOrder(null);
+        }
+    };
+
+    // FUNCIÓN PARA ENVIAR TODOS LOS PENDIENTES
+    const handleSendAllPending = async () => {
         if (!isConnected) {
             setAlert({
                 show: true,
@@ -106,30 +124,50 @@ const OrdersView = () => {
             return;
         }
 
+        const confirmacion = window.confirm(
+            `¿Está seguro que desea enviar todos los pedidos pendientes?\n\n` +
+            `Se enviarán ${pendingOrders.length} pedidos al servidor.\n` +
+            `Esta acción no se puede deshacer.`
+        );
+
+        if (!confirmacion) return;
+
         setIsLoading(true);
 
-         try {
-        const resultado = await enviarTodosPendientes();
+        try {
+            const resultado = await enviarTodosPendientes();
 
-        setAlert({
-            show: true,
-            type: resultado.errores > 0 ? 'warning' : 'success',
-            message: resultado.mensaje
-        });
+            setAlert({
+                show: true,
+                type: resultado.errores > 0 ? 'warning' : 'success',
+                message: resultado.mensaje
+            });
 
-        await cargarOrdenes();
+            await cargarOrdenes();
 
-    } catch (error) {
-        // Mensaje simplificado para el usuario
-        setAlert({
-            show: true,
-            type: 'error',
-            message: '❌ Error al enviar los pedidos. Por favor, intente nuevamente.'
-        });
-    } finally {
-        setIsLoading(false);
-    }
-};
+        } catch (error) {
+            // Mensajes de error en español para envío masivo
+            let errorMessage = '❌ Error al enviar los pedidos. Por favor, intente nuevamente.';
+            
+            if (error.message.includes("Failed to fetch") || error.message.includes("Network Error")) {
+                errorMessage = '❌ Error de conexión con el servidor. Algunos pedidos no se pudieron enviar.';
+            } else if (error.message.includes("validation")) {
+                errorMessage = '❌ Algunos pedidos tienen datos inválidos y no se pudieron enviar.';
+            } else if (error.message.includes("No hay pedidos")) {
+                errorMessage = '⚠️ No hay pedidos pendientes para enviar.';
+            } else if (error.message) {
+                errorMessage = `❌ ${error.message}`;
+            }
+
+            setAlert({
+                show: true,
+                type: 'error',
+                message: errorMessage
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const dismissAlert = () => {
         setAlert({ show: false, type: '', message: '' });
@@ -233,27 +271,27 @@ const OrdersView = () => {
 
                             <div className="card-body p-2 p-md-3 pb-5">
                                 {/* Alertas */}
-                               {alert.show && (
-    <div 
-        className={`alert alert-${alert.type === 'success' ? 'success' : alert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show d-flex`} 
-        role="alert"
-        style={{ maxWidth: '100%' }}
-    >
-        <div className="d-flex align-items-center flex-grow-1">
-            {alert.type === 'success' && <Check className="me-2" size={20} />}
-            {alert.type === 'error' && <X className="me-2" size={20} />}
-            <div className="text-break" style={{ maxWidth: '85%' }}>
-                {alert.message}
-            </div>
-        </div>
-        <button 
-            type="button" 
-            className="btn-close ms-2" 
-            onClick={dismissAlert}
-            aria-label="Cerrar"
-        ></button>
-    </div>
-)}
+                                {alert.show && (
+                                    <div
+                                        className={`alert alert-${alert.type === 'success' ? 'success' : alert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show d-flex`}
+                                        role="alert"
+                                        style={{ maxWidth: '100%' }}
+                                    >
+                                        <div className="d-flex align-items-center flex-grow-1">
+                                            {alert.type === 'success' && <Check className="me-2" size={20} />}
+                                            {alert.type === 'error' && <X className="me-2" size={20} />}
+                                            <div className="text-break" style={{ maxWidth: '85%' }}>
+                                                {alert.message}
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn-close ms-2"
+                                            onClick={dismissAlert}
+                                            aria-label="Cerrar"
+                                        ></button>
+                                    </div>
+                                )}
 
                                 {/* Vista móvil - Cards para todas las órdenes */}
                                 <div className="d-block d-md-none">
@@ -379,7 +417,7 @@ const OrdersView = () => {
                                         <button
                                             className="btn btn-success px-4 py-2 w-100 w-md-auto"
                                             style={{ maxWidth: '300px' }}
-                                            onClick={sendAllPending}
+                                            onClick={handleSendAllPending}
                                             disabled={isLoading || !isConnected}
                                         >
                                             {isLoading ? (
