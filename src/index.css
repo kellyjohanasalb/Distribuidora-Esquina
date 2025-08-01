@@ -156,3 +156,12 @@ h1 {
   height: 80px;
 }
 
+/* En tu CSS global */
+@media (max-width: 768px) {
+  .card-header {
+    padding: 0.5rem !important;
+  }
+  .fixed-bottom {
+    padding: 0 5px;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrdenes } from '../Hooks/useOrdenes';
+import '../index.css';
 
 const OrdersView = () => {
     const {
@@ -42,7 +43,7 @@ const OrdersView = () => {
     };
 
     // FUNCIÓN PARA ENVIAR PEDIDO INDIVIDUAL
-    const handleSendOrder = (order) => {
+  const handleSendOrder = (order) => {
         if (!isConnected) {
             setAlert({
                 show: true,
@@ -146,23 +147,25 @@ const OrdersView = () => {
             await cargarOrdenes();
 
         } catch (error) {
-            // Mensajes de error en español para envío masivo
-            let errorMessage = '❌ Error al enviar los pedidos. Por favor, intente nuevamente.';
+            // Mensajes de error MEJORADOS y en español
+            let errorMessage = 'Error al enviar el pedido. Por favor, intente nuevamente.';
             
             if (error.message.includes("Failed to fetch") || error.message.includes("Network Error")) {
-                errorMessage = '❌ Error de conexión con el servidor. Algunos pedidos no se pudieron enviar.';
-            } else if (error.message.includes("validation")) {
-                errorMessage = '❌ Algunos pedidos tienen datos inválidos y no se pudieron enviar.';
-            } else if (error.message.includes("No hay pedidos")) {
-                errorMessage = '⚠️ No hay pedidos pendientes para enviar.';
-            } else if (error.message) {
-                errorMessage = `❌ ${error.message}`;
+                errorMessage = 'Error de conexión con el servidor. Verifique su conexión a internet.';
+            } else if (error.message.includes("validation") || error.message.includes("invalid")) {
+                errorMessage = 'Los datos del pedido son inválidos. Revise la información.';
+            } else if (error.message.includes("timeout")) {
+                errorMessage = 'El servidor tardó demasiado en responder. Intente nuevamente.';
+            } else if (error.message.includes("401") || error.message.includes("unauthorized")) {
+                errorMessage = 'No tiene permisos para realizar esta acción.';
+            } else if (error.message.includes("500")) {
+                errorMessage = 'Error interno del servidor. Contacte al administrador.';
             }
 
             setAlert({
                 show: true,
                 type: 'error',
-                message: errorMessage
+                message: `❌ ${errorMessage}`
             });
         } finally {
             setIsLoading(false);
@@ -437,16 +440,16 @@ const OrdersView = () => {
                             </div>
 
                             {/* Navegación inferior */}
-                            <nav className="fixed-bottom mb-4 bg-transparent" style={{ zIndex: 100 }}>
+                             <nav className="fixed-bottom mb-4 bg-transparent" style={{ zIndex: 100 }}>
                                 <div className="d-flex justify-content-around align-items-center">
-                                    <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-                                        🔍 <span className="fw-semibold text-white">Catálogo</span>
+                                    <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
+                                        🔍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
                                     </Link>
-                                    <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-                                        ➕ <span className="fw-semibold text-white">Pedido</span>
+                                    <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
+                                        ➕ <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
                                     </Link>
-                                    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-                                        📄 <span className="fw-semibold text-white">Órdenes</span>
+                                    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
+                                        📄 <span className="d-none d-md-inline fw-semibold text-white">Órdenes</span>
                                     </Link>
                                 </div>
                             </nav>

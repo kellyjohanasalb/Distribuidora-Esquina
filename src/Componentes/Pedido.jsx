@@ -15,6 +15,7 @@ const DistribuidoraEsquina = () => {
   const modalRef = useRef(null);
   const modalContainerRef = useRef(null);
 
+  const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
   const {
     pedido,
@@ -69,7 +70,7 @@ const DistribuidoraEsquina = () => {
   useEffect(() => {
     const handleScroll = () => {
       if (!modalContainerRef.current || !hasNextPage) return;
-      
+
       const { scrollTop, scrollHeight, clientHeight } = modalContainerRef.current;
       if (scrollTop + clientHeight >= scrollHeight - 100) {
         fetchProductos(false);
@@ -156,8 +157,8 @@ const DistribuidoraEsquina = () => {
 
   const { generarIdUnico } = useOrdenes();
 
- 
- // Función modificada para guardar pedido (estado pendiente) con ID único
+
+  // Función modificada para guardar pedido (estado pendiente) con ID único
   const guardarPedidoPendiente = async () => {
     if (pedido.length === 0) {
       alert("Debe agregar al menos un producto al pedido.");
@@ -169,7 +170,7 @@ const DistribuidoraEsquina = () => {
       return;
     }
 
-   try {
+    try {
       // Generar ID único autoincremental
       const idPedido = await generarIdUnico();
 
@@ -219,7 +220,7 @@ const DistribuidoraEsquina = () => {
         currency: 'COP',
         minimumFractionDigits: 0
       }).format(total)}`);
-      
+
       limpiarPedido();
       setClienteNombre('');
       guardarObservacionGeneral('');
@@ -414,7 +415,7 @@ const DistribuidoraEsquina = () => {
                         <div className="d-flex justify-content-center gap-2">
                           <button
                             className="btn btn-sm btn-info"
-                            onClick={() => setImagenModal(item.imagen)}
+                            onClick={() => setImagenModal(item.imagen || IMAGEN_POR_DEFECTO)}
                           >
                             Ver Imagen
                           </button>
@@ -455,7 +456,7 @@ const DistribuidoraEsquina = () => {
 
         {/* MODAL FLOTANTE PARA AÑADIR PRODUCTOS */}
         {mostrarAñadir && (
-          <div 
+          <div
             ref={modalRef}
             className="position-absolute bg-white shadow rounded mt-2 p-3 z-3"
             style={{
@@ -471,15 +472,15 @@ const DistribuidoraEsquina = () => {
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="fw-bold text-success m-0">Seleccionar Productos</h5>
-              <button 
+              <button
                 className="btn btn-sm btn-outline-danger"
                 onClick={() => setMostrarAñadir(false)}
               >
                 Cerrar
               </button>
             </div>
-            
-            <div 
+
+            <div
               ref={modalContainerRef}
               style={{ maxHeight: '70vh', overflowY: 'auto' }}
             >
@@ -517,7 +518,7 @@ const DistribuidoraEsquina = () => {
                               <div className="d-flex justify-content-center gap-2">
                                 <button
                                   className="btn btn-sm btn-info"
-                                  onClick={() => setImagenModal(item.imagen)}
+                                  onClick={() => setImagenModal(item.imagen || IMAGEN_POR_DEFECTO)}
                                 >
                                   Ver Imagen
                                 </button>
@@ -564,113 +565,114 @@ const DistribuidoraEsquina = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pedido.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.idArticulo}</td>
-                        <td>{item.articulo}</td>
-                        <td>
-                          <div className="d-flex flex-wrap align-items-center justify-content-center">
-                            <button
-                              className="btn btn-sm btn-outline-secondary me-1 mb-1"
-                              onClick={() =>
-                                actualizarProducto(item.id, {
-                                  cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
-                                })
-                              }
-                              disabled={item.cantidad <= 1}
-                            >
-                              –
-                            </button>
+                    {pedido.map((item) => {
+                      const producto = productos.find(p => p.idArticulo === item.idArticulo);
+                      const imagen = producto?.imagen || IMAGEN_POR_DEFECTO;
+
+                      return (
+                        <tr key={item.id}>
+                          <td>{item.idArticulo}</td>
+                          <td>{item.articulo}</td>
+                          <td>
+                            <div className="d-flex flex-wrap align-items-center justify-content-center">
+                              <button
+                                className="btn btn-sm btn-outline-secondary me-1 mb-1"
+                                onClick={() =>
+                                  actualizarProducto(item.id, {
+                                    cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
+                                  })
+                                }
+                                disabled={item.cantidad <= 1}
+                              >
+                                –
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                max="9999"
+                                className="form-control form-control-sm text-center mb-1 input-cantidad"
+                                style={{ width: '70px' }}
+                                value={item.cantidad === 0 ? "" : item.cantidad}
+                                onChange={(e) => {
+                                  const valor = e.target.value;
+                                  if (valor === "") {
+                                    actualizarProducto(item.id, { cantidad: 0 });
+                                    return;
+                                  }
+                                  const numero = parseInt(valor);
+                                  if (!isNaN(numero) && numero >= 1 && numero <= 9999) {
+                                    actualizarProducto(item.id, { cantidad: numero });
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const valor = parseInt(e.target.value);
+                                  actualizarProducto(item.id, {
+                                    cantidad: isNaN(valor) || valor < 1 ? 1 : Math.min(valor, 9999)
+                                  });
+                                }}
+                              />
+                              <button
+                                className="btn btn-sm btn-outline-secondary ms-1 mb-1"
+                                onClick={() =>
+                                  actualizarProducto(item.id, {
+                                    cantidad: Math.min(item.cantidad + 1, 9999),
+                                  })
+                                }
+                                disabled={item.cantidad >= 9999}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td>
                             <input
-                              type="number"
-                              min="1"
-                              max="9999"
-                              className="form-control form-control-sm text-center mb-1 input-cantidad"
-                              style={{ width: '70px' }}
-                              value={item.cantidad === 0 ? "" : item.cantidad}
-                              onChange={(e) => {
-                                const valor = e.target.value;
-
-                                if (valor === "") {
-                                  actualizarProducto(item.id, { cantidad: 0 });
-                                  return;
-                                }
-
-                                const numero = parseInt(valor);
-                                if (!isNaN(numero) && numero >= 1 && numero <= 9999) {
-                                  actualizarProducto(item.id, { cantidad: numero });
-                                }
-                              }}
-                              onBlur={(e) => {
-                                const valor = parseInt(e.target.value);
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={item.observacion}
+                              maxLength={512}
+                              onChange={(e) =>
                                 actualizarProducto(item.id, {
-                                  cantidad: isNaN(valor) || valor < 1 ? 1 : Math.min(valor, 9999)
-                                });
-                              }}
-                            />
-                            <button
-                              className="btn btn-sm btn-outline-secondary ms-1 mb-1"
-                              onClick={() =>
-                                actualizarProducto(item.id, {
-                                  cantidad: Math.min(item.cantidad + 1, 9999),
+                                  observacion: e.target.value,
                                 })
                               }
-                              disabled={item.cantidad >= 9999}
-                            >
-                              +
-                            </button>
-                          </div>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={item.observacion}
-                            maxLength={512}
-                            onChange={(e) =>
-                              actualizarProducto(item.id, {
-                                observacion: e.target.value,
-                              })
-                            }
-                            placeholder="Observación (opcional)"
-                          />
-                          {item.observacion && (
-                            <small className="text-muted">
-                              {item.observacion.length}/512
-                            </small>
-                          )}
-                        </td>
-                        <td>
-                          <div className="d-flex gap-2 flex-wrap justify-content-center">
-                            <button 
-                              className="btn btn-sm btn-info"
-                              onClick={() => {
-                                const producto = productos.find(p => p.idArticulo === item.idArticulo);
-                                if (producto) setImagenModal(producto.imagen);
-                              }}
-                            >
-                              Ver Imagen
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => {
-                                if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
-                                  eliminarProducto(item.id);
-                                }
-                              }}
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              placeholder="Observación (opcional)"
+                            />
+                            {item.observacion && (
+                              <small className="text-muted">
+                                {item.observacion.length}/512
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            <div className="d-flex gap-2 flex-wrap justify-content-center">
+                              <button
+                                className="btn btn-sm btn-info"
+                                onClick={() => setImagenModal(imagen)}
+                              >
+                                Ver Imagen
+                              </button>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
+                                    eliminarProducto(item.id);
+                                  }
+                                }}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         )}
+
 
         {/* Observación General */}
         <div className="mb-4">
@@ -686,8 +688,8 @@ const DistribuidoraEsquina = () => {
                 value={observacionGeneral}
                 maxLength={512}
                 onChange={(e) => guardarObservacionGeneral(e.target.value)}
-                style={{ 
-                  minHeight: '60px', 
+                style={{
+                  minHeight: '60px',
                   resize: 'vertical',
                   backgroundColor: '#F0F0F0',
                   borderBottom: '2px solid #298143 !important'
