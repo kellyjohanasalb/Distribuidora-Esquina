@@ -1,6 +1,14 @@
-// src/Hooks/useOrdenes.js
 import { useState, useEffect } from "react";
 import axios from "axios";
+
+// Función para generar UUID (misma que en usePedido.js)
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0,
+          v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 export function useOrdenes() {
   const [ordenes, setOrdenes] = useState([]);
@@ -97,19 +105,27 @@ export function useOrdenes() {
       
       // LIMPIAR PAYLOAD: Solo enviar campos que acepta el backend
       const datosParaEnvio = {
+        frontId: generateUUID(), // AÑADIDO: campo requerido por el backend
         clientName: orden.originalData.clientName,
-        products: orden.originalData.products,
+        products: orden.originalData.products.map(p => ({
+          idArticulo: p.idArticulo,
+          cantidad: p.cantidad,
+          precio: p.precio || 1, // Asegurar precio mínimo
+          observation: p.observation || null
+        })),
         fechaAlta: orden.originalData.fechaAlta || new Date().toISOString()
       };
 
       // Solo agregar observation si existe y no está vacía
-      if (orden.originalData.observation && orden.originalData.observation.trim() !== "" && orden.originalData.observation.trim() !== "Sin observaciones") {
+      if (orden.originalData.observation && 
+          orden.originalData.observation.trim() !== "" && 
+          orden.originalData.observation.trim() !== "Sin observaciones") {
         datosParaEnvio.observation = orden.originalData.observation.trim();
       }
 
       console.log("📤 Enviando payload limpio:", datosParaEnvio);
       
-      // Enviar al backend (sin ID, total, status)
+      // Enviar al backend
       const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio, {
         headers: { "Content-Type": "application/json" }
       });
@@ -149,7 +165,12 @@ export function useOrdenes() {
       // Mensaje de error más específico
       let errorMessage = "Error al enviar pedido";
       if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
+        // Unificar mensajes en un string legible
+        if (Array.isArray(err.response.data.message)) {
+          errorMessage = err.response.data.message.join(". ");
+        } else {
+          errorMessage = err.response.data.message;
+        }
       } else if (err.response?.status === 400) {
         errorMessage = "Datos del pedido inválidos. Verifique la información.";
       } else if (err.response?.status === 500) {

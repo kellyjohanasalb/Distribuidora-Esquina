@@ -1,6 +1,14 @@
-// src/Hooks/usePedido.js
 import { useState } from "react";
 import axios from "axios";
+
+// Función para generar UUID (compatible con navegadores)
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0,
+          v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 export function usePedido() {
   const [pedido, setPedido] = useState([]);
@@ -8,31 +16,40 @@ export function usePedido() {
   const [observacionGeneral, setObservacionGeneral] = useState("");
   const [observacionCliente, setObservacionCliente] = useState("");
 
-  // Agregar producto
+  // 🔹 Agregar producto al pedido
   const agregarProducto = (producto) => {
-    const yaExiste = pedido.find((p) => p.id === producto.id);
+    const yaExiste = pedido.find((p) => p.idArticulo === producto.idArticulo);
+
     if (yaExiste) {
-      actualizarProducto(producto.id, {
+      actualizarProducto(producto.idArticulo, {
         cantidad: yaExiste.cantidad + 1,
       });
     } else {
-      setPedido((prev) => [...prev, { ...producto, cantidad: 1 }]);
+      setPedido((prev) => [
+        ...prev,
+        {
+          ...producto,
+          cantidad: 1,
+          observacion: producto.observacion || "",
+          precio: producto.precio || null,
+        },
+      ]);
     }
   };
 
-  // Actualizar producto
-  const actualizarProducto = (id, cambios) => {
+  // 🔹 Actualizar producto
+  const actualizarProducto = (idArticulo, cambios) => {
     setPedido((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...cambios } : p))
+      prev.map((p) => (p.idArticulo === idArticulo ? { ...p, ...cambios } : p))
     );
   };
 
-  // Eliminar producto
-  const eliminarProducto = (id) => {
-    setPedido((prev) => prev.filter((p) => p.id !== id));
+  // 🔹 Eliminar producto
+  const eliminarProducto = (idArticulo) => {
+    setPedido((prev) => prev.filter((p) => p.idArticulo !== idArticulo));
   };
 
-  // Limpiar pedido
+  // 🔹 Limpiar todo el pedido
   const limpiarPedido = () => {
     setPedido([]);
     setCliente("");
@@ -40,40 +57,74 @@ export function usePedido() {
     setObservacionCliente("");
   };
 
-  // Setters para datos del cliente y observaciones
-  const guardarCliente = (nombre) => setCliente(nombre);
+  // 🔹 Setters para cliente y observaciones
+  const guardarCliente = (nombre) => {
+    console.log("📝 Guardando cliente:", nombre);
+    setCliente(nombre);
+  };
   const guardarObservacionGeneral = (texto) => setObservacionGeneral(texto);
   const guardarObservacionCliente = (texto) => setObservacionCliente(texto);
 
-  // Guardar pedido
+  // 🔹 Guardar pedido en backend - CORREGIDO
   const guardarPedido = async (bodyPersonalizado = null) => {
-    const body = bodyPersonalizado || {
-      id: Date.now(), // Cambiado a 'id'
-      clientName: cliente.trim(),
-      fechaPedido: new Date().toISOString(),
-      observation: observacionGeneral?.trim() || "Sin observaciones",
-      seen: false,
-      productos: pedido.map((p) => ({
-        idArticulo: p.idArticulo,
-        cantidad: p.cantidad,
-        observation: p.observacion?.trim() || "Sin observaciones",
-        descripcion: p.articulo,
-      })),
-    };
+    // Si se pasa un body personalizado, usarlo; sino usar los estados del hook
+    const clienteAUsar = bodyPersonalizado?.clientName || cliente;
+    const pedidoAUsar = bodyPersonalizado?.products || pedido;
+    const observacionAUsar = bodyPersonalizado?.observation || observacionGeneral;
 
-    console.log("📦 Enviando body:", JSON.stringify(body, null, 2));
+
+    // 1️⃣ Validaciones antes de enviar
+    if (!clienteAUsar?.trim()) {
+      console.warn("⚠️ Debes ingresar un nombre de cliente");
+      throw new Error("Debes ingresar un nombre de cliente");
+    }
+    if (!pedidoAUsar?.length) {
+      console.warn("⚠️ No puedes enviar un pedido vacío");
+      throw new Error("No puedes enviar un pedido vacío");
+    }
+
+    // 2️⃣ Construir body del pedido
+    const body = {
+    frontId: generateUUID(),
+    clientName: clienteAUsar.trim(),
+    fechaAlta: new Date().toISOString(),
+    observation: observacionAUsar?.trim() || null,
+    products: pedidoAUsar.map((p) => ({
+      idArticulo: p.idArticulo,
+      cantidad: p.cantidad,
+      precio: Math.max(Number(p.precio) || 1, 1),
+      observation: p.observacion?.trim() || null
+    }))
+  };
 
     try {
+      console.log("📤 Enviando al backend:", JSON.stringify(body, null, 2));
       const res = await axios.post(
-        `https://remito-send-back.vercel.app/api/pedidos`,
+        "https://remito-send-back.vercel.app/api/pedidos",
         body,
         { headers: { "Content-Type": "application/json" } }
       );
+
       console.log("✅ Pedido guardado:", res.data);
-      return res;
+
+      // 5️⃣ Limpiar estado solo si usamos los estados del hook
+      if (!bodyPersonalizado) {
+        setPedido([]);
+        setCliente("");
+        setObservacionGeneral("");
+      }
+
+      return true;
     } catch (error) {
-      console.error("❌ Error al guardar el pedido:", error);
-      throw error;
+      console.error("❌ Error al guardar pedido:", error.response?.data || error.message);
+      
+      // Manejar errores específicos del backend
+      let errorMessage = "Error al enviar el pedido";
+      if (error.response?.data?.message) {
+        errorMessage += ":\n" + error.response.data.message.join("\n");
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -5,29 +6,22 @@ import { useOrdenes } from '../Hooks/useOrdenes';
 import '../index.css';
 
 const OrdersView = () => {
-    const {
-        ordenes,
-        loading,
-        error,
-        cargarOrdenes,
-        enviarPedidoBackend,
-        enviarTodosPendientes
-    } = useOrdenes();
-
+    const { ordenes, loading, cargarOrdenes, enviarPedidoBackend, enviarTodosPendientes } = useOrdenes();
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [isConnected, setIsConnected] = useState(navigator.onLine);
 
-    // Detectar cambios en la conexión
+    useEffect(() => {
+        cargarOrdenes({ seen: false });
+    }, [cargarOrdenes]);
+
     useEffect(() => {
         const handleOnline = () => setIsConnected(true);
         const handleOffline = () => setIsConnected(false);
-
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
@@ -42,60 +36,32 @@ const OrdersView = () => {
         }).format(value || 0);
     };
 
-    // FUNCIÓN PARA ENVIAR PEDIDO INDIVIDUAL
-  const handleSendOrder = (order) => {
+
+    const dismissAlert = () => {
+    setAlert({ show: false, type: '', message: '' });
+  };
+
+    const handleSendOrder = (order) => {
         if (!isConnected) {
-            setAlert({
-                show: true,
-                type: 'error',
-                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.'
-            });
+            setAlert({ show: true, type: 'error', message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.' });
             return;
         }
         setSelectedOrder(order);
         setShowModal(true);
     };
 
-    // CONFIRMAR ENVÍO DE PEDIDO INDIVIDUAL
     const confirmSendOrder = async () => {
         if (!selectedOrder) return;
-
         setIsLoading(true);
-
         try {
-            const { nuevoId } = await enviarPedidoBackend(selectedOrder);
-
-            setAlert({
-                show: true,
-                type: 'success',
-                message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}`
-            });
-
+            const resultado = await enviarPedidoBackend(selectedOrder.raw ?? selectedOrder);
+            const nuevoId = resultado.nuevoId ?? resultado.data?.idPedido ?? resultado.data?.id ?? null;
+            setAlert({ show: true, type: 'success', message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}` });
             await cargarOrdenes();
-
         } catch (error) {
-            // Mensajes de error en español
             let errorMessage = '❌ Error al enviar el pedido. Por favor, intente nuevamente.';
-            
-            if (error.message.includes("Failed to fetch") || error.message.includes("Network Error")) {
-                errorMessage = '❌ Error de conexión con el servidor. Verifique su conexión a internet.';
-            } else if (error.message.includes("validation") || error.message.includes("invalid")) {
-                errorMessage = '❌ Los datos del pedido son inválidos. Revise la información.';
-            } else if (error.message.includes("timeout")) {
-                errorMessage = '❌ El servidor tardó demasiado en responder. Intente nuevamente.';
-            } else if (error.message.includes("401") || error.message.includes("unauthorized")) {
-                errorMessage = '❌ No tiene permisos para realizar esta acción.';
-            } else if (error.message.includes("500")) {
-                errorMessage = '❌ Error interno del servidor. Contacte al administrador.';
-            } else if (error.message) {
-                errorMessage = `❌ ${error.message}`;
-            }
-
-            setAlert({
-                show: true,
-                type: 'error',
-                message: errorMessage
-            });
+            if (error.message) errorMessage = `❌ ${error.message}`;
+            setAlert({ show: true, type: 'error', message: errorMessage });
         } finally {
             setIsLoading(false);
             setShowModal(false);
@@ -103,89 +69,31 @@ const OrdersView = () => {
         }
     };
 
-    // FUNCIÓN PARA ENVIAR TODOS LOS PENDIENTES
     const handleSendAllPending = async () => {
-        if (!isConnected) {
-            setAlert({
-                show: true,
-                type: 'error',
-                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.'
-            });
-            return;
-        }
-
-        const pendingOrders = ordenes.filter(order => order.status === 'Pendiente');
-
-        if (pendingOrders.length === 0) {
-            setAlert({
-                show: true,
-                type: 'warning',
-                message: 'No hay pedidos pendientes para enviar'
-            });
-            return;
-        }
-
-        const confirmacion = window.confirm(
-            `¿Está seguro que desea enviar todos los pedidos pendientes?\n\n` +
-            `Se enviarán ${pendingOrders.length} pedidos al servidor.\n` +
-            `Esta acción no se puede deshacer.`
-        );
-
+        if (!isConnected) return setAlert({ show: true, type: 'error', message: 'No hay conexión a internet.' });
+        const confirmacion = window.confirm('¿Está seguro que desea enviar todos los pedidos pendientes?');
         if (!confirmacion) return;
-
         setIsLoading(true);
-
         try {
-            const resultado = await enviarTodosPendientes();
-
-            setAlert({
-                show: true,
-                type: resultado.errores > 0 ? 'warning' : 'success',
-                message: resultado.mensaje
-            });
-
+            const res = await enviarTodosPendientes();
+            setAlert({ show: true, type: res.errores > 0 ? 'warning' : 'success', message: res.mensaje });
             await cargarOrdenes();
-
-        } catch (error) {
-            // Mensajes de error MEJORADOS y en español
-            let errorMessage = 'Error al enviar el pedido. Por favor, intente nuevamente.';
-            
-            if (error.message.includes("Failed to fetch") || error.message.includes("Network Error")) {
-                errorMessage = 'Error de conexión con el servidor. Verifique su conexión a internet.';
-            } else if (error.message.includes("validation") || error.message.includes("invalid")) {
-                errorMessage = 'Los datos del pedido son inválidos. Revise la información.';
-            } else if (error.message.includes("timeout")) {
-                errorMessage = 'El servidor tardó demasiado en responder. Intente nuevamente.';
-            } else if (error.message.includes("401") || error.message.includes("unauthorized")) {
-                errorMessage = 'No tiene permisos para realizar esta acción.';
-            } else if (error.message.includes("500")) {
-                errorMessage = 'Error interno del servidor. Contacte al administrador.';
-            }
-
-            setAlert({
-                show: true,
-                type: 'error',
-                message: `❌ ${errorMessage}`
-            });
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: err.message || 'Error al enviar pedidos pendientes' });
         } finally {
             setIsLoading(false);
         }
     };
 
-    const dismissAlert = () => {
-        setAlert({ show: false, type: '', message: '' });
-    };
-
-    // Separar órdenes por estado para contadores
-    const ordenesPendientes = ordenes.filter(o => o.status === 'Pendiente');
-    const ordenesEnviadas = ordenes.filter(o => o.status === 'Enviado');
-
-    // Ordenar todas las órdenes: pendientes primero, luego enviadas, y dentro de cada grupo por id descendente
-    const todasOrdenes = [...ordenes].sort((a, b) => {
-        if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
-        if (a.status !== 'Pendiente' && b.status === 'Pendiente') return 1;
-        return b.id - a.id;
+    // ordenar y contadores
+    const ordenesPendientes = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'pendiente' || (o.status ?? '').toLowerCase() === 'pending');
+    const ordenesEnviadas = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'enviado' || (o.status ?? '').toLowerCase() === 'sent');
+    const todasOrdenes = [...ordenes].sort((a,b) => {
+        if ((a.status ?? '').toLowerCase() === 'pendiente' && (b.status ?? '').toLowerCase() !== 'pendiente') return -1;
+        if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
+        return (b.id ?? 0) - (a.id ?? 0);
     });
+
 
     if (loading && ordenes.length === 0) {
         return (
@@ -375,7 +283,7 @@ const OrdersView = () => {
                                                             key={order.id}
                                                             className={order.status === 'Enviado' ? 'table-success' : ''}
                                                         >
-                                                            <td className="fw-bold">{order.id}</td>
+                                                           <td className="fw-bold">#{order.idPedido || order.id}</td>
                                                             <td>{order.name}</td>
                                                             <td>{formatCurrency(order.value)}</td>
                                                             <td>

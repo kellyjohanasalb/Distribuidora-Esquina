@@ -17,16 +17,18 @@ const DistribuidoraEsquina = () => {
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
-  const {
-    pedido,
-    agregarProducto,
-    actualizarProducto,
-    eliminarProducto,
-    observacionGeneral,
-    guardarObservacionGeneral,
-    limpiarPedido,
-    guardarPedido,
-  } = usePedido();
+ // Cambiar esta línea en tu componente Pedido.jsx:
+const {
+  pedido,
+  agregarProducto,
+  actualizarProducto,
+  eliminarProducto,
+  observacionGeneral,
+  guardarObservacionGeneral,
+  limpiarPedido,
+  guardarPedido,
+  guardarCliente, 
+} = usePedido();
 
   const {
     productos,
@@ -66,27 +68,26 @@ const DistribuidoraEsquina = () => {
     };
   }, [mostrarAñadir]);
 
-  // Scroll infinito para cargar más productos
-  useEffect(() => {
+// Reemplazar el useEffect problemático con este código
+useEffect(() => {
+    if (!mostrarAñadir || !hasNextPage) return;
+    
+    const container = modalContainerRef.current;
+    if (!container) return;
+
     const handleScroll = () => {
-      if (!modalContainerRef.current || !hasNextPage) return;
-
-      const { scrollTop, scrollHeight, clientHeight } = modalContainerRef.current;
-      if (scrollTop + clientHeight >= scrollHeight - 100) {
-        fetchProductos(false);
-      }
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        if (scrollTop + clientHeight >= scrollHeight - 100) {
+            fetchProductos(false);
+        }
     };
 
-    if (mostrarAñadir && modalContainerRef.current) {
-      modalContainerRef.current.addEventListener('scroll', handleScroll);
-    }
-
+    container.addEventListener('scroll', handleScroll);
+    
     return () => {
-      if (modalContainerRef.current) {
-        modalContainerRef.current.removeEventListener('scroll', handleScroll);
-      }
+        container.removeEventListener('scroll', handleScroll);
     };
-  }, [mostrarAñadir, hasNextPage, fetchProductos]);
+}, [mostrarAñadir, hasNextPage, fetchProductos]);// Las dependencias están correctas
 
   // Detectar estado de conexión
   useEffect(() => {
@@ -112,7 +113,7 @@ const DistribuidoraEsquina = () => {
       (!observacionGeneral || (observacionGeneral.length >= 1 && observacionGeneral.length <= 512)) &&
       pedido.every(p => !p.observacion || (p.observacion.length >= 1 && p.observacion.length <= 512))
     );
-  };
+  };   
 
   // Verificar si el botón enviar debe estar habilitado
   const puedeEnviar = () => {
@@ -149,11 +150,13 @@ const DistribuidoraEsquina = () => {
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
   const handleChange = (e) => {
-    const valor = e.target.value;
-    if (valor.length <= 128) {
-      setClienteNombre(valor);
-    }
-  };
+  const valor = e.target.value;
+  if (valor.length <= 128) {
+    setClienteNombre(valor);
+    // 🔹 IMPORTANTE: También actualizar el estado del hook
+    guardarCliente(valor);
+  }
+};
 
   const { generarIdUnico } = useOrdenes();
 
@@ -229,69 +232,122 @@ const DistribuidoraEsquina = () => {
       alert("Error al guardar el pedido local:\n" + error.message);
     }
   };
+
   // Función para enviar pedido (estado enviado)
-  const enviarPedido = async () => {
-    if (!puedeEnviar()) {
-      if (!isOnline) {
-        alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
-        return;
-      }
-      if (!esPedidoValido()) {
-        alert("El pedido no es válido. Verifique los datos ingresados.");
-        return;
-      }
+const enviarPedido = async () => {
+  if (!puedeEnviar()) {
+    if (!isOnline) {
+      alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
       return;
     }
+    if (!esPedidoValido()) {
+      alert("El pedido no es válido. Verifique los datos ingresados.");
+      return;
+    }
+    return;
+  }
 
-    const confirmacion = window.confirm(
-      `¿Está seguro que desea enviar este pedido?\n\n` +
-      `Cliente: ${clienteNombre}\n` +
-      `Productos: ${totalProductos}\n` +
-      `Fecha: ${fechaFormateada}\n\n` +
-      `Una vez enviado, el pedido no podrá ser editado.`
-    );
+  const confirmacion = window.confirm(
+    `¿Está seguro que desea enviar este pedido?\n\n` +
+    `Cliente: ${clienteNombre}\n` +
+    `Productos: ${totalProductos}\n` +
+    `Fecha: ${fechaFormateada}\n\n` +
+    `Una vez enviado, el pedido no podrá ser editado.`
+  );
 
-    if (!confirmacion) return;
+  if (!confirmacion) return;
 
-    setIsEnviando(true);
+  setIsEnviando(true);
 
-    const productosMapeados = pedido
-      .filter(p => typeof p.idArticulo === 'string' && p.idArticulo.length >= 1 && p.idArticulo.length <= 15)
-      .map(p => {
-        const producto = {
-          idArticulo: p.idArticulo,
-          cantidad: p.cantidad,
-        };
-        if (p.observacion?.trim()) {
-          producto.observation = p.observacion.trim();
-        }
-        return producto;
-      });
+  try {
+    console.log("🚀 Iniciando envío de pedido...");
+    console.log("Cliente nombre:", clienteNombre);
+    console.log("Pedido actual:", pedido);
 
+    // 1️⃣ Actualizar el estado del hook con el cliente actual
+    guardarCliente(clienteNombre.trim());
+    
+    // 2️⃣ Mapeo de productos con toda la información necesaria
+   const productosMapeados = pedido.map(p => {
+      const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+      
+       return {
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+        precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
+        observation: p.observacion?.trim() || null
+      };
+    });
+
+    console.log("📦 Productos mapeados:", productosMapeados);
+
+    // 3️⃣ Cuerpo del pedido
     const body = {
       clientName: clienteNombre.trim(),
       products: productosMapeados,
       fechaAlta: new Date().toISOString(),
+      observation: observacionGeneral?.trim() || null
     };
 
-    if (observacionGeneral?.trim()) {
-      body.observation = observacionGeneral.trim();
-    }
+    console.log("📤 Body a enviar:", body);
 
-    try {
-      await guardarPedido(body);
-      alert("¡Pedido enviado con éxito!\n\nEl pedido ha sido registrado como procesado y cerrado.");
-      limpiarPedido();
-      setClienteNombre('');
-      guardarObservacionGeneral('');
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error("❌ Error al enviar pedido:", error);
-      alert("Error al enviar el pedido:\n" + (error.response?.data?.message || error.message));
-    } finally {
-      setIsEnviando(false);
+    // 4️⃣ Enviar al backend usando el hook
+    await guardarPedido(body);
+
+    // 5️⃣ Calcular total para localStorage
+    const total = productosMapeados.reduce((acc, p) => {
+      return acc + (p.precio * p.cantidad);
+    }, 0);
+
+    // 6️⃣ Actualizar lista de órdenes enviadas en localStorage
+    const ordenesActuales = JSON.parse(localStorage.getItem("ordenesEnviadas")) || [];
+    const nuevaOrden = {
+      ...body,
+      total: total.toFixed(2),
+      status: "Enviado",
+      fechaAlta: fechaFormateada,
+      idPedido: Date.now() // ID temporal para localStorage
+    };
+    
+    ordenesActuales.push(nuevaOrden);
+    localStorage.setItem("ordenesEnviadas", JSON.stringify(ordenesActuales));
+
+    // 7️⃣ Limpiar formulario
+    limpiarPedido();
+    setClienteNombre('');
+    guardarObservacionGeneral('');
+
+    // 8️⃣ Mostrar confirmación y navegar
+    alert(`✅ Pedido enviado correctamente!\nTotal: ${new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(total)}`);
+
+    // 9️⃣ Navegar a órdenes para ver el pedido enviado
+    navigate('/ordenes', { replace: true });
+
+  } catch (error) {
+    console.error("❌ Error completo:", error);
+    
+    let mensajeError = "Error al enviar el pedido.";
+    
+    if (error.response?.data?.message) {
+      if (Array.isArray(error.response.data.message)) {
+        mensajeError += "\nDetalles:\n" + error.response.data.message.join("\n");
+      } else {
+        mensajeError += "\nDetalle: " + error.response.data.message;
+      }
+    } else if (error.message) {
+      mensajeError += "\nDetalle: " + error.message;
     }
-  };
+    
+    alert(mensajeError + "\n\nIntente nuevamente.");
+  } finally {
+    setIsEnviando(false);
+  }
+};
+
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
@@ -570,7 +626,7 @@ const DistribuidoraEsquina = () => {
                       const imagen = producto?.imagen || IMAGEN_POR_DEFECTO;
 
                       return (
-                        <tr key={item.id}>
+                        <tr key={item.idArticulo}>
                           <td>{item.idArticulo}</td>
                           <td>{item.articulo}</td>
                           <td>
@@ -578,7 +634,7 @@ const DistribuidoraEsquina = () => {
                               <button
                                 className="btn btn-sm btn-outline-secondary me-1 mb-1"
                                 onClick={() =>
-                                  actualizarProducto(item.id, {
+                                  actualizarProducto(item.idArticulo, {
                                     cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
                                   })
                                 }
@@ -596,17 +652,17 @@ const DistribuidoraEsquina = () => {
                                 onChange={(e) => {
                                   const valor = e.target.value;
                                   if (valor === "") {
-                                    actualizarProducto(item.id, { cantidad: 0 });
+                                    actualizarProducto(item.idArticulo, { cantidad: 0 });
                                     return;
                                   }
                                   const numero = parseInt(valor);
                                   if (!isNaN(numero) && numero >= 1 && numero <= 9999) {
-                                    actualizarProducto(item.id, { cantidad: numero });
+                                    actualizarProducto(item.idArticulo, { cantidad: numero });
                                   }
                                 }}
                                 onBlur={(e) => {
                                   const valor = parseInt(e.target.value);
-                                  actualizarProducto(item.id, {
+                                  actualizarProducto(item.idArticulo, {
                                     cantidad: isNaN(valor) || valor < 1 ? 1 : Math.min(valor, 9999)
                                   });
                                 }}
@@ -614,7 +670,7 @@ const DistribuidoraEsquina = () => {
                               <button
                                 className="btn btn-sm btn-outline-secondary ms-1 mb-1"
                                 onClick={() =>
-                                  actualizarProducto(item.id, {
+                                  actualizarProducto(item.idArticulo, {
                                     cantidad: Math.min(item.cantidad + 1, 9999),
                                   })
                                 }
@@ -631,7 +687,7 @@ const DistribuidoraEsquina = () => {
                               value={item.observacion}
                               maxLength={512}
                               onChange={(e) =>
-                                actualizarProducto(item.id, {
+                                actualizarProducto(item.idArticulo, {
                                   observacion: e.target.value,
                                 })
                               }
@@ -655,7 +711,7 @@ const DistribuidoraEsquina = () => {
                                 className="btn btn-sm btn-danger"
                                 onClick={() => {
                                   if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
-                                    eliminarProducto(item.id);
+                                    eliminarProducto(item.idArticulo);
                                   }
                                 }}
                               >
@@ -664,6 +720,7 @@ const DistribuidoraEsquina = () => {
                             </div>
                           </td>
                         </tr>
+
                       );
                     })}
                   </tbody>
