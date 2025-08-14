@@ -185,16 +185,23 @@ useEffect(() => {
         return acc + (precio * p.cantidad);
       }, 0);
 
-      const productosMapeados = pedido.map(p => {
-        const producto = {
-          idArticulo: p.idArticulo,
-          cantidad: p.cantidad,
-        };
-        if (p.observacion?.trim()) {
-          producto.observation = p.observacion.trim();
-        }
-        return producto;
-      });
+      // Dentro de Pedido.jsx → guardarPedidoPendiente
+
+const productosMapeados = pedido.map(p => {
+  const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+  const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1; // 🔹 precio siempre presente
+
+  const producto = {
+    idArticulo: p.idArticulo,
+    cantidad: p.cantidad,
+    precio, // 🔹 agregado para que siempre exista
+  };
+  if (p.observacion?.trim()) {
+    producto.observation = p.observacion.trim();
+  }
+  return producto;
+});
+
 
       const body = {
         idPedido, // ID único autoincremental

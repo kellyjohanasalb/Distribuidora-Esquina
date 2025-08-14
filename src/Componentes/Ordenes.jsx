@@ -38,8 +38,8 @@ const OrdersView = () => {
 
 
     const dismissAlert = () => {
-    setAlert({ show: false, type: '', message: '' });
-  };
+        setAlert({ show: false, type: '', message: '' });
+    };
 
     const handleSendOrder = (order) => {
         if (!isConnected) {
@@ -88,7 +88,7 @@ const OrdersView = () => {
     // ordenar y contadores
     const ordenesPendientes = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'pendiente' || (o.status ?? '').toLowerCase() === 'pending');
     const ordenesEnviadas = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'enviado' || (o.status ?? '').toLowerCase() === 'sent');
-    const todasOrdenes = [...ordenes].sort((a,b) => {
+    const todasOrdenes = [...ordenes].sort((a, b) => {
         if ((a.status ?? '').toLowerCase() === 'pendiente' && (b.status ?? '').toLowerCase() !== 'pendiente') return -1;
         if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
         return (b.id ?? 0) - (a.id ?? 0);
@@ -180,7 +180,7 @@ const OrdersView = () => {
                                 </div>
                             </div>
 
-                            <div className="card-body p-2 p-md-3 pb-5">
+                            <div className="card-body p-2 p-md-3 pb-5" style={{ paddingBottom: '120px' }}>
                                 {/* Alertas */}
                                 {alert.show && (
                                     <div
@@ -283,7 +283,7 @@ const OrdersView = () => {
                                                             key={order.id}
                                                             className={order.status === 'Enviado' ? 'table-success' : ''}
                                                         >
-                                                           <td className="fw-bold">#{order.idPedido || order.id}</td>
+                                                            <td className="fw-bold">#{order.idPedido || order.id}</td>
                                                             <td>{order.name}</td>
                                                             <td>{formatCurrency(order.value)}</td>
                                                             <td>
@@ -324,7 +324,7 @@ const OrdersView = () => {
 
                                 {/* Botón enviar pendientes */}
                                 {ordenesPendientes.length > 0 && (
-                                    <div className="d-flex justify-content-center mt-3 mb-5">
+                                    <div className="d-flex justify-content-center mt-3 mb-5" style={{ marginBottom: '90px' }}>
                                         <button
                                             className="btn btn-success px-4 py-2 w-100 w-md-auto"
                                             style={{ maxWidth: '300px' }}
@@ -348,7 +348,8 @@ const OrdersView = () => {
                             </div>
 
                             {/* Navegación inferior */}
-                             <nav className="fixed-bottom mb-4 bg-transparent" style={{ zIndex: 100 }}>
+                            <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
+
                                 <div className="d-flex justify-content-around align-items-center">
                                     <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
                                         🔍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
