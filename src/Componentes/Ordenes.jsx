@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -35,7 +34,6 @@ const OrdersView = () => {
             minimumFractionDigits: 0
         }).format(value || 0);
     };
-
 
     const dismissAlert = () => {
         setAlert({ show: false, type: '', message: '' });
@@ -93,7 +91,6 @@ const OrdersView = () => {
         if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
         return (b.id ?? 0) - (a.id ?? 0);
     });
-
 
     if (loading && ordenes.length === 0) {
         return (
@@ -204,10 +201,39 @@ const OrdersView = () => {
                                     </div>
                                 )}
 
+                                {/* Contenedor para título y botón ENVIAR TODOS */}
+                                <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                                    {/* Vista móvil - Título */}
+                                    <h6 className="d-block d-md-none fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h6>
+                                    
+                                    {/* Vista desktop - Título */}
+                                    <h5 className="d-none d-md-block fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h5>
+                                    
+                                    {/* Botón ENVIAR TODOS - Ahora en el mismo nivel del título */}
+                                    {ordenesPendientes.length > 0 && (
+                                        <button
+                                            className="btn btn-success px-3 py-1"
+                                            onClick={handleSendAllPending}
+                                            disabled={isLoading || !isConnected}
+                                            style={{ fontSize: '0.875rem' }}
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                    Enviando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send size={16} className="me-1" />
+                                                    Enviar Todos ({ordenesPendientes.length})
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+
                                 {/* Vista móvil - Cards para todas las órdenes */}
                                 <div className="d-block d-md-none">
-                                    <h6 className="fw-bold text-warning mb-3">📋 TODOS LOS PEDIDOS</h6>
-
                                     {todasOrdenes.length > 0 ? (
                                         todasOrdenes.map((order) => (
                                             <div
@@ -264,7 +290,6 @@ const OrdersView = () => {
 
                                 {/* Vista desktop - Tabla única para todas las órdenes */}
                                 <div className="d-none d-md-block">
-                                    <h5 className="fw-bold text-warning mb-3">📋 TODOS LOS PEDIDOS</h5>
                                     {todasOrdenes.length > 0 ? (
                                         <div className="table-responsive">
                                             <table className="table table-borderless">
@@ -321,32 +346,8 @@ const OrdersView = () => {
                                         )
                                     )}
                                 </div>
-
-                                {/* Botón enviar pendientes */}
-                                {ordenesPendientes.length > 0 && (
-                                    <div className="d-flex justify-content-center mt-3 mb-5" style={{ marginBottom: '90px' }}>
-                                        <button
-                                            className="btn btn-success px-4 py-2 w-100 w-md-auto"
-                                            style={{ maxWidth: '300px' }}
-                                            onClick={handleSendAllPending}
-                                            disabled={isLoading || !isConnected}
-                                        >
-                                            {isLoading ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                    Enviando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Send size={18} className="me-2" />
-                                                    Enviar Todos los Pendientes ({ordenesPendientes.length})
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
                             </div>
-
+                            
                             {/* Navegación inferior */}
                             <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
 

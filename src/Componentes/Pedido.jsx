@@ -8,7 +8,6 @@ import '../index.css';
 const DistribuidoraEsquina = () => {
   const navigate = useNavigate();
   const [imagenModal, setImagenModal] = useState(null);
-  const [clienteNombre, setClienteNombre] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isEnviando, setIsEnviando] = useState(false);
   const [mostrarAñadir, setMostrarAñadir] = useState(false);
@@ -17,18 +16,18 @@ const DistribuidoraEsquina = () => {
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
- // Cambiar esta línea en tu componente Pedido.jsx:
-const {
-  pedido,
-  agregarProducto,
-  actualizarProducto,
-  eliminarProducto,
-  observacionGeneral,
-  guardarObservacionGeneral,
-  limpiarPedido,
-  guardarPedido,
-  guardarCliente, 
-} = usePedido();
+  const {
+    pedido,
+    cliente,
+    agregarProducto,
+    actualizarProducto,
+    eliminarProducto,
+    observacionGeneral,
+    guardarObservacionGeneral,
+    limpiarPedido,
+    guardarPedido,
+    guardarCliente, 
+  } = usePedido();
 
   const {
     productos,
@@ -68,8 +67,7 @@ const {
     };
   }, [mostrarAñadir]);
 
-// Reemplazar el useEffect problemático con este código
-useEffect(() => {
+  useEffect(() => {
     if (!mostrarAñadir || !hasNextPage) return;
     
     const container = modalContainerRef.current;
@@ -87,7 +85,7 @@ useEffect(() => {
     return () => {
         container.removeEventListener('scroll', handleScroll);
     };
-}, [mostrarAñadir, hasNextPage, fetchProductos]);// Las dependencias están correctas
+  }, [mostrarAñadir, hasNextPage, fetchProductos]);
 
   // Detectar estado de conexión
   useEffect(() => {
@@ -107,8 +105,8 @@ useEffect(() => {
   const esPedidoValido = () => {
     return (
       pedido.length > 0 &&
-      clienteNombre.trim().length >= 1 &&
-      clienteNombre.trim().length <= 128 &&
+      cliente.trim().length >= 1 &&
+      cliente.trim().length <= 128 &&
       pedido.every(p => p.cantidad >= 1 && p.cantidad <= 9999) &&
       (!observacionGeneral || (observacionGeneral.length >= 1 && observacionGeneral.length <= 512)) &&
       pedido.every(p => !p.observacion || (p.observacion.length >= 1 && p.observacion.length <= 512))
@@ -150,16 +148,13 @@ useEffect(() => {
   const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
 
   const handleChange = (e) => {
-  const valor = e.target.value;
-  if (valor.length <= 128) {
-    setClienteNombre(valor);
-    // 🔹 IMPORTANTE: También actualizar el estado del hook
-    guardarCliente(valor);
-  }
-};
+    const valor = e.target.value;
+    if (valor.length <= 128) {
+      guardarCliente(valor);
+    }
+  };
 
   const { generarIdUnico } = useOrdenes();
-
 
   // Función modificada para guardar pedido (estado pendiente) con ID único
   const guardarPedidoPendiente = async () => {
@@ -168,7 +163,7 @@ useEffect(() => {
       return;
     }
 
-    if (!clienteNombre.trim()) {
+    if (!cliente.trim()) {
       alert("Por favor, ingresá el nombre del cliente.");
       return;
     }
@@ -179,36 +174,32 @@ useEffect(() => {
 
       // Calcular total (usa precio si existe, sino cuenta solo cantidades)
       const total = pedido.reduce((acc, p) => {
-        // Buscar el producto en el catálogo para obtener el precio
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
         const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 0;
         return acc + (precio * p.cantidad);
       }, 0);
 
-      // Dentro de Pedido.jsx → guardarPedidoPendiente
+      const productosMapeados = pedido.map(p => {
+        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+        const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1;
 
-const productosMapeados = pedido.map(p => {
-  const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-  const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1; // 🔹 precio siempre presente
-
-  const producto = {
-    idArticulo: p.idArticulo,
-    cantidad: p.cantidad,
-    precio, // 🔹 agregado para que siempre exista
-  };
-  if (p.observacion?.trim()) {
-    producto.observation = p.observacion.trim();
-  }
-  return producto;
-});
-
+        const producto = {
+          idArticulo: p.idArticulo,
+          cantidad: p.cantidad,
+          precio,
+        };
+        if (p.observacion?.trim()) {
+          producto.observation = p.observacion.trim();
+        }
+        return producto;
+      });
 
       const body = {
-        idPedido, // ID único autoincremental
-        clientName: clienteNombre.trim(),
+        idPedido,
+        clientName: cliente.trim(),
         products: productosMapeados,
         fechaAlta: new Date().toISOString(),
-        total, // Total calculado con precios reales
+        total,
         observation: observacionGeneral?.trim() || "Sin observaciones",
         status: "Pendiente"
       };
@@ -232,8 +223,6 @@ const productosMapeados = pedido.map(p => {
       }).format(total)}`);
 
       limpiarPedido();
-      setClienteNombre('');
-      guardarObservacionGeneral('');
     } catch (error) {
       console.error("❌ Error al guardar pedido local:", error);
       alert("Error al guardar el pedido local:\n" + error.message);
@@ -241,120 +230,114 @@ const productosMapeados = pedido.map(p => {
   };
 
   // Función para enviar pedido (estado enviado)
-const enviarPedido = async () => {
-  if (!puedeEnviar()) {
-    if (!isOnline) {
-      alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
-      return;
-    }
-    if (!esPedidoValido()) {
-      alert("El pedido no es válido. Verifique los datos ingresados.");
-      return;
-    }
-    return;
-  }
-
-  const confirmacion = window.confirm(
-    `¿Está seguro que desea enviar este pedido?\n\n` +
-    `Cliente: ${clienteNombre}\n` +
-    `Productos: ${totalProductos}\n` +
-    `Fecha: ${fechaFormateada}\n\n` +
-    `Una vez enviado, el pedido no podrá ser editado.`
-  );
-
-  if (!confirmacion) return;
-
-  setIsEnviando(true);
-
-  try {
-    console.log("🚀 Iniciando envío de pedido...");
-    console.log("Cliente nombre:", clienteNombre);
-    console.log("Pedido actual:", pedido);
-
-    // 1️⃣ Actualizar el estado del hook con el cliente actual
-    guardarCliente(clienteNombre.trim());
-    
-    // 2️⃣ Mapeo de productos con toda la información necesaria
-   const productosMapeados = pedido.map(p => {
-      const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-      
-       return {
-        idArticulo: p.idArticulo,
-        cantidad: p.cantidad,
-        precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
-        observation: p.observacion?.trim() || null
-      };
-    });
-
-    console.log("📦 Productos mapeados:", productosMapeados);
-
-    // 3️⃣ Cuerpo del pedido
-    const body = {
-      clientName: clienteNombre.trim(),
-      products: productosMapeados,
-      fechaAlta: new Date().toISOString(),
-      observation: observacionGeneral?.trim() || null
-    };
-
-    console.log("📤 Body a enviar:", body);
-
-    // 4️⃣ Enviar al backend usando el hook
-    await guardarPedido(body);
-
-    // 5️⃣ Calcular total para localStorage
-    const total = productosMapeados.reduce((acc, p) => {
-      return acc + (p.precio * p.cantidad);
-    }, 0);
-
-    // 6️⃣ Actualizar lista de órdenes enviadas en localStorage
-    const ordenesActuales = JSON.parse(localStorage.getItem("ordenesEnviadas")) || [];
-    const nuevaOrden = {
-      ...body,
-      total: total.toFixed(2),
-      status: "Enviado",
-      fechaAlta: fechaFormateada,
-      idPedido: Date.now() // ID temporal para localStorage
-    };
-    
-    ordenesActuales.push(nuevaOrden);
-    localStorage.setItem("ordenesEnviadas", JSON.stringify(ordenesActuales));
-
-    // 7️⃣ Limpiar formulario
-    limpiarPedido();
-    setClienteNombre('');
-    guardarObservacionGeneral('');
-
-    // 8️⃣ Mostrar confirmación y navegar
-    alert(`✅ Pedido enviado correctamente!\nTotal: ${new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(total)}`);
-
-    // 9️⃣ Navegar a órdenes para ver el pedido enviado
-    navigate('/ordenes', { replace: true });
-
-  } catch (error) {
-    console.error("❌ Error completo:", error);
-    
-    let mensajeError = "Error al enviar el pedido.";
-    
-    if (error.response?.data?.message) {
-      if (Array.isArray(error.response.data.message)) {
-        mensajeError += "\nDetalles:\n" + error.response.data.message.join("\n");
-      } else {
-        mensajeError += "\nDetalle: " + error.response.data.message;
+  const enviarPedido = async () => {
+    if (!puedeEnviar()) {
+      if (!isOnline) {
+        alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
+        return;
       }
-    } else if (error.message) {
-      mensajeError += "\nDetalle: " + error.message;
+      if (!esPedidoValido()) {
+        alert("El pedido no es válido. Verifique los datos ingresados.");
+        return;
+      }
+      return;
     }
-    
-    alert(mensajeError + "\n\nIntente nuevamente.");
-  } finally {
-    setIsEnviando(false);
-  }
-};
 
+    const confirmacion = window.confirm(
+      `¿Está seguro que desea enviar este pedido?\n\n` +
+      `Cliente: ${cliente}\n` +
+      `Productos: ${totalProductos}\n` +
+      `Fecha: ${fechaFormateada}\n\n` +
+      `Una vez enviado, el pedido no podrá ser editado.`
+    );
+
+    if (!confirmacion) return;
+
+    setIsEnviando(true);
+
+    try {
+      console.log("🚀 Iniciando envío de pedido...");
+      console.log("Cliente nombre:", cliente);
+      console.log("Pedido actual:", pedido);
+
+      // Mapeo de productos con toda la información necesaria
+      const productosMapeados = pedido.map(p => {
+        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+        
+        return {
+          idArticulo: p.idArticulo,
+          cantidad: p.cantidad,
+          precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
+          observation: p.observacion?.trim() || null
+        };
+      });
+
+      console.log("📦 Productos mapeados:", productosMapeados);
+
+      // Cuerpo del pedido
+      const body = {
+        clientName: cliente.trim(),
+        products: productosMapeados,
+        fechaAlta: new Date().toISOString(),
+        observation: observacionGeneral?.trim() || null
+      };
+
+      console.log("📤 Body a enviar:", body);
+
+      // Enviar al backend usando el hook
+      await guardarPedido(body);
+
+      // Calcular total para localStorage
+      const total = productosMapeados.reduce((acc, p) => {
+        return acc + (p.precio * p.cantidad);
+      }, 0);
+
+      // Actualizar lista de órdenes enviadas en localStorage
+      const ordenesActuales = JSON.parse(localStorage.getItem("ordenesEnviadas")) || [];
+      const nuevaOrden = {
+        ...body,
+        total: total.toFixed(2),
+        status: "Enviado",
+        fechaAlta: fechaFormateada,
+        idPedido: Date.now()
+      };
+      
+      ordenesActuales.push(nuevaOrden);
+      localStorage.setItem("ordenesEnviadas", JSON.stringify(ordenesActuales));
+
+      // Limpiar formulario
+      limpiarPedido();
+
+      // Mostrar confirmación y navegar
+      alert(`✅ Pedido enviado correctamente!\nTotal: ${new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(total)}`);
+
+      // Navegar a órdenes para ver el pedido enviado
+      navigate('/ordenes', { replace: true });
+
+    } catch (error) {
+      console.error("❌ Error completo:", error);
+      
+      let mensajeError = "Error al enviar el pedido.";
+      
+      if (error.response?.data?.message) {
+        if (Array.isArray(error.response.data.message)) {
+          mensajeError += "\nDetalles:\n" + error.response.data.message.join("\n");
+        } else {
+          mensajeError += "\nDetalle: " + error.response.data.message;
+        }
+      } else if (error.message) {
+        mensajeError += "\nDetalle: " + error.message;
+      }
+      
+      alert(mensajeError + "\n\nIntente nuevamente.");
+    } finally {
+      setIsEnviando(false);
+    }
+  };
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
@@ -391,7 +374,7 @@ const enviarPedido = async () => {
                   <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
                   <input
                     type="text"
-                    value={clienteNombre}
+                    value={cliente}
                     onChange={handleChange}
                     placeholder="Nombre cliente"
                     className="form-control form-control-sm border-0 bg-transparent text-white"
@@ -775,8 +758,8 @@ const enviarPedido = async () => {
           <div className="alert alert-warning " role="alert">
             <h9>Revise los siguientes puntos para poder enviar:</h9>
             <ul className="mb-0 ">
-              {!clienteNombre.trim() && <li>Ingrese el nombre del cliente</li>}
-              {clienteNombre.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
+              {!cliente.trim() && <li>Ingrese el nombre del cliente</li>}
+              {cliente.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
               {pedido.some(p => p.cantidad < 1 || p.cantidad > 9999) && <li>Las cantidades deben estar entre 1 y 9999</li>}
               {observacionGeneral && observacionGeneral.length > 512 && <li>La observación general no puede exceder 512 caracteres</li>}
               {pedido.some(p => p.observacion && p.observacion.length > 512) && <li>Las observaciones de productos no pueden exceder 512 caracteres</li>}
@@ -799,8 +782,6 @@ const enviarPedido = async () => {
                   onClick={() => {
                     if (window.confirm("¿Deshacer todo el pedido?")) {
                       limpiarPedido();
-                      setClienteNombre('');
-                      guardarObservacionGeneral('');
                     }
                   }}
                 >
@@ -816,7 +797,7 @@ const enviarPedido = async () => {
           <button
             className="btn btn-outline-success fw-semibold px-4 py-2"
             onClick={guardarPedidoPendiente}
-            disabled={pedido.length === 0 || !clienteNombre.trim()}
+            disabled={pedido.length === 0 || !cliente.trim()}
           >
             💾 Guardar
           </button>

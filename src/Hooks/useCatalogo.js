@@ -146,6 +146,12 @@ const useCatalogo = () => {
     setSugerencias([]);
   };
 
+    const reiniciarFiltros = () => {
+    setBusqueda('');
+    setFiltroRubro('');
+    setSugerencias([]);
+  };
+
   return {
     productos,
     rubros,
@@ -157,7 +163,8 @@ const useCatalogo = () => {
     seleccionarSugerencia,
     fetchProductos,
     hasNextPage,
-    isLoading
+    isLoading,
+    reiniciarFiltros
   };
 };
 

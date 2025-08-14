@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import '../index.css';
 
 const Catalogo = () => {
-  const {
+   const {
     productos,
     rubros,
     busqueda,
@@ -18,6 +18,7 @@ const Catalogo = () => {
     fetchProductos,
     hasNextPage,
     isLoading,
+    reiniciarFiltros  // Recibir la nueva función
   } = useCatalogo();
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
@@ -127,25 +128,45 @@ const Catalogo = () => {
           </span>
         </div>
         
-        {/* Mostrar filtros activos */}
+        {/* Mejorar visualización de filtros activos */}
         {(busqueda || filtroRubro) && (
-          <div className="mt-2 px-2">
+          <div className="mt-2 px-2 d-flex justify-content-between align-items-center">
             <small className="text-muted">
               {busqueda && `Buscando: "${busqueda}"`}
               {busqueda && filtroRubro && ' • '}
               {filtroRubro && `Rubro: ${nombreRubro}`}
             </small>
+            <button 
+              className="btn btn-sm btn-outline-secondary"
+              onClick={reiniciarFiltros}
+            >
+              Limpiar filtros
+            </button>
           </div>
         )}
       </section>
 
-      <main className="container my-3">
-        {noHayResultados ? (
+        <main className="container my-3">
+        {/* Mostrar spinner durante carga inicial */}
+        {isLoading && productos.length === 0 ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-success" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <p className="mt-2">Buscando productos...</p>
+          </div>
+        ) : noHayResultados ? (
           <div className="text-center text-muted py-5">
             <h5>No se encontraron resultados.</h5>
             {busqueda && (
               <p>Intenta con otros términos de búsqueda o verifica la ortografía.</p>
             )}
+            <button 
+              className="btn btn-link text-success"
+              onClick={reiniciarFiltros}
+            >
+              Mostrar todos los productos
+            </button>
           </div>
         ) : (
           Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
@@ -189,14 +210,19 @@ const Catalogo = () => {
           ))
         )}
 
-        {hasNextPage && (
+            {hasNextPage && (
           <div className="col-12 text-center mt-4">
             <button
               onClick={() => fetchProductos()}
               className="btn btn-success"
               disabled={isLoading}
             >
-              {isLoading ? 'Cargando...' : 'Ver más productos'}
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Cargando...
+                </>
+              ) : 'Ver más productos'}
             </button>
           </div>
         )}
@@ -205,4 +231,5 @@ const Catalogo = () => {
   );
 };
 
-export default Catalogo;
+
+export default Catalogo;;

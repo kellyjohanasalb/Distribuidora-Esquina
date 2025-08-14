@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 // Función para generar UUID (compatible con navegadores)
@@ -10,11 +10,47 @@ const generateUUID = () => {
   });
 };
 
+// Claves para localStorage
+const PEDIDO_KEY = 'pedidoEnProgreso';
+const CLIENTE_KEY = 'pedidoCliente';
+const OBS_GENERAL_KEY = 'pedidoObservacionGeneral';
+const OBS_CLIENTE_KEY = 'pedidoObservacionCliente';
+
 export function usePedido() {
-  const [pedido, setPedido] = useState([]);
-  const [cliente, setCliente] = useState("");
-  const [observacionGeneral, setObservacionGeneral] = useState("");
-  const [observacionCliente, setObservacionCliente] = useState("");
+  // Inicializar estados leyendo de localStorage
+  const [pedido, setPedido] = useState(() => {
+    const savedPedido = localStorage.getItem(PEDIDO_KEY);
+    return savedPedido ? JSON.parse(savedPedido) : [];
+  });
+  
+  const [cliente, setCliente] = useState(() => {
+    return localStorage.getItem(CLIENTE_KEY) || "";
+  });
+  
+  const [observacionGeneral, setObservacionGeneral] = useState(() => {
+    return localStorage.getItem(OBS_GENERAL_KEY) || "";
+  });
+  
+  const [observacionCliente, setObservacionCliente] = useState(() => {
+    return localStorage.getItem(OBS_CLIENTE_KEY) || "";
+  });
+
+  // Guardar automáticamente en localStorage cuando cambia el estado
+  useEffect(() => {
+    localStorage.setItem(PEDIDO_KEY, JSON.stringify(pedido));
+  }, [pedido]);
+
+  useEffect(() => {
+    localStorage.setItem(CLIENTE_KEY, cliente);
+  }, [cliente]);
+
+  useEffect(() => {
+    localStorage.setItem(OBS_GENERAL_KEY, observacionGeneral);
+  }, [observacionGeneral]);
+
+  useEffect(() => {
+    localStorage.setItem(OBS_CLIENTE_KEY, observacionCliente);
+  }, [observacionCliente]);
 
   // 🔹 Agregar producto al pedido
   const agregarProducto = (producto) => {
@@ -49,12 +85,18 @@ export function usePedido() {
     setPedido((prev) => prev.filter((p) => p.idArticulo !== idArticulo));
   };
 
-  // 🔹 Limpiar todo el pedido
+  // 🔹 Limpiar todo el pedido (incluyendo localStorage)
   const limpiarPedido = () => {
     setPedido([]);
     setCliente("");
     setObservacionGeneral("");
     setObservacionCliente("");
+    
+    // Limpiar localStorage
+    localStorage.removeItem(PEDIDO_KEY);
+    localStorage.removeItem(CLIENTE_KEY);
+    localStorage.removeItem(OBS_GENERAL_KEY);
+    localStorage.removeItem(OBS_CLIENTE_KEY);
   };
 
   // 🔹 Setters para cliente y observaciones
@@ -62,16 +104,16 @@ export function usePedido() {
     console.log("📝 Guardando cliente:", nombre);
     setCliente(nombre);
   };
+  
   const guardarObservacionGeneral = (texto) => setObservacionGeneral(texto);
   const guardarObservacionCliente = (texto) => setObservacionCliente(texto);
 
-  // 🔹 Guardar pedido en backend - CORREGIDO
+  // 🔹 Guardar pedido en backend
   const guardarPedido = async (bodyPersonalizado = null) => {
     // Si se pasa un body personalizado, usarlo; sino usar los estados del hook
     const clienteAUsar = bodyPersonalizado?.clientName || cliente;
     const pedidoAUsar = bodyPersonalizado?.products || pedido;
     const observacionAUsar = bodyPersonalizado?.observation || observacionGeneral;
-
 
     // 1️⃣ Validaciones antes de enviar
     if (!clienteAUsar?.trim()) {
@@ -85,17 +127,17 @@ export function usePedido() {
 
     // 2️⃣ Construir body del pedido
     const body = {
-    frontId: generateUUID(),
-    clientName: clienteAUsar.trim(),
-    fechaAlta: new Date().toISOString(),
-    observation: observacionAUsar?.trim() || null,
-    products: pedidoAUsar.map((p) => ({
-      idArticulo: p.idArticulo,
-      cantidad: p.cantidad,
-      precio: Math.max(Number(p.precio) || 1, 1),
-      observation: p.observacion?.trim() || null
-    }))
-  };
+      frontId: generateUUID(),
+      clientName: clienteAUsar.trim(),
+      fechaAlta: new Date().toISOString(),
+      observation: observacionAUsar?.trim() || null,
+      products: pedidoAUsar.map((p) => ({
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+        precio: Math.max(Number(p.precio) || 1, 1),
+        observation: p.observacion?.trim() || null
+      }))
+    };
 
     try {
       console.log("📤 Enviando al backend:", JSON.stringify(body, null, 2));
@@ -109,9 +151,7 @@ export function usePedido() {
 
       // 5️⃣ Limpiar estado solo si usamos los estados del hook
       if (!bodyPersonalizado) {
-        setPedido([]);
-        setCliente("");
-        setObservacionGeneral("");
+        limpiarPedido(); // Esto limpia el localStorage también
       }
 
       return true;
