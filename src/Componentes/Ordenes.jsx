@@ -1,101 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrdenes } from '../Hooks/useOrdenes';
 import '../index.css';
 
 const OrdersView = () => {
-    const { ordenes, loading, cargarOrdenes, enviarPedidoBackend, enviarTodosPendientes } = useOrdenes();
+    const { 
+        ordenes, 
+        loading, 
+        cargarOrdenes, 
+        enviarPedidoBackend, 
+        enviarTodosPendientes 
+    } = useOrdenes();
+    
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [isConnected, setIsConnected] = useState(navigator.onLine);
 
-    // Cargar órdenes al iniciar
+    // Cargar órdenes al iniciar usando el hook
     useEffect(() => {
-        cargarOrdenes({ seen: false });
+        cargarOrdenes();
     }, [cargarOrdenes]);
 
     // Escuchar cambios de conexión
     useEffect(() => {
         const handleOnline = () => setIsConnected(true);
         const handleOffline = () => setIsConnected(false);
+        
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
+        
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
     }, []);
 
-    const formatCurrency = (value) => {
+    const formatCurrency = useCallback((value) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
             currency: 'COP',
             minimumFractionDigits: 0
         }).format(value || 0);
-    };
+    }, []);
 
-    const dismissAlert = () => {
+    const dismissAlert = useCallback(() => {
         setAlert({ show: false, type: '', message: '' });
-    };
+    }, []);
 
-    const handleSendOrder = (order) => {
+    const handleSendOrder = useCallback((order) => {
         if (!isConnected) {
-            setAlert({ show: true, type: 'error', message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.' });
+            setAlert({ 
+                show: true, 
+                type: 'error', 
+                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.' 
+            });
             return;
         }
         setSelectedOrder(order);
         setShowModal(true);
-    };
+    }, [isConnected]);
 
-    const confirmSendOrder = async () => {
+    const confirmSendOrder = useCallback(async () => {
         if (!selectedOrder) return;
         setIsLoading(true);
         try {
-            const resultado = await enviarPedidoBackend(selectedOrder.raw ?? selectedOrder);
-            const nuevoId = resultado.nuevoId ?? resultado.data?.idPedido ?? resultado.data?.id ?? null;
-            setAlert({ show: true, type: 'success', message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}` });
+            const resultado = await enviarPedidoBackend(selectedOrder);
+            const nuevoId = resultado.nuevoId || resultado.idPedido || selectedOrder.id;
+            setAlert({ 
+                show: true, 
+                type: 'success', 
+                message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}` 
+            });
             await cargarOrdenes();
         } catch (error) {
-            let errorMessage = '❌ Error al enviar el pedido. Por favor, intente nuevamente.';
-            if (error.message) errorMessage = `❌ ${error.message}`;
+            const errorMessage = error.message 
+                ? `❌ ${error.message}`
+                : '❌ Error al enviar el pedido. Por favor, intente nuevamente.';
             setAlert({ show: true, type: 'error', message: errorMessage });
         } finally {
             setIsLoading(false);
             setShowModal(false);
             setSelectedOrder(null);
         }
-    };
+    }, [selectedOrder, enviarPedidoBackend, cargarOrdenes]);
 
-    const handleSendAllPending = async () => {
-        if (!isConnected) return setAlert({ show: true, type: 'error', message: 'No hay conexión a internet.' });
+    const handleSendAllPending = useCallback(async () => {
+        if (!isConnected) {
+            setAlert({ 
+                show: true, 
+                type: 'error', 
+                message: 'No hay conexión a internet.' 
+            });
+            return;
+        }
+        
         const confirmacion = window.confirm('¿Está seguro que desea enviar todos los pedidos pendientes?');
         if (!confirmacion) return;
+        
         setIsLoading(true);
         try {
             const res = await enviarTodosPendientes();
-            setAlert({ show: true, type: res.errores > 0 ? 'warning' : 'success', message: res.mensaje });
+            setAlert({ 
+                show: true, 
+                type: res.errores > 0 ? 'warning' : 'success', 
+                message: res.mensaje || 'Pedidos enviados correctamente'
+            });
             await cargarOrdenes();
         } catch (err) {
-            setAlert({ show: true, type: 'error', message: err.message || 'Error al enviar pedidos pendientes' });
+            setAlert({ 
+                show: true, 
+                type: 'error', 
+                message: err.message || 'Error al enviar pedidos pendientes' 
+            });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isConnected, enviarTodosPendientes, cargarOrdenes]);
 
     // Contadores
-    const ordenesPendientes = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'pendiente' || (o.status ?? '').toLowerCase() === 'pending');
-    const ordenesEnviadas = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'enviado' || (o.status ?? '').toLowerCase() === 'sent');
+    const ordenesPendientes = ordenes.filter(o => 
+        (o.status?.toLowerCase() === 'pendiente' || 
+         o.status?.toLowerCase() === 'pending')
+    );
+    
+    const ordenesEnviadas = ordenes.filter(o => 
+        (o.status?.toLowerCase() === 'enviado' || 
+         o.status?.toLowerCase() === 'sent')
+    );
 
-    // 🔹 Cambio: Filtrar según conexión
+    // Filtrar y ordenar órdenes
     const todasOrdenes = [...ordenes]
-        .filter(o => isConnected || (o.status ?? '').toLowerCase() === 'pendiente')
+        .filter(o => isConnected || o.status?.toLowerCase() === 'pendiente')
         .sort((a, b) => {
-            if ((a.status ?? '').toLowerCase() === 'pendiente' && (b.status ?? '').toLowerCase() !== 'pendiente') return -1;
-            if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
-            return (b.id ?? 0) - (a.id ?? 0);
+            const aStatus = a.status?.toLowerCase();
+            const bStatus = b.status?.toLowerCase();
+            
+            if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
+            if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
+            return (b.id || 0) - (a.id || 0);
         });
 
     if (loading && ordenes.length === 0) {
@@ -124,7 +169,6 @@ const OrdersView = () => {
                                 minHeight: '100vh'
                             }}
                         >
-
                             <div className="card-header py-2 py-md-3" style={{ backgroundColor: '#f7dc6f', borderRadius: '15px 15px 0 0' }}>
                                 <div className="row align-items-center">
                                     <div className="col-auto d-none d-sm-block">
@@ -152,12 +196,10 @@ const OrdersView = () => {
                                     </div>
                                     <div className="col-auto">
                                         <div className="d-flex align-items-center">
-                                            {/* Estado de conexión */}
                                             <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
                                                 {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
                                             </div>
 
-                                            {/* CLIENTE */}
                                             <div
                                                 className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
                                                 style={{ backgroundColor: '#298143' }}
@@ -166,7 +208,6 @@ const OrdersView = () => {
                                                 <small className="fw-semibold text-white">Cliente</small>
                                             </div>
 
-                                            {/* FOTO DE USUARIO */}
                                             <div
                                                 className="rounded-circle overflow-hidden"
                                                 style={{ width: '40px', height: '40px' }}
@@ -184,7 +225,6 @@ const OrdersView = () => {
                             </div>
 
                             <div className="card-body p-2 p-md-3 pb-5" style={{ paddingBottom: '120px' }}>
-                                {/* Alertas */}
                                 {alert.show && (
                                     <div
                                         className={`alert alert-${alert.type === 'success' ? 'success' : alert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show d-flex`}
@@ -207,15 +247,10 @@ const OrdersView = () => {
                                     </div>
                                 )}
 
-                                {/* Contenedor para título y botón ENVIAR TODOS */}
                                 <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                                    {/* Vista móvil - Título */}
                                     <h6 className="d-block d-md-none fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h6>
-                                    
-                                    {/* Vista desktop - Título */}
                                     <h5 className="d-none d-md-block fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h5>
                                     
-                                    {/* Botón ENVIAR TODOS - Ahora en el mismo nivel del título */}
                                     {ordenesPendientes.length > 0 && (
                                         <button
                                             className="btn btn-success px-3 py-1"
@@ -238,7 +273,6 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
-                                {/* Vista móvil - Cards para todas las órdenes */}
                                 <div className="d-block d-md-none">
                                     {todasOrdenes.length > 0 ? (
                                         todasOrdenes.map((order) => (
@@ -294,7 +328,6 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
-                                {/* Vista desktop - Tabla única para todas las órdenes */}
                                 <div className="d-none d-md-block">
                                     {todasOrdenes.length > 0 ? (
                                         <div className="table-responsive">
@@ -354,9 +387,7 @@ const OrdersView = () => {
                                 </div>
                             </div>
                             
-                            {/* Navegación inferior */}
                             <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
-
                                 <div className="d-flex justify-content-around align-items-center">
                                     <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
                                         🔍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
@@ -374,7 +405,6 @@ const OrdersView = () => {
                 </div>
             </div>
 
-            {/* Modal de confirmación */}
             <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex="-1">
                 <div className="modal-dialog modal-dialog-centered modal-sm">
                     <div className="modal-content">
@@ -423,10 +453,8 @@ const OrdersView = () => {
                 </div>
             </div>
 
-            {/* Backdrop del modal */}
             {showModal && <div className="modal-backdrop fade show"></div>}
 
-            {/* Toggle de conexión para pruebas */}
             <div className="position-fixed" style={{ bottom: '100px', right: '15px', zIndex: 1000 }}>
                 <button
                     className={`btn btn-sm ${isConnected ? 'btn-success' : 'btn-danger'}`}

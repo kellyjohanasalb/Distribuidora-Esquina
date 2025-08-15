@@ -1,12 +1,12 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+
 import 'bootstrap/dist/css/bootstrap.min.css';
+import  axios from 'axios';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useConexion from '../Hooks/useConexion.js';
 import {usePedido} from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js'
-import { useOrdenes } from '../Hooks/useOrdenes.js';
-import Select from 'react-select';
+
 import '../index.css';
 
 const DistribuidoraEsquina = () => {
@@ -31,7 +31,6 @@ const DistribuidoraEsquina = () => {
     limpiarPedido,
     guardarPedido,
     guardarCliente,
-    setPedido, // 🔹 Asegúrate que tu hook `usePedido` exponga esto
   } = usePedido();
 
 
@@ -56,34 +55,12 @@ const DistribuidoraEsquina = () => {
     });
   });
 
- // 1️⃣ Cargar borrador al montar
-useEffect(() => {
-  const borrador = JSON.parse(localStorage.getItem("pedidoBorrador"));
-  if (borrador && borrador.pedido?.length > 0) {
-    const aceptar = window.confirm("Tienes un pedido en borrador. ¿Quieres cargarlo?");
-    if (aceptar) {
-      setPedido(borrador.pedido);
-      guardarCliente(borrador.cliente || "");
-      guardarObservacionGeneral(borrador.observacionGeneral || "");
-    } else {
-      localStorage.removeItem("pedidoBorrador");
-    }
-  }
-}, [guardarCliente, guardarObservacionGeneral]);
 
 
-// 2️⃣ Guardar borrador automáticamente en cada cambio
-useEffect(() => {
-  if (pedido.length > 0 || cliente.trim() || observacionGeneral.trim()) {
-    localStorage.setItem("pedidoBorrador", JSON.stringify({
-      pedido,
-      cliente,
-      observacionGeneral
-    }));
-  } else {
-    localStorage.removeItem("pedidoBorrador");
-  }
-}, [pedido, cliente, observacionGeneral]);
+
+
+
+
    // Detectar clic fuera del modal
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -167,26 +144,55 @@ useEffect(() => {
     }
   };
 
-  const { generarIdUnico } = useOrdenes();
-
-
   // Función modificada para guardar pedido (estado pendiente) con ID único
-  const guardarPedidoPendiente = async () => {
+ const guardarPedidoPendiente = async () => {
     if (pedido.length === 0) {
       alert("Debe agregar al menos un producto al pedido.");
       return;
     }
+
     if (!cliente.trim()) {
       alert("Por favor, ingresá el nombre del cliente.");
       return;
     }
+
     try {
-      const idPedido = await generarIdUnico();
+      // Obtener pedidos pendientes existentes
+      const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+      let idPedido;
+
+      try {
+        // Intentar obtener máximo ID (online + offline)
+        const res = await axios.get("https://remito-send-back.vercel.app/api/pedidos");
+        const enviados = res.data.items || [];
+
+        // Calcular máximo ID considerando ambos orígenes
+        const maxId = Math.max(
+          23000,
+          ...pedidosGuardados.map(p => p.idPedido).filter(id => id),
+          ...enviados.map(p => p.idPedido).filter(id => id)
+        );
+
+        idPedido = maxId + 1;
+      } catch (error) {
+        // Modo offline: calcular máximo ID solo con locales
+        console.warn("Modo offline para generar ID. Razón:", error.message);
+        if (pedidosGuardados.length > 0) {
+          const maxId = Math.max(...pedidosGuardados.map(p => p.idPedido).filter(id => id));
+          idPedido = maxId + 1;
+        } else {
+          idPedido = 23001; // ID inicial si no hay pedidos
+        }
+      }
+
+      // Calcular total del pedido
       const total = pedido.reduce((acc, p) => {
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
         const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 0;
         return acc + (precio * p.cantidad);
       }, 0);
+
+      // Mapear productos para guardar
       const productosMapeados = pedido.map(p => {
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
         const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1;
@@ -200,6 +206,8 @@ useEffect(() => {
         }
         return producto;
       });
+
+      // Construir cuerpo del pedido
       const body = {
         idPedido,
         clientName: cliente.trim(),
@@ -209,24 +217,27 @@ useEffect(() => {
         observation: observacionGeneral?.trim() || "Sin observaciones",
         status: "Pendiente"
       };
-      const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+
+      // Verificar si el ID ya existe
       if (pedidosGuardados.some(p => p.idPedido === idPedido)) {
         alert("⚠️ Ya existe un pedido con este ID. Intente nuevamente.");
         return;
       }
+
+      // Guardar en localStorage
       pedidosGuardados.push(body);
       localStorage.setItem("pedidosPendientes", JSON.stringify(pedidosGuardados));
       alert(`✅ Pedido guardado localmente con ID: ${idPedido}`);
       limpiarPedido();
-      localStorage.removeItem("pedidoBorrador"); // 🔹 Limpia el borrador al guardar
     } catch (error) {
       console.error("❌ Error al guardar pedido local:", error);
       alert("Error al guardar el pedido local:\n" + error.message);
     }
   };
 
+
   // Función para enviar pedido (estado enviado)
-    const enviarPedido = async () => {
+     const enviarPedido = async () => {
     if (!puedeEnviar()) {
       if (!isOnline) {
         alert("No hay conexión a internet.");
@@ -259,7 +270,6 @@ useEffect(() => {
       };
       await guardarPedido(body);
       limpiarPedido();
-      localStorage.removeItem("pedidoBorrador"); // 🔹 Limpia borrador al enviar
       navigate('/ordenes', { replace: true });
     } catch (error) {
       console.error("❌ Error completo:", error);
