@@ -1,14 +1,18 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import React, { useState, useEffect, useRef } from 'react';
-import { usePedido } from '../Hooks/usePedido.js';
-import { useOrdenes } from '../Hooks/useOrdenes.js';
-import useCatalogo from '../Hooks/useCatalogo.js';
+import useConexion from '../Hooks/useConexion.js';
+import usePedido from '../Hooks/usePedido.js';
+import useCatalogo from '../Hooks/useCatalogo.js'
+import useOrdenes from '../Hooks/useOrdenes.js';
+import Select from 'react-select';
 import '../index.css';
 
 const DistribuidoraEsquina = () => {
+  const isOnline = useConexion();
   const navigate = useNavigate();
   const [imagenModal, setImagenModal] = useState(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isEnviando, setIsEnviando] = useState(false);
   const [mostrarAñadir, setMostrarAñadir] = useState(false);
   const modalRef = useRef(null);
@@ -16,7 +20,7 @@ const DistribuidoraEsquina = () => {
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
-  const {
+ const {
     pedido,
     cliente,
     agregarProducto,
@@ -26,8 +30,10 @@ const DistribuidoraEsquina = () => {
     guardarObservacionGeneral,
     limpiarPedido,
     guardarPedido,
-    guardarCliente, 
+    guardarCliente,
+    setPedido, // 🔹 Asegúrate que tu hook `usePedido` exponga esto
   } = usePedido();
+
 
   const {
     productos,
@@ -38,7 +44,7 @@ const DistribuidoraEsquina = () => {
     hasNextPage,
   } = useCatalogo();
 
-  // Fecha automática NO EDITABLE
+ // Fecha automática
   const [fechaFormateada] = useState(() => {
     const now = new Date();
     return now.toLocaleDateString('es-ES', {
@@ -50,58 +56,68 @@ const DistribuidoraEsquina = () => {
     });
   });
 
-  // Detectar clics fuera del modal para cerrarlo
+ // 1️⃣ Cargar borrador al montar
+useEffect(() => {
+  const borrador = JSON.parse(localStorage.getItem("pedidoBorrador"));
+  if (borrador && borrador.pedido?.length > 0) {
+    const aceptar = window.confirm("Tienes un pedido en borrador. ¿Quieres cargarlo?");
+    if (aceptar) {
+      setPedido(borrador.pedido);
+      guardarCliente(borrador.cliente || "");
+      guardarObservacionGeneral(borrador.observacionGeneral || "");
+    } else {
+      localStorage.removeItem("pedidoBorrador");
+    }
+  }
+}, [guardarCliente, guardarObservacionGeneral]);
+
+
+// 2️⃣ Guardar borrador automáticamente en cada cambio
+useEffect(() => {
+  if (pedido.length > 0 || cliente.trim() || observacionGeneral.trim()) {
+    localStorage.setItem("pedidoBorrador", JSON.stringify({
+      pedido,
+      cliente,
+      observacionGeneral
+    }));
+  } else {
+    localStorage.removeItem("pedidoBorrador");
+  }
+}, [pedido, cliente, observacionGeneral]);
+   // Detectar clic fuera del modal
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setMostrarAñadir(false);
       }
     };
-
     if (mostrarAñadir) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [mostrarAñadir]);
 
+   // Scroll infinito modal añadir
   useEffect(() => {
     if (!mostrarAñadir || !hasNextPage) return;
-    
     const container = modalContainerRef.current;
     if (!container) return;
-
     const handleScroll = () => {
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        if (scrollTop + clientHeight >= scrollHeight - 100) {
-            fetchProductos(false);
-        }
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        fetchProductos(false);
+      }
     };
-
     container.addEventListener('scroll', handleScroll);
-    
     return () => {
-        container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('scroll', handleScroll);
     };
   }, [mostrarAñadir, hasNextPage, fetchProductos]);
 
-  // Detectar estado de conexión
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Validar si el pedido es válido
+  // Validaciones
   const esPedidoValido = () => {
     return (
       pedido.length > 0 &&
@@ -111,16 +127,15 @@ const DistribuidoraEsquina = () => {
       (!observacionGeneral || (observacionGeneral.length >= 1 && observacionGeneral.length <= 512)) &&
       pedido.every(p => !p.observacion || (p.observacion.length >= 1 && p.observacion.length <= 512))
     );
-  };   
-
-  // Verificar si el botón enviar debe estar habilitado
-  const puedeEnviar = () => {
-    return isOnline && esPedidoValido() && !isEnviando;
   };
 
-  const agregarAlPedido = (item) => {
-    const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
+  const puedeEnviar = () => {
+    return isOnline && esPedidoValido() && !isEnviando;
+  }; 
 
+
+   const agregarAlPedido = (item) => {
+    const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
     if (productoExistente) {
       actualizarProducto(productoExistente.id, {
         cantidad: productoExistente.cantidad + 1
@@ -135,11 +150,9 @@ const DistribuidoraEsquina = () => {
         observacion: '',
       });
     }
-
     handleBusquedaChange({ target: { value: '' } });
   };
 
-  // Función para añadir y cerrar el modal
   const agregarYCerrar = (item) => {
     agregarAlPedido(item);
     setMostrarAñadir(false);
@@ -156,33 +169,27 @@ const DistribuidoraEsquina = () => {
 
   const { generarIdUnico } = useOrdenes();
 
+
   // Función modificada para guardar pedido (estado pendiente) con ID único
   const guardarPedidoPendiente = async () => {
     if (pedido.length === 0) {
       alert("Debe agregar al menos un producto al pedido.");
       return;
     }
-
     if (!cliente.trim()) {
       alert("Por favor, ingresá el nombre del cliente.");
       return;
     }
-
     try {
-      // Generar ID único autoincremental
       const idPedido = await generarIdUnico();
-
-      // Calcular total (usa precio si existe, sino cuenta solo cantidades)
       const total = pedido.reduce((acc, p) => {
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
         const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 0;
         return acc + (precio * p.cantidad);
       }, 0);
-
       const productosMapeados = pedido.map(p => {
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
         const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1;
-
         const producto = {
           idArticulo: p.idArticulo,
           cantidad: p.cantidad,
@@ -193,7 +200,6 @@ const DistribuidoraEsquina = () => {
         }
         return producto;
       });
-
       const body = {
         idPedido,
         clientName: cliente.trim(),
@@ -203,26 +209,16 @@ const DistribuidoraEsquina = () => {
         observation: observacionGeneral?.trim() || "Sin observaciones",
         status: "Pendiente"
       };
-
-      // Verificar localStorage actual
       const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-
-      // Verificar que no exista el ID (doble seguridad)
       if (pedidosGuardados.some(p => p.idPedido === idPedido)) {
         alert("⚠️ Ya existe un pedido con este ID. Intente nuevamente.");
         return;
       }
-
       pedidosGuardados.push(body);
       localStorage.setItem("pedidosPendientes", JSON.stringify(pedidosGuardados));
-
-      alert(`✅ Pedido guardado localmente con ID: ${idPedido}\nTotal: ${new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-      }).format(total)}`);
-
+      alert(`✅ Pedido guardado localmente con ID: ${idPedido}`);
       limpiarPedido();
+      localStorage.removeItem("pedidoBorrador"); // 🔹 Limpia el borrador al guardar
     } catch (error) {
       console.error("❌ Error al guardar pedido local:", error);
       alert("Error al guardar el pedido local:\n" + error.message);
@@ -230,40 +226,24 @@ const DistribuidoraEsquina = () => {
   };
 
   // Función para enviar pedido (estado enviado)
-  const enviarPedido = async () => {
+    const enviarPedido = async () => {
     if (!puedeEnviar()) {
       if (!isOnline) {
-        alert("No hay conexión a internet. Verifique su conexión e intente nuevamente.");
+        alert("No hay conexión a internet.");
         return;
       }
       if (!esPedidoValido()) {
-        alert("El pedido no es válido. Verifique los datos ingresados.");
+        alert("El pedido no es válido.");
         return;
       }
       return;
     }
-
-    const confirmacion = window.confirm(
-      `¿Está seguro que desea enviar este pedido?\n\n` +
-      `Cliente: ${cliente}\n` +
-      `Productos: ${totalProductos}\n` +
-      `Fecha: ${fechaFormateada}\n\n` +
-      `Una vez enviado, el pedido no podrá ser editado.`
-    );
-
+    const confirmacion = window.confirm(`¿Enviar este pedido? Cliente: ${cliente}`);
     if (!confirmacion) return;
-
     setIsEnviando(true);
-
     try {
-      console.log("🚀 Iniciando envío de pedido...");
-      console.log("Cliente nombre:", cliente);
-      console.log("Pedido actual:", pedido);
-
-      // Mapeo de productos con toda la información necesaria
       const productosMapeados = pedido.map(p => {
         const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-        
         return {
           idArticulo: p.idArticulo,
           cantidad: p.cantidad,
@@ -271,73 +251,24 @@ const DistribuidoraEsquina = () => {
           observation: p.observacion?.trim() || null
         };
       });
-
-      console.log("📦 Productos mapeados:", productosMapeados);
-
-      // Cuerpo del pedido
       const body = {
         clientName: cliente.trim(),
         products: productosMapeados,
         fechaAlta: new Date().toISOString(),
         observation: observacionGeneral?.trim() || null
       };
-
-      console.log("📤 Body a enviar:", body);
-
-      // Enviar al backend usando el hook
       await guardarPedido(body);
-
-      // Calcular total para localStorage
-      const total = productosMapeados.reduce((acc, p) => {
-        return acc + (p.precio * p.cantidad);
-      }, 0);
-
-      // Actualizar lista de órdenes enviadas en localStorage
-      const ordenesActuales = JSON.parse(localStorage.getItem("ordenesEnviadas")) || [];
-      const nuevaOrden = {
-        ...body,
-        total: total.toFixed(2),
-        status: "Enviado",
-        fechaAlta: fechaFormateada,
-        idPedido: Date.now()
-      };
-      
-      ordenesActuales.push(nuevaOrden);
-      localStorage.setItem("ordenesEnviadas", JSON.stringify(ordenesActuales));
-
-      // Limpiar formulario
       limpiarPedido();
-
-      // Mostrar confirmación y navegar
-      alert(`✅ Pedido enviado correctamente!\nTotal: ${new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-      }).format(total)}`);
-
-      // Navegar a órdenes para ver el pedido enviado
+      localStorage.removeItem("pedidoBorrador"); // 🔹 Limpia borrador al enviar
       navigate('/ordenes', { replace: true });
-
     } catch (error) {
       console.error("❌ Error completo:", error);
-      
-      let mensajeError = "Error al enviar el pedido.";
-      
-      if (error.response?.data?.message) {
-        if (Array.isArray(error.response.data.message)) {
-          mensajeError += "\nDetalles:\n" + error.response.data.message.join("\n");
-        } else {
-          mensajeError += "\nDetalle: " + error.response.data.message;
-        }
-      } else if (error.message) {
-        mensajeError += "\nDetalle: " + error.message;
-      }
-      
-      alert(mensajeError + "\n\nIntente nuevamente.");
+      alert("Error al enviar el pedido.");
     } finally {
       setIsEnviando(false);
     }
   };
+
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>

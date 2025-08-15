@@ -1,12 +1,13 @@
-
+// src/Pages/Catalogo.jsx
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
+import { useConexion } from '../Hooks/useConexion.js'; // ← Nuevo import
 import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import '../index.css';
 
 const Catalogo = () => {
-   const {
+  const {
     productos,
     rubros,
     busqueda,
@@ -18,16 +19,20 @@ const Catalogo = () => {
     fetchProductos,
     hasNextPage,
     isLoading,
-    reiniciarFiltros  // Recibir la nueva función
+    reiniciarFiltros
   } = useCatalogo();
+
+  const online = useConexion(); // ← Detecta conexión
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
-  // Mejorar las opciones del buscador con sugerencias dinámicas
-  const opcionesProductos = sugerencias.length > 0 ? sugerencias : productos.slice(0, 10).map(p => ({
-    value: p.idArticulo,
-    label: p.descripcion,
-  }));
+  // Opciones del buscador
+  const opcionesProductos = sugerencias.length > 0
+    ? sugerencias
+    : productos.slice(0, 10).map(p => ({
+        value: p.idArticulo,
+        label: p.descripcion,
+      }));
 
   const opcionesRubros = rubros.map(r => ({
     value: r.id.toString(),
@@ -37,12 +42,13 @@ const Catalogo = () => {
   const rubroActivo = rubros.find(r => r.id.toString() === filtroRubro);
   const nombreRubro = rubroActivo?.descripcion || 'Todos los productos';
 
-  // Función mejorada para formatear precios
+  // Formatear precios
   const formatearPrecio = (precio) => {
     const numero = parseFloat(precio);
     return isNaN(numero) ? '0,00' : numero.toFixed(2).replace('.', ',');
   };
 
+  // Agrupar por rubro
   const productosPorRubro = {};
   productos.forEach(producto => {
     const nombre = rubros.find(r => r.id === producto.idRubro)?.descripcion || 'Otros';
@@ -52,7 +58,7 @@ const Catalogo = () => {
 
   const noHayResultados = !isLoading && productos.length === 0;
 
-  // Función para manejar la selección en el buscador
+  // Manejo de selección en buscador
   const handleBuscarSeleccion = (selected) => {
     if (selected) {
       seleccionarSugerencia(selected);
@@ -63,9 +69,11 @@ const Catalogo = () => {
 
   return (
     <>
+      {/* HEADER */}
       <header className="bg-custom-header shadow-sm w-100">
         <div className="container">
           <div className="row align-items-center g-3 py-2">
+            {/* Logo y título */}
             <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
               <Link to="/pedido">
                 <img
@@ -76,11 +84,18 @@ const Catalogo = () => {
                   style={{ cursor: 'pointer' }}
                 />
               </Link>
-              <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
+              <div>
+                <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
+                <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
+                  {online ? "🟢 En línea" : "🔴 Offline"}
+                </small>
+              </div>
             </div>
 
+            {/* Buscador y filtros */}
             <div className="col-12 col-md-8">
               <div className="d-flex gap-2 flex-wrap justify-content-md-end justify-content-center">
+                {/* Buscador */}
                 <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={opcionesProductos}
@@ -95,10 +110,11 @@ const Catalogo = () => {
                     isSearchable
                     noOptionsMessage={() => "No se encontraron productos"}
                     loadingMessage={() => "Buscando..."}
-                    filterOption={null} // Desactivar filtro interno de react-select
+                    filterOption={null}
                   />
                 </div>
 
+                {/* Filtro por rubro */}
                 <div style={{ minWidth: '160px', maxWidth: '240px' }}>
                   <Select
                     options={[{ value: '', label: 'Todos los rubros' }, ...opcionesRubros]}
@@ -120,6 +136,7 @@ const Catalogo = () => {
         </div>
       </header>
 
+      {/* Título y filtros activos */}
       <section className="container my-3">
         <div className="d-flex justify-content-between align-items-center px-2">
           <h2 className="text-success fw-bold fs-2 m-0">Catálogo</h2>
@@ -128,7 +145,6 @@ const Catalogo = () => {
           </span>
         </div>
         
-        {/* Mejorar visualización de filtros activos */}
         {(busqueda || filtroRubro) && (
           <div className="mt-2 px-2 d-flex justify-content-between align-items-center">
             <small className="text-muted">
@@ -146,8 +162,8 @@ const Catalogo = () => {
         )}
       </section>
 
-        <main className="container my-3">
-        {/* Mostrar spinner durante carga inicial */}
+      {/* MAIN */}
+      <main className="container my-3">
         {isLoading && productos.length === 0 ? (
           <div className="text-center py-5">
             <div className="spinner-border text-success" role="status">
@@ -171,6 +187,7 @@ const Catalogo = () => {
         ) : (
           Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => (
             <div key={rubro} className="mb-5">
+              {/* Nombre de rubro */}
               <div className="row mb-3">
                 <div className="col-12">
                   <div className="border-bottom pb-2 mb-2">
@@ -184,6 +201,7 @@ const Catalogo = () => {
                 </div>
               </div>
 
+              {/* Productos */}
               <div className="row">
                 {productosDelRubro.map((producto) => (
                   <div key={producto.idArticulo} className="col-12 col-sm-6 col-md-4 mb-4">
@@ -210,7 +228,7 @@ const Catalogo = () => {
           ))
         )}
 
-            {hasNextPage && (
+        {hasNextPage && (
           <div className="col-12 text-center mt-4">
             <button
               onClick={() => fetchProductos()}
@@ -231,5 +249,4 @@ const Catalogo = () => {
   );
 };
 
-
-export default Catalogo;;
+export default Catalogo;

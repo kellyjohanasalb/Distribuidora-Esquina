@@ -12,10 +12,12 @@ const OrdersView = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [isConnected, setIsConnected] = useState(navigator.onLine);
 
+    // Cargar órdenes al iniciar
     useEffect(() => {
         cargarOrdenes({ seen: false });
     }, [cargarOrdenes]);
 
+    // Escuchar cambios de conexión
     useEffect(() => {
         const handleOnline = () => setIsConnected(true);
         const handleOffline = () => setIsConnected(false);
@@ -83,14 +85,18 @@ const OrdersView = () => {
         }
     };
 
-    // ordenar y contadores
+    // Contadores
     const ordenesPendientes = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'pendiente' || (o.status ?? '').toLowerCase() === 'pending');
     const ordenesEnviadas = ordenes.filter(o => (o.status ?? '').toLowerCase() === 'enviado' || (o.status ?? '').toLowerCase() === 'sent');
-    const todasOrdenes = [...ordenes].sort((a, b) => {
-        if ((a.status ?? '').toLowerCase() === 'pendiente' && (b.status ?? '').toLowerCase() !== 'pendiente') return -1;
-        if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
-        return (b.id ?? 0) - (a.id ?? 0);
-    });
+
+    // 🔹 Cambio: Filtrar según conexión
+    const todasOrdenes = [...ordenes]
+        .filter(o => isConnected || (o.status ?? '').toLowerCase() === 'pendiente')
+        .sort((a, b) => {
+            if ((a.status ?? '').toLowerCase() === 'pendiente' && (b.status ?? '').toLowerCase() !== 'pendiente') return -1;
+            if ((b.status ?? '').toLowerCase() === 'pendiente' && (a.status ?? '').toLowerCase() !== 'pendiente') return 1;
+            return (b.id ?? 0) - (a.id ?? 0);
+        });
 
     if (loading && ordenes.length === 0) {
         return (
@@ -104,7 +110,7 @@ const OrdersView = () => {
             </div>
         );
     }
-
+    
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#f7dc6f' }}>
             <div className="container-fluid px-2 px-md-4 py-3">
