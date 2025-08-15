@@ -1,0 +1,34 @@
+[33m1d95309[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m reaorganizando la carga sin internet
+[33mfd7d70b[m agregando el aplicativo sin conexion a internet
+[33m8a87216[m organizando mejoras
+[33m81187d3[m haciendo algunas mejoras
+[33me388ad0[m por fin arregle la conexion con el back aplicacion funcional
+[33m42e1462[m elimene un hook que no necesitaba
+[33mdbe7f7b[m organizando lo de imagenes en pedido
+[33m143a14e[m ordenes funcioanl
+[33mfcdbb32[m organizando ordenes
+[33mc6b98a3[m haciendo pequeños cambios en pedidos
+[33m5757ebd[m organizando el boton de añadir
+[33me95151b[m peuqeños cambio de diseño
+[33m856e2e3[m conectando peido con base de datos
+[33mbccddc7[m agregando vista de ordenes
+[33me7ea42b[m realizando la conecxion del boton catalogo
+[33m6fff002[m orgnizando filtrado y busqueda
+[33mc10cc99[m Actualización: ajustes en catálogo y pedido + mejoras de estilos
+[33m0a181e9[m fix: cambio de importación para Vercel
+[33mfef93f2[m fix: agregando extensión a importación
+[33mf952249[m agrgando pedido
+[33ma95fd7e[m Agrega vista de pedido y mejora diseño de filtros
+[33m708c2d9[m Actualizar componente Catalogo y estilos CSS
+[33m617e00f[m Actualizar componente Catalogo y estilos CSS
+[33mf6a7b97[m Fix import path in Catalogo.jsx
+[33mc44778f[m Force deploy
+[33m31a11d0[m Ajustes de estilo en catálogo por rubro y diseño final
+[33m99f1446[m agrando conexion con back
+[33m1f2a51c[m reorganice catalogo
+[33m944a340[m Add favicon logo
+[33m65741d5[m Use Bootstrap CDN instead of npm package
+[33me70cda7[m Fix BrowserRouter usage in App.jsx
+[33m54c1e1b[m 3de julio cambios
+[33m0341815[m agregando cambios
+[33mae326f0[m Subida real del proyecto
