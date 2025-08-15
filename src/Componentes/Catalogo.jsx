@@ -1,7 +1,7 @@
 // src/Pages/Catalogo.jsx
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
-import { useConexion } from '../Hooks/useConexion.js'; // ← Nuevo import
+import  useConexion  from '../Hooks/useConexion.js'; // ← Nuevo import
 import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import '../index.css';

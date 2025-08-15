@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -44,47 +45,27 @@ export function useOrdenes() {
   const cargarOrdenes = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      // Pendientes locales
+      // 🔹 1. Siempre leer pedidos pendientes locales
       const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
 
-      // Enviados del backend
+      // 🔹 2. Si no hay internet, mostramos solo los pendientes
+      if (!navigator.onLine) {
+        console.warn("📴 Sin conexión: mostrando pedidos pendientes guardados localmente");
+        const pendientesMapeados = locales.map(mapearPendiente);
+        setOrdenes(pendientesMapeados);
+        return;
+      }
+
+      // 🔹 3. Si hay internet, traer también enviados del backend
       const res = await axios.get(`${baseURL}/api/pedidos`);
       const enviados = res.data.items || [];
 
-      // Mapear pendientes con originalData completo y precio garantizado
-      const pendientesMapeados = locales.map(pedido => ({
-        id: Number(pedido.idPedido || pedido.id),
-        name: pedido.clientName || pedido.cliente || "Sin nombre",
-        value: pedido.total || 0,
-        status: "Pendiente",
-        fechaAlta: pedido.fechaAlta,
-        observation: pedido.observation,
-        products: pedido.products || pedido.productos,
-        originalData: {
-          clientName: pedido.clientName || pedido.cliente || "Sin nombre",
-          products: (pedido.products || []).map(p => ({
-            idArticulo: p.idArticulo,
-            cantidad: p.cantidad,
-            precio: p.precio || 1, // 🔹 precio siempre presente
-            observation: p.observation || null
-          })),
-          fechaAlta: pedido.fechaAlta,
-          observation: pedido.observation || "Sin observaciones"
-        }
-      }));
+      const pendientesMapeados = locales.map(mapearPendiente);
+      const enviadosMapeados = enviados.map(mapearEnviado);
 
-      const enviadosMapeados = enviados.map(pedido => ({
-        id: Number(pedido.idPedido || pedido.id),
-        name: pedido.clientName || pedido.cliente || "Sin nombre",
-        value: pedido.total || 0,
-        status: "Enviado",
-        fechaAlta: pedido.fechaAlta,
-        observation: pedido.observation,
-        products: pedido.products || pedido.productos
-      }));
-
-      // Combinar, priorizando enviados
+      // 🔹 4. Combinar sin duplicar
       const todasLasOrdenes = [...enviadosMapeados];
       pendientesMapeados.forEach(pendiente => {
         const yaExiste = todasLasOrdenes.find(orden => orden.id === pendiente.id);
@@ -95,12 +76,50 @@ export function useOrdenes() {
 
       setOrdenes(todasLasOrdenes);
     } catch (err) {
-      setError(err.message || "Error al cargar órdenes");
-      console.error("Error cargando órdenes:", err);
+      if (err.message.includes("Network Error")) {
+        console.warn("📴 Sin conexión: cargando solo pedidos locales");
+        const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+        setOrdenes(locales.map(mapearPendiente));
+      } else {
+        setError(err.message || "Error al cargar órdenes");
+        console.error("Error cargando órdenes:", err);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // 🔹 Funciones para mapear pedidos
+  const mapearPendiente = (pedido) => ({
+    id: Number(pedido.idPedido || pedido.id),
+    name: pedido.clientName || pedido.cliente || "Sin nombre",
+    value: pedido.total || 0,
+    status: "Pendiente",
+    fechaAlta: pedido.fechaAlta,
+    observation: pedido.observation,
+    products: pedido.products || pedido.productos,
+    originalData: {
+      clientName: pedido.clientName || pedido.cliente || "Sin nombre",
+      products: (pedido.products || []).map(p => ({
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+        precio: p.precio || 1,
+        observation: p.observation || null
+      })),
+      fechaAlta: pedido.fechaAlta,
+      observation: pedido.observation || "Sin observaciones"
+    }
+  });
+
+  const mapearEnviado = (pedido) => ({
+    id: Number(pedido.idPedido || pedido.id),
+    name: pedido.clientName || pedido.cliente || "Sin nombre",
+    value: pedido.total || 0,
+    status: "Enviado",
+    fechaAlta: pedido.fechaAlta,
+    observation: pedido.observation,
+    products: pedido.products || pedido.productos
+  });
 
   const enviarPedidoBackend = async (orden) => {
     try {
@@ -126,24 +145,20 @@ export function useOrdenes() {
         datosParaEnvio.observation = orden.originalData.observation.trim();
       }
 
-      console.log("📤 Enviando payload limpio:", datosParaEnvio);
-
       const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio, {
         headers: { "Content-Type": "application/json" }
       });
 
-      console.log("✅ Respuesta del backend:", response.data);
-
       const nuevoId = response.data.idPedido || response.data.id;
 
-      // 🔹 normalización de IDs para borrar del localStorage
+      // Eliminar del localStorage si se envió
       const pendientes = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
       const pendientesFiltrados = pendientes.filter(p =>
         Number(p.idPedido || p.id) !== Number(orden.id)
       );
       localStorage.setItem("pedidosPendientes", JSON.stringify(pendientesFiltrados));
 
-      // Actualizar estado en memoria
+      // Actualizar estado
       setOrdenes(prev =>
         prev.map(o =>
           o.id === orden.id
@@ -161,21 +176,9 @@ export function useOrdenes() {
       return { success: true, nuevoId };
     } catch (err) {
       console.error("❌ Error enviando pedido:", err);
-
-      let errorMessage = "Error al enviar pedido";
-      if (err.response?.data?.message) {
-        errorMessage = Array.isArray(err.response.data.message)
-          ? err.response.data.message.join(". ")
-          : err.response.data.message;
-      } else if (err.response?.status === 400) {
-        errorMessage = "Datos del pedido inválidos. Verifique la información.";
-      } else if (err.response?.status === 500) {
-        errorMessage = "Error interno del servidor. Intente más tarde.";
-      } else if (err.message.includes("Network Error")) {
-        errorMessage = "Error de conexión. Verifique su internet.";
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(err.message.includes("Network Error")
+        ? "Sin conexión. Guarda el pedido como pendiente."
+        : "Error al enviar pedido");
     } finally {
       setLoading(false);
     }
@@ -189,8 +192,6 @@ export function useOrdenes() {
       if (pendientes.length === 0) {
         throw new Error("No hay pedidos pendientes para enviar");
       }
-
-      console.log(`📤 Enviando ${pendientes.length} pedidos pendientes...`);
 
       let enviados = 0;
       let errores = [];
@@ -206,22 +207,11 @@ export function useOrdenes() {
 
       await cargarOrdenes();
 
-      const mensajeBase =
-        enviados > 0
-          ? `✅ ${enviados} pedidos enviados exitosamente${errores.length > 0 ? `. ${errores.length} con errores.` : '.'}`
-          : `❌ No se pudo enviar ningún pedido. ${errores.length} errores.`;
-
-      const detalleErroresTexto =
-        errores.length > 0
-          ? "\n\nErrores:\n" + errores.map(e => `- Pedido ${e.id}: ${e.error}`).join("\n")
-          : "";
-
       return {
         success: enviados > 0,
         enviados,
         errores: errores.length,
-        mensaje: mensajeBase + detalleErroresTexto,
-        detalleErrores: errores
+        mensaje: `Enviados: ${enviados}, Errores: ${errores.length}`
       };
     } catch (err) {
       console.error("❌ Error enviando pedidos masivo:", err);

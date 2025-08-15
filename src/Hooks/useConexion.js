@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function useConexion() {
+export default function useConexion() {
   const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {

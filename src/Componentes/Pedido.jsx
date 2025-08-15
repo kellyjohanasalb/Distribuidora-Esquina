@@ -3,9 +3,9 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useConexion from '../Hooks/useConexion.js';
-import usePedido from '../Hooks/usePedido.js';
+import {usePedido} from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js'
-import useOrdenes from '../Hooks/useOrdenes.js';
+import { useOrdenes } from '../Hooks/useOrdenes.js';
 import Select from 'react-select';
 import '../index.css';
 
