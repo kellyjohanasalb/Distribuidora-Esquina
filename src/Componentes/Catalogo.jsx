@@ -1,7 +1,7 @@
 // src/Pages/Catalogo.jsx
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
-import  useConexion  from '../Hooks/useConexion.js'; // ← Nuevo import
+import  useConexion  from '../Hooks/useConexion.js';
 import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import '../index.css';
@@ -19,14 +19,15 @@ const Catalogo = () => {
     fetchProductos,
     hasNextPage,
     isLoading,
-    reiniciarFiltros
+    reiniciarFiltros,
+    catalogoCompleto
   } = useCatalogo();
 
-  const online = useConexion(); // ← Detecta conexión
+  const online = useConexion();
 
   const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
-  // Opciones del buscador
+  // Opciones del buscador - mejoradas
   const opcionesProductos = sugerencias.length > 0
     ? sugerencias
     : productos.slice(0, 10).map(p => ({
@@ -56,7 +57,10 @@ const Catalogo = () => {
     productosPorRubro[nombre].push(producto);
   });
 
-  const noHayResultados = !isLoading && productos.length === 0;
+  // Condiciones mejoradas para mostrar estado
+  const mostrarCargando = isLoading && productos.length === 0;
+  const mostrarSinResultados = !isLoading && productos.length === 0 && (busqueda.trim().length >= 2 || filtroRubro);
+  const mostrarMensajeInicial = !isLoading && productos.length === 0 && busqueda.trim().length < 2 && !filtroRubro;
 
   // Manejo de selección en buscador
   const handleBuscarSeleccion = (selected) => {
@@ -88,6 +92,7 @@ const Catalogo = () => {
                 <h1 className="text-success fw-bold fs-5 m-0">Distribuidora Esquina</h1>
                 <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
                   {online ? "🟢 En línea" : "🔴 Offline"}
+                  {/* {catalogoCompleto && <span className="text-muted ms-2">(Catálogo completo)</span>} */}
                 </small>
               </div>
             </div>
@@ -108,9 +113,10 @@ const Catalogo = () => {
                     classNamePrefix="react-select"
                     isClearable
                     isSearchable
-                    noOptionsMessage={() => "No se encontraron productos"}
+                    noOptionsMessage={() => busqueda.length < 2 ? "Escriba al menos 2 caracteres" : "No se encontraron productos"}
                     loadingMessage={() => "Buscando..."}
                     filterOption={null}
+                    menuIsOpen={busqueda.length >= 2 && sugerencias.length > 0 ? undefined : false}
                   />
                 </div>
 
@@ -164,17 +170,26 @@ const Catalogo = () => {
 
       {/* MAIN */}
       <main className="container my-3">
-        {isLoading && productos.length === 0 ? (
+        {mostrarCargando ? (
           <div className="text-center py-5">
             <div className="spinner-border text-success" role="status">
               <span className="visually-hidden">Cargando...</span>
             </div>
-            <p className="mt-2">Buscando productos...</p>
+            <p className="mt-2">Cargando catálogo...</p>
           </div>
-        ) : noHayResultados ? (
+        ) : mostrarMensajeInicial ? (
           <div className="text-center text-muted py-5">
-            <h5>No se encontraron resultados.</h5>
-            {busqueda && (
+            <h5>Bienvenido al catálogo</h5>
+            <p>Use el buscador o seleccione un rubro para ver los productos.</p>
+            <small>Escriba al menos 2 caracteres para buscar productos</small>
+          </div>
+        ) : mostrarSinResultados ? (
+          <div className="text-center text-muted py-5">
+            <h5>No se encontraron resultados</h5>
+            {busqueda && busqueda.length < 2 && (
+              <p>Escriba al menos 2 caracteres para buscar productos.</p>
+            )}
+            {busqueda && busqueda.length >= 2 && (
               <p>Intenta con otros términos de búsqueda o verifica la ortografía.</p>
             )}
             <button 
@@ -228,7 +243,7 @@ const Catalogo = () => {
           ))
         )}
 
-        {hasNextPage && (
+        {hasNextPage && !catalogoCompleto && (
           <div className="col-12 text-center mt-4">
             <button
               onClick={() => fetchProductos()}
