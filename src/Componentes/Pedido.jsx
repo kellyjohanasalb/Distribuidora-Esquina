@@ -1,4 +1,4 @@
-
+/* eslint-disable no-unused-vars */
 import 'bootstrap/dist/css/bootstrap.min.css';
 import  axios from 'axios';
 import { useState, useEffect, useRef } from 'react';
@@ -15,6 +15,7 @@ const DistribuidoraEsquina = () => {
   const [imagenModal, setImagenModal] = useState(null);
   const [isEnviando, setIsEnviando] = useState(false);
   const [mostrarAñadir, setMostrarAñadir] = useState(false);
+  const [mostrarBorrador, setMostrarBorrador] = useState(false);
   const modalRef = useRef(null);
   const modalContainerRef = useRef(null);
 
@@ -31,6 +32,9 @@ const DistribuidoraEsquina = () => {
     limpiarPedido,
     guardarPedido,
     guardarCliente,
+    hayBorradorDisponible,
+    recuperarBorrador,
+    descartarBorrador
   } = usePedido();
 
 
@@ -55,11 +59,19 @@ const DistribuidoraEsquina = () => {
     });
   });
 
-
-
-
-
-
+  // Verificar si hay borrador disponible al cargar el componente
+useEffect(() => {
+  const borrador = localStorage.getItem('pedidoBorrador');
+  if (borrador) {
+    const parsedBorrador = JSON.parse(borrador);
+    // Solo mostrar si el borrador tiene contenido válido
+    if (parsedBorrador.pedido.length > 0 || 
+        parsedBorrador.cliente.trim().length > 0 || 
+        parsedBorrador.observacionGeneral.trim().length > 0) {
+      setMostrarBorrador(true);
+    }
+  }
+}, []);
 
    // Detectar clic fuera del modal
   useEffect(() => {
@@ -110,6 +122,16 @@ const DistribuidoraEsquina = () => {
     return isOnline && esPedidoValido() && !isEnviando;
   }; 
 
+  // Manejar recuperación de borrador
+  const manejarRecuperarBorrador = () => {
+    recuperarBorrador();
+    setMostrarBorrador(false);
+  };
+
+  const manejarDescartarBorrador = () => {
+    descartarBorrador();
+    setMostrarBorrador(false);
+  };
 
    const agregarAlPedido = (item) => {
     const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
@@ -282,6 +304,54 @@ const DistribuidoraEsquina = () => {
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
+      {/* MODAL DE BORRADOR DISPONIBLE */}
+      {mostrarBorrador && (
+        <div
+          className="modal fade show"
+          tabIndex="-1"
+          style={{
+            display: 'block',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 1060,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+          }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 rounded shadow">
+              <div className="modal-header border-0 bg-warning">
+                <h5 className="modal-title fw-bold text-dark">
+                  📝 Borrador Disponible
+                </h5>
+              </div>
+              <div className="modal-body">
+                <p className="mb-3">
+                  Se detectó un pedido en progreso que no fue completado. 
+                  ¿Deseas recuperar este borrador o empezar un pedido nuevo?
+                </p>
+                <div className="d-flex justify-content-end gap-2">
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={manejarDescartarBorrador}
+                  >
+                    🗑️ Descartar
+                  </button>
+                  <button
+                    className="btn btn-warning"
+                    onClick={manejarRecuperarBorrador}
+                  >
+                    🔄 Recuperar Borrador
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="shadow-sm mb-4" style={{ backgroundColor: '#f7dc6f' }}>
         <div className="container-fluid py-3">
@@ -571,7 +641,7 @@ const DistribuidoraEsquina = () => {
                                 }
                                 disabled={item.cantidad <= 1}
                               >
-                                –
+                                −
                               </button>
                               <input
                                 type="number"
@@ -773,7 +843,7 @@ const DistribuidoraEsquina = () => {
       <nav className="fixed-bottom mb-4 bg-transparent">
         <div className="d-flex justify-content-around align-items-center">
           <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-            🔍 <span className="fw-semibold text-white">Catálogo</span>
+            📋 <span className="fw-semibold text-white">Catálogo</span>
           </Link>
           <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             ➕ <span className="fw-semibold text-white">Pedido</span>

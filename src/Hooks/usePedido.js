@@ -15,6 +15,7 @@ const PEDIDO_KEY = 'pedidoEnProgreso';
 const CLIENTE_KEY = 'pedidoCliente';
 const OBS_GENERAL_KEY = 'pedidoObservacionGeneral';
 const OBS_CLIENTE_KEY = 'pedidoObservacionCliente';
+const BORRADOR_KEY = 'pedidoBorrador'; // Nueva clave para borradores
 
 export function usePedido() {
   // Inicializar estados leyendo de localStorage
@@ -52,6 +53,68 @@ export function usePedido() {
     localStorage.setItem(OBS_CLIENTE_KEY, observacionCliente);
   }, [observacionCliente]);
 
+  // 🔹 Función para verificar si hay un borrador disponible
+  const hayBorradorDisponible = () => {
+  const borradorGuardado = localStorage.getItem(BORRADOR_KEY);
+  if (!borradorGuardado) return false;
+
+  const borrador = JSON.parse(borradorGuardado);
+  
+  // Verificar si hay contenido en el borrador
+  return (
+    borrador.pedido.length > 0 || 
+    borrador.cliente.trim().length > 0 || 
+    borrador.observacionGeneral.trim().length > 0
+  );
+};
+
+  // 🔹 Función para crear un borrador del estado actual
+  const crearBorrador = () => {
+    const borrador = {
+      pedido: JSON.parse(localStorage.getItem(PEDIDO_KEY) || '[]'),
+      cliente: localStorage.getItem(CLIENTE_KEY) || '',
+      observacionGeneral: localStorage.getItem(OBS_GENERAL_KEY) || '',
+      observacionCliente: localStorage.getItem(OBS_CLIENTE_KEY) || '',
+      fechaCreacion: new Date().toISOString()
+    };
+    
+    // Solo guardar si hay contenido significativo
+    if (borrador.pedido.length > 0 || borrador.cliente.trim().length > 0 || borrador.observacionGeneral.trim().length > 0) {
+      localStorage.setItem(BORRADOR_KEY, JSON.stringify(borrador));
+    }
+  };
+
+  // 🔹 Función para recuperar el borrador
+  const recuperarBorrador = () => {
+    const borradorGuardado = localStorage.getItem(BORRADOR_KEY);
+    if (borradorGuardado) {
+      const borrador = JSON.parse(borradorGuardado);
+      
+      // Restaurar los estados
+      setPedido(borrador.pedido || []);
+      setCliente(borrador.cliente || '');
+      setObservacionGeneral(borrador.observacionGeneral || '');
+      setObservacionCliente(borrador.observacionCliente || '');
+      
+      // Restaurar en localStorage también
+      localStorage.setItem(PEDIDO_KEY, JSON.stringify(borrador.pedido || []));
+      localStorage.setItem(CLIENTE_KEY, borrador.cliente || '');
+      localStorage.setItem(OBS_GENERAL_KEY, borrador.observacionGeneral || '');
+      localStorage.setItem(OBS_CLIENTE_KEY, borrador.observacionCliente || '');
+      
+      // Eliminar el borrador una vez recuperado
+      localStorage.removeItem(BORRADOR_KEY);
+      
+      console.log("📝 Borrador recuperado exitosamente");
+    }
+  };
+
+  // 🔹 Función para descartar el borrador
+  const descartarBorrador = () => {
+    localStorage.removeItem(BORRADOR_KEY);
+    console.log("🗑️ Borrador descartado");
+  };
+
   // 🔹 Agregar producto al pedido
   const agregarProducto = (producto) => {
     const yaExiste = pedido.find((p) => p.idArticulo === producto.idArticulo);
@@ -85,23 +148,27 @@ export function usePedido() {
     setPedido((prev) => prev.filter((p) => p.idArticulo !== idArticulo));
   };
 
-  // 🔹 Limpiar todo el pedido (incluyendo localStorage)
-  const limpiarPedido = () => {
-    setPedido([]);
-    setCliente("");
-    setObservacionGeneral("");
-    setObservacionCliente("");
-    
-    // Limpiar localStorage
-    localStorage.removeItem(PEDIDO_KEY);
-    localStorage.removeItem(CLIENTE_KEY);
-    localStorage.removeItem(OBS_GENERAL_KEY);
-    localStorage.removeItem(OBS_CLIENTE_KEY);
-  };
 
+  // 🔹 Limpiar todo el pedido (incluyendo localStorage)
+const limpiarPedido = () => {
+  // No crear borrador al limpiar intencionalmente
+  setPedido([]);
+  setCliente("");
+  setObservacionGeneral("");
+  setObservacionCliente("");
+  
+  // Limpiar localStorage
+  localStorage.removeItem(PEDIDO_KEY);
+  localStorage.removeItem(CLIENTE_KEY);
+  localStorage.removeItem(OBS_GENERAL_KEY);
+  localStorage.removeItem(OBS_CLIENTE_KEY);
+  
+  // También eliminar cualquier borrador existente
+  localStorage.removeItem(BORRADOR_KEY);
+};
   // 🔹 Setters para cliente y observaciones
   const guardarCliente = (nombre) => {
-    console.log("📝 Guardando cliente:", nombre);
+    console.log("🔐 Guardando cliente:", nombre);
     setCliente(nombre);
   };
   
@@ -151,7 +218,20 @@ export function usePedido() {
 
       // 5️⃣ Limpiar estado solo si usamos los estados del hook
       if (!bodyPersonalizado) {
-        limpiarPedido(); // Esto limpia el localStorage también
+        // No crear borrador cuando se envía exitosamente
+        setPedido([]);
+        setCliente("");
+        setObservacionGeneral("");
+        setObservacionCliente("");
+        
+        // Limpiar localStorage sin crear borrador
+        localStorage.removeItem(PEDIDO_KEY);
+        localStorage.removeItem(CLIENTE_KEY);
+        localStorage.removeItem(OBS_GENERAL_KEY);
+        localStorage.removeItem(OBS_CLIENTE_KEY);
+        
+        // También limpiar cualquier borrador existente
+        localStorage.removeItem(BORRADOR_KEY);
       }
 
       return true;
@@ -168,6 +248,35 @@ export function usePedido() {
     }
   };
 
+  // 🔹 Detectar cuando el usuario está saliendo de la aplicación
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Solo crear borrador si hay contenido significativo
+      if (pedido.length > 0 || cliente.trim() || observacionGeneral.trim()) {
+        crearBorrador();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Solo crear borrador si hay contenido significativo
+        if (pedido.length > 0 || cliente.trim() || observacionGeneral.trim()) {
+          crearBorrador();
+        }
+      }
+    };
+
+    // Escuchar eventos de salida de la aplicación
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [pedido, cliente, observacionGeneral]); // Dependencias para detectar cambios
+
   return {
     pedido,
     cliente,
@@ -181,5 +290,10 @@ export function usePedido() {
     guardarObservacionGeneral,
     guardarObservacionCliente,
     guardarPedido,
+    // Nuevas funciones para borradores
+    hayBorradorDisponible,
+    recuperarBorrador,
+    descartarBorrador,
+    crearBorrador
   };
 }
