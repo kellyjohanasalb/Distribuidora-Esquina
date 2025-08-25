@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Package, Send, X, Wifi, WifiOff } from 'lucide-react';
+import { Check, Package, Send, X, Wifi, WifiOff, Calendar, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrdenes } from '../Hooks/useOrdenes';
 import '../index.css';
@@ -18,6 +18,11 @@ const OrdersView = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [isConnected, setIsConnected] = useState(navigator.onLine);
+
+    // Estados para filtros de fecha
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showDateFilter, setShowDateFilter] = useState(false);
+    const [filterType, setFilterType] = useState('today'); // 'today', 'date', 'all'
 
     // Cargar órdenes al iniciar usando el hook
     useEffect(() => {
@@ -45,6 +50,72 @@ const OrdersView = () => {
             minimumFractionDigits: 0
         }).format(value || 0);
     }, []);
+
+    const formatDate = useCallback((dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-CO', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }, []);
+
+    const isToday = useCallback((dateString) => {
+        const today = new Date().toDateString();
+        const orderDate = new Date(dateString).toDateString();
+        return today === orderDate;
+    }, []);
+
+    const isSameDate = useCallback((dateString, compareDate) => {
+        const date1 = new Date(dateString).toDateString();
+        const date2 = new Date(compareDate).toDateString();
+        return date1 === date2;
+    }, []);
+
+    // Función para filtrar órdenes por fecha
+    const getFilteredOrders = useCallback(() => {
+        let filtered = [...ordenes];
+
+        // Si no hay conexión, solo mostrar pendientes
+        if (!isConnected) {
+            filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
+        }
+
+        // Aplicar filtros de fecha
+        switch (filterType) {
+            case 'today':
+                filtered = filtered.filter(o => {
+                    // Pendientes siempre se muestran
+                    if (o.status?.toLowerCase() === 'pendiente') return true;
+                    // Enviados solo si son de hoy
+                    return o.fechaAlta && isToday(o.fechaAlta);
+                });
+                break;
+            case 'date':
+                filtered = filtered.filter(o => {
+                    // Pendientes siempre se muestran
+                    if (o.status?.toLowerCase() === 'pendiente') return true;
+                    // Enviados solo si son de la fecha seleccionada
+                    return o.fechaAlta && isSameDate(o.fechaAlta, selectedDate);
+                });
+                break;
+            case 'all':
+                // Mostrar todo (ya filtrado por conexión arriba)
+                break;
+            default:
+                break;
+        }
+
+        // Ordenar: pendientes primero, luego por ID descendente
+        return filtered.sort((a, b) => {
+            const aStatus = a.status?.toLowerCase();
+            const bStatus = b.status?.toLowerCase();
+            
+            if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
+            if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
+            return (b.id || 0) - (a.id || 0);
+        });
+    }, [ordenes, isConnected, filterType, selectedDate, isToday, isSameDate]);
 
     const dismissAlert = useCallback(() => {
         setAlert({ show: false, type: '', message: '' });
@@ -120,28 +191,24 @@ const OrdersView = () => {
         }
     }, [isConnected, enviarTodosPendientes, cargarOrdenes]);
 
-    // Contadores
-    const ordenesPendientes = ordenes.filter(o => 
+    // Obtener órdenes filtradas
+    const todasOrdenes = getFilteredOrders();
+
+    // Contadores basados en órdenes filtradas
+    const ordenesPendientes = todasOrdenes.filter(o => 
         (o.status?.toLowerCase() === 'pendiente' || 
          o.status?.toLowerCase() === 'pending')
     );
     
-    const ordenesEnviadas = ordenes.filter(o => 
+    const ordenesEnviadas = todasOrdenes.filter(o => 
         (o.status?.toLowerCase() === 'enviado' || 
          o.status?.toLowerCase() === 'sent')
     );
 
-    // Filtrar y ordenar órdenes
-    const todasOrdenes = [...ordenes]
-        .filter(o => isConnected || o.status?.toLowerCase() === 'pendiente')
-        .sort((a, b) => {
-            const aStatus = a.status?.toLowerCase();
-            const bStatus = b.status?.toLowerCase();
-            
-            if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
-            if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
-            return (b.id || 0) - (a.id || 0);
-        });
+    const handleFilterChange = (type) => {
+        setFilterType(type);
+        setShowDateFilter(false);
+    };
 
     if (loading && ordenes.length === 0) {
         return (
@@ -247,9 +314,69 @@ const OrdersView = () => {
                                     </div>
                                 )}
 
+                                {/* Filtros de Fecha */}
+                                <div className="card mb-3" style={{ backgroundColor: '#fff3cd' }}>
+                                    <div className="card-body p-3">
+                                        <div className="d-flex flex-wrap align-items-center justify-content-between">
+                                            <div className="d-flex align-items-center mb-2 mb-md-0">
+                                                <Calendar size={20} className="text-warning me-2" />
+                                                <span className="fw-semibold text-dark">Filtrar por fecha:</span>
+                                            </div>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'today' ? 'btn-warning' : 'btn-outline-warning'}`}
+                                                    onClick={() => handleFilterChange('today')}
+                                                >
+                                                    📅 Hoy
+                                                </button>
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'date' ? 'btn-warning' : 'btn-outline-warning'}`}
+                                                    onClick={() => setShowDateFilter(!showDateFilter)}
+                                                >
+                                                    🗓️ Fecha específica
+                                                </button>
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'all' ? 'btn-warning' : 'btn-outline-warning'}`}
+                                                    onClick={() => handleFilterChange('all')}
+                                                >
+                                                    📋 Todos
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {showDateFilter && (
+                                            <div className="mt-3 pt-3 border-top">
+                                                <div className="row align-items-center">
+                                                    <div className="col-auto">
+                                                        <label className="form-label mb-0">Seleccionar fecha:</label>
+                                                    </div>
+                                                    <div className="col-auto">
+                                                        <input
+                                                            type="date"
+                                                            className="form-control form-control-sm"
+                                                            value={selectedDate}
+                                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                                            max={new Date().toISOString().split('T')[0]}
+                                                        />
+                                                    </div>
+                                                    <div className="col-auto">
+                                                        <button
+                                                            className="btn btn-success btn-sm"
+                                                            onClick={() => handleFilterChange('date')}
+                                                        >
+                                                            <Filter size={14} className="me-1" />
+                                                            Aplicar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                                    <h6 className="d-block d-md-none fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h6>
-                                    <h5 className="d-none d-md-block fw-bold text-warning mb-0">📋 TODOS LOS PEDIDOS</h5>
+                                    <h6 className="d-block d-md-none fw-bold text-success mb-0">📋 PEDIDOS FILTRADOS</h6>
+                                    <h5 className="d-none d-md-block fw-bold text-success mb-0">📋 PEDIDOS FILTRADOS</h5>
                                     
                                     {ordenesPendientes.length > 0 && (
                                         <button
@@ -273,6 +400,7 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
+                                {/* Vista móvil */}
                                 <div className="d-block d-md-none">
                                     {todasOrdenes.length > 0 ? (
                                         todasOrdenes.map((order) => (
@@ -289,6 +417,11 @@ const OrdersView = () => {
                                                                     {order.status}
                                                                 </span>
                                                             </div>
+                                                            {order.fechaAlta && (
+                                                                <small className="text-muted">
+                                                                    📅 {formatDate(order.fechaAlta)}
+                                                                </small>
+                                                            )}
                                                         </div>
                                                         <div className="col-12 mb-2">
                                                             <div className="text-muted small">Cliente:</div>
@@ -318,8 +451,12 @@ const OrdersView = () => {
                                         !loading && (
                                             <div className="text-center py-5">
                                                 <Package size={64} className="text-muted mb-3" />
-                                                <h5 className="text-muted">No hay órdenes disponibles</h5>
-                                                <p className="text-muted">Los pedidos aparecerán aquí una vez que sean creados.</p>
+                                                <h5 className="text-muted">No hay órdenes para mostrar</h5>
+                                                <p className="text-muted">
+                                                    {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
+                                                     filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
+                                                     'No hay pedidos disponibles.'}
+                                                </p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
                                                 </Link>
@@ -328,6 +465,7 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
+                                {/* Vista desktop */}
                                 <div className="d-none d-md-block">
                                     {todasOrdenes.length > 0 ? (
                                         <div className="table-responsive">
@@ -337,6 +475,7 @@ const OrdersView = () => {
                                                         <th>Código</th>
                                                         <th>Nombre</th>
                                                         <th>Valor</th>
+                                                        <th>Fecha</th>
                                                         <th>Estado</th>
                                                         <th>Acciones</th>
                                                     </tr>
@@ -350,6 +489,18 @@ const OrdersView = () => {
                                                             <td className="fw-bold">#{order.idPedido || order.id}</td>
                                                             <td>{order.name}</td>
                                                             <td>{formatCurrency(order.value)}</td>
+                                                            <td>
+                                                                {order.fechaAlta ? (
+                                                                    <small className="text-muted">
+                                                                        {formatDate(order.fechaAlta)}
+                                                                        {isToday(order.fechaAlta) && (
+                                                                            <span className="badge bg-info text-dark ms-1">Hoy</span>
+                                                                        )}
+                                                                    </small>
+                                                                ) : (
+                                                                    <small className="text-muted">Sin fecha</small>
+                                                                )}
+                                                            </td>
                                                             <td>
                                                                 <span className={`badge px-3 py-2 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
                                                                     {order.status}
@@ -376,8 +527,12 @@ const OrdersView = () => {
                                         !loading && (
                                             <div className="text-center py-5">
                                                 <Package size={64} className="text-muted mb-3" />
-                                                <h5 className="text-muted">No hay órdenes disponibles</h5>
-                                                <p className="text-muted">Los pedidos aparecerán aquí una vez que sean creados.</p>
+                                                <h5 className="text-muted">No hay órdenes para mostrar</h5>
+                                                <p className="text-muted">
+                                                    {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
+                                                     filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
+                                                     'No hay pedidos disponibles.'}
+                                                </p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
                                                 </Link>
@@ -390,7 +545,7 @@ const OrdersView = () => {
                             <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
                                 <div className="d-flex justify-content-around align-items-center">
                                     <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
-                                        🔍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
+                                        🛍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
                                     </Link>
                                     <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
                                         ➕ <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
@@ -405,6 +560,7 @@ const OrdersView = () => {
                 </div>
             </div>
 
+            {/* Modal de confirmación */}
             <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex="-1">
                 <div className="modal-dialog modal-dialog-centered modal-sm">
                     <div className="modal-content">
@@ -455,6 +611,7 @@ const OrdersView = () => {
 
             {showModal && <div className="modal-backdrop fade show"></div>}
 
+            {/* Botón de simulación de conexión */}
             <div className="position-fixed" style={{ bottom: '100px', right: '15px', zIndex: 1000 }}>
                 <button
                     className={`btn btn-sm ${isConnected ? 'btn-success' : 'btn-danger'}`}
