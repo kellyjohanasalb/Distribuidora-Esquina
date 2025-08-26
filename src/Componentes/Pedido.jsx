@@ -500,17 +500,16 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Botón Añadir */}
+         {/* Botón Añadir */}
         <div className="d-flex justify-content-end mb-4">
           <button
-            className="btn btn-success d-flex align-items-center"
+            className="btn btn-success rounded-pill btn-animado d-flex align-items-center"
             onClick={() => setMostrarAñadir(!mostrarAñadir)}
           >
             <span className="me-2">➕</span>
             Añadir
           </button>
         </div>
-
         {/* MODAL FLOTANTE PARA AÑADIR PRODUCTOS */}
         {mostrarAñadir && (
           <div
