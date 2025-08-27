@@ -201,45 +201,45 @@ const Catalogo = () => {
                   );
                 })}
               </div>
-            </div>
 
-            {/* Filtros activos */}
-            {(busqueda || filtroRubro) && (
-              <div className="card mt-3 shadow-sm">
-                <div className="card-body">
-                  <h6 className="card-title">Filtros activos</h6>
+              {/* Filtros activos - AHORA DENTRO DEL CARD DE CATEGORÍAS */}
+              {(busqueda || filtroRubro) && (
+                <div className="card-footer bg-light">
+                  <h6 className="card-title mb-2">Filtros activos</h6>
                   {busqueda && (
                     <div className="mb-2">
-                      <span className="badge bg-primary me-2">
+                      <span className="badge bg-primary me-2 d-inline-flex align-items-center">
                         Búsqueda: "{busqueda}"
                         <button 
                           type="button" 
                           className="btn-close btn-close-white ms-2" 
                           style={{ fontSize: '0.6rem' }}
                           onClick={() => handleBusquedaChange({ target: { value: '' } })}
+                          aria-label="Eliminar filtro de búsqueda"
                         ></button>
                       </span>
                     </div>
                   )}
                   {filtroRubro && (
                     <div className="mb-2">
-                      <span className="badge bg-info me-2">
+                      <span className="badge bg-info me-2 d-inline-flex align-items-center">
                         Categoría: {nombreRubro}
                         <button 
                           type="button" 
                           className="btn-close btn-close-white ms-2" 
                           style={{ fontSize: '0.6rem' }}
                           onClick={() => handleRubroChange({ target: { value: '' } })}
+                          aria-label="Eliminar filtro de categoría"
                         ></button>
                       </span>
                     </div>
                   )}
-                  <button className="btn btn-sm btn-outline-secondary w-100" onClick={reiniciarFiltros}>
+                  <button className="btn btn-sm btn-outline-secondary w-100 mt-2" onClick={reiniciarFiltros}>
                     Limpiar todos los filtros
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
