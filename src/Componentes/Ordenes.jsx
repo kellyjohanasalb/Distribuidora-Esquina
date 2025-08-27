@@ -242,7 +242,7 @@ const OrdersView = () => {
                                         <img
                                             src="/logo-distruidora/logo.png"
                                             alt="Distribuidora Esquina"
-                                            className="me-3 rounded shadow"
+                                            className="logo-img"
                                             style={{ width: '120px', height: '120px' }}
                                         />
                                     </div>

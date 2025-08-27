@@ -1,8 +1,8 @@
-/* eslint-disable no-unused-vars */
 import 'bootstrap/dist/css/bootstrap.min.css';
 import useCatalogo from '../Hooks/useCatalogo.js';
 import useConexion from '../Hooks/useConexion.js';
-import CarruselProductos from './CarruselProdcutos.jsx'; // ojo: revisa el nombre real
+import Select from 'react-select';
+import CarruselProductos from './CarruselProdcutos.jsx';
 import { Link } from 'react-router-dom';
 import '../index.css';
 
@@ -40,6 +40,14 @@ const Catalogo = () => {
     'Otros': '#95A5A6'
   };
 
+  // Opciones del buscador - restauradas de la versión original
+  const opcionesProductos = sugerencias.length > 0
+    ? sugerencias
+    : productos.slice(0, 10).map(p => ({
+        value: p.idArticulo,
+        label: p.descripcion,
+      }));
+
   // Agrupar productos por rubro
   const productosPorRubro = {};
   productos.forEach((producto) => {
@@ -54,9 +62,9 @@ const Catalogo = () => {
     !isLoading && productos.length === 0 && (busqueda.trim().length >= 2 || filtroRubro);
   const mostrarMensajeInicial =
     !isLoading && productos.length === 0 && busqueda.trim().length < 2 && !filtroRubro;
-  const mostrarCarrusel = !mostrarCargando && productos.length > 0;
+  const mostrarCarrusel = !mostrarCargando && !filtroRubro && !busqueda.trim();
 
-  // Buscar selección (cuando se selecciona una sugerencia)
+  // Manejo de selección en buscador - restaurado
   const handleBuscarSeleccion = (selected) => {
     if (selected) {
       seleccionarSugerencia(selected);
@@ -94,44 +102,47 @@ const Catalogo = () => {
                 />
               </Link>
               <div>
-                <h1 className="text-success fw-bold fs-1 m-0">Catálogo</h1>
+                <h1 className="text-success fw-bold fs-3 m-0" style={{ whiteSpace: 'nowrap' }}>Distribuidora Esquina</h1>
                 <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
                   {online ? '🟢 En línea' : '🔴 Offline'}
                 </small>
               </div>
             </div>
 
-            {/* Buscador */}
+            {/* Buscador - RESTAURADO con Select */}
             <div className="col-12 col-md-8">
               <div className="d-flex justify-content-md-end justify-content-center">
                 <div style={{ width: '100%', maxWidth: '400px' }}>
-                  <div className="position-relative">
-                    <input
-                      type="text"
-                      className="form-control form-control-lg shadow-sm"
-                      placeholder="¿Qué producto buscas?"
-                      value={busqueda}
-                      onChange={handleBusquedaChange}
-                      style={{
+                  <Select
+                    options={opcionesProductos}
+                    onInputChange={(inputValue) => {
+                      handleBusquedaChange({ target: { value: inputValue } });
+                    }}
+                    onChange={handleBuscarSeleccion}
+                    value={busqueda ? { value: '', label: busqueda } : null}
+                    placeholder="¿Qué producto buscas?"
+                    classNamePrefix="react-select"
+                    isClearable
+                    isSearchable
+                    noOptionsMessage={() => busqueda.length < 2 ? "Escriba al menos 2 caracteres" : "No se encontraron productos"}
+                    loadingMessage={() => "Buscando..."}
+                    filterOption={null}
+                    menuIsOpen={busqueda.length >= 2 && sugerencias.length > 0 ? undefined : false}
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
                         borderRadius: '25px',
-                        paddingLeft: '20px',
-                        paddingRight: '50px',
+                        paddingLeft: '10px',
                         fontSize: '16px',
-                        border: '2px solid #ddd'
-                      }}
-                    />
-                    <div
-                      className="position-absolute"
-                      style={{
-                        right: '15px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
+                        border: '2px solid #ddd',
+                        minHeight: '48px'
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
                         color: '#999'
-                      }}
-                    >
-                      🔍
-                    </div>
-                  </div>
+                      })
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -145,9 +156,9 @@ const Catalogo = () => {
       {/* CONTENIDO PRINCIPAL CON SIDEBAR */}
       <div className="container-fluid my-3">
         <div className="row">
-          {/* SIDEBAR - CATEGORÍAS */}
-          <div className="col-lg-3 col-md-4 mb-4">
-            <div className="card shadow-sm">
+          {/* SIDEBAR - CATEGORÍAS - Solo visible en pantallas grandes */}
+          <div className="col-lg-3 d-none d-lg-block">
+            <div className="card shadow-sm" style={{ position: 'sticky', top: '20px', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
               <div className="card-header bg-light">
                 <h5 className="mb-0 fw-bold">CATEGORÍAS</h5>
               </div>
@@ -199,27 +210,120 @@ const Catalogo = () => {
                   <h6 className="card-title">Filtros activos</h6>
                   {busqueda && (
                     <div className="mb-2">
-                      <span className="badge bg-primary me-2">Búsqueda: {busqueda}</span>
+                      <span className="badge bg-primary me-2">
+                        Búsqueda: "{busqueda}"
+                        <button 
+                          type="button" 
+                          className="btn-close btn-close-white ms-2" 
+                          style={{ fontSize: '0.6rem' }}
+                          onClick={() => handleBusquedaChange({ target: { value: '' } })}
+                        ></button>
+                      </span>
                     </div>
                   )}
                   {filtroRubro && (
                     <div className="mb-2">
-                      <span className="badge bg-info me-2">Categoría: {nombreRubro}</span>
+                      <span className="badge bg-info me-2">
+                        Categoría: {nombreRubro}
+                        <button 
+                          type="button" 
+                          className="btn-close btn-close-white ms-2" 
+                          style={{ fontSize: '0.6rem' }}
+                          onClick={() => handleRubroChange({ target: { value: '' } })}
+                        ></button>
+                      </span>
                     </div>
                   )}
                   <button className="btn btn-sm btn-outline-secondary w-100" onClick={reiniciarFiltros}>
-                    Limpiar filtros
+                    Limpiar todos los filtros
                   </button>
                 </div>
               </div>
             )}
           </div>
 
+          {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
+          <div className="d-lg-none mb-3">
+            <div className="container">
+              {/* Categorías en móvil */}
+              <div className="row mb-3">
+                <div className="col-12">
+                  <div className="d-flex gap-2 overflow-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+                    <button
+                      className={`btn ${!filtroRubro ? 'btn-success' : 'btn-outline-success'} flex-shrink-0`}
+                      onClick={() => handleRubroChange({ target: { value: '' } })}
+                    >
+                      Todos ({productos.length})
+                    </button>
+                    {rubros.map((rubro) => {
+                      const productosEnRubro = productos.filter((p) => p.idRubro === rubro.id).length;
+                      const colorCategoria = coloresCategoria[rubro.descripcion] || coloresCategoria['Otros'];
+                      const isActive = filtroRubro === rubro.id.toString();
+
+                      return (
+                        <button
+                          key={rubro.id}
+                          className={`btn flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
+                          style={{
+                            backgroundColor: isActive ? colorCategoria : 'transparent',
+                            borderColor: colorCategoria,
+                            color: isActive ? 'white' : colorCategoria
+                          }}
+                          onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
+                        >
+                          {rubro.descripcion} ({productosEnRubro})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Filtros activos móvil */}
+              {(busqueda || filtroRubro) && (
+                <div className="row mb-3">
+                  <div className="col-12">
+                    <div className="d-flex flex-wrap gap-2 align-items-center">
+                      <small className="text-muted me-2">Filtros:</small>
+                      {busqueda && (
+                        <span className="badge bg-primary">
+                          Búsqueda: "{busqueda}"
+                          <button 
+                            type="button" 
+                            className="btn-close btn-close-white ms-2" 
+                            style={{ fontSize: '0.6rem' }}
+                            onClick={() => handleBusquedaChange({ target: { value: '' } })}
+                          ></button>
+                        </span>
+                      )}
+                      {filtroRubro && (
+                        <span className="badge bg-info">
+                          {nombreRubro}
+                          <button 
+                            type="button" 
+                            className="btn-close btn-close-white ms-2" 
+                            style={{ fontSize: '0.6rem' }}
+                            onClick={() => handleRubroChange({ target: { value: '' } })}
+                          ></button>
+                        </span>
+                      )}
+                      <button className="btn btn-sm btn-outline-secondary" onClick={reiniciarFiltros}>
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* CONTENIDO PRINCIPAL */}
-          <div className="col-lg-9 col-md-8">
+          <div className="col-lg-9 col-12">
             {/* Título y contador */}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h2 className="text-success fw-bold m-0">{nombreRubro}</h2>
+            <div className="d-flex justify-content-between align-items-center mb-3 px-3 px-lg-0">
+              <h2 className="text-success fw-bold m-0">
+                {filtroRubro ? nombreRubro : 'Catálogo'}
+              </h2>
               <span className="text-muted">
                 {productos.length} producto{productos.length !== 1 ? 's' : ''}
               </span>
@@ -237,12 +341,18 @@ const Catalogo = () => {
               ) : mostrarMensajeInicial ? (
                 <div className="text-center text-muted py-5">
                   <h5>Bienvenido al catálogo</h5>
-                  <p>Seleccione una categoría para ver los productos.</p>
+                  <p>Use el buscador o seleccione una categoría para ver los productos.</p>
+                  <small>Escriba al menos 2 caracteres para buscar productos</small>
                 </div>
               ) : mostrarSinResultados ? (
                 <div className="text-center text-muted py-5">
                   <h5>No se encontraron resultados</h5>
-                  <p>Intenta con otros términos de búsqueda o selecciona una categoría diferente.</p>
+                  {busqueda && busqueda.length < 2 && (
+                    <p>Escriba al menos 2 caracteres para buscar productos.</p>
+                  )}
+                  {busqueda && busqueda.length >= 2 && (
+                    <p>Intenta con otros términos de búsqueda o verifica la ortografía.</p>
+                  )}
                   <button className="btn btn-link text-success" onClick={reiniciarFiltros}>
                     Mostrar todos los productos
                   </button>
@@ -253,8 +363,8 @@ const Catalogo = () => {
 
                   return (
                     <div key={rubro} className="mb-5">
-                      {/* Mostrar título solo si no hay filtro */}
-                      {(!filtroRubro || !rubroActivo) && (
+                      {/* Mostrar título de rubro solo cuando no hay filtro específico */}
+                      {(!filtroRubro || Object.keys(productosPorRubro).length > 1) && (
                         <div className="d-flex justify-content-between align-items-center mb-3">
                           <h5 className="mb-0 fw-semibold d-flex align-items-center" style={{ color: colorCategoria }}>
                             <span>{rubro}</span>

@@ -259,47 +259,52 @@ useEffect(() => {
 
 
   // Función para enviar pedido (estado enviado)
-     const enviarPedido = async () => {
-    if (!puedeEnviar()) {
-      if (!isOnline) {
-        alert("No hay conexión a internet.");
-        return;
-      }
-      if (!esPedidoValido()) {
-        alert("El pedido no es válido.");
-        return;
-      }
+const enviarPedido = async () => {
+  if (!puedeEnviar()) {
+    if (!isOnline) {
+      alert("No hay conexión a internet.");
       return;
     }
-    const confirmacion = window.confirm(`¿Enviar este pedido? Cliente: ${cliente}`);
-    if (!confirmacion) return;
-    setIsEnviando(true);
-    try {
-      const productosMapeados = pedido.map(p => {
-        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-        return {
-          idArticulo: p.idArticulo,
-          cantidad: p.cantidad,
-          precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
-          observation: p.observacion?.trim() || null
-        };
-      });
-      const body = {
-        clientName: cliente.trim(),
-        products: productosMapeados,
-        fechaAlta: new Date().toISOString(),
-        observation: observacionGeneral?.trim() || null
-      };
-      await guardarPedido(body);
-      limpiarPedido();
-      navigate('/ordenes', { replace: true });
-    } catch (error) {
-      console.error("❌ Error completo:", error);
-      alert("Error al enviar el pedido.");
-    } finally {
-      setIsEnviando(false);
+    if (!esPedidoValido()) {
+      alert("El pedido no es válido.");
+      return;
     }
-  };
+    return;
+  }
+  const confirmacion = window.confirm(`¿Enviar este pedido? Cliente: ${cliente}`);
+  if (!confirmacion) return;
+  setIsEnviando(true);
+  try {
+    const productosMapeados = pedido.map(p => {
+      const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+      return {
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+        precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
+        observation: p.observacion?.trim() || null
+      };
+    });
+    const body = {
+      clientName: cliente.trim(),
+      products: productosMapeados,
+      fechaAlta: new Date().toISOString(),
+      observation: observacionGeneral?.trim() || null
+    };
+    await guardarPedido(body);
+    limpiarPedido();
+    
+    // ✅ Mostrar mensaje de éxito y permanecer en la página
+    alert(`✅ Pedido enviado exitosamente para ${cliente}. Puedes crear un nuevo pedido.`);
+    
+    // ❌ LÍNEA ELIMINADA: navigate('/ordenes', { replace: true });
+    
+  } catch (error) {
+    console.error("❌ Error completo:", error);
+    alert("Error al enviar el pedido.");
+  } finally {
+    setIsEnviando(false);
+  }
+};
 
 
   return (
@@ -361,12 +366,12 @@ useEffect(() => {
                 <img
                   src="/logo-distruidora/logo.png"
                   alt="Distribuidora Esquina"
-                  className="me-3 rounded shadow"
-                  style={{ width: '120px', height: '120px' }}
+                  className="logo-img me-3" 
+                  style={{ width: '80px', height: '80px' }}  
                 />
                 <div>
-                  <h1 className="h4 mb-0 fw-bold text-success">Distribuidora</h1>
-                  <small className="fw-semibold text-success">ESQUINA</small>
+                  <h1 className="h4 mb-0 fw-bold text-success">Distribuidora Esquina</h1>
+            {/*       <small className="fw-semibold text-success">ESQUINA</small> */}
                 </div>
               </div>
             </div>
