@@ -1,64 +1,40 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Star, Sparkles } from 'lucide-react';
+import useProductosNuevos from '../Hooks/useProdcutosNuevos';
+
+const IMAGEN_POR_DEFECTO =
+  'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
 
 const CarruselProductos = () => {
+  const { productos, loading } = useProductosNuevos();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [itemsToShow, setItemsToShow] = useState(4);
 
-  const productosNuevos = [
-    {
-      id: 1,
-      imagen: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&h=200&fit=crop",
-      descripcion: "Aceite Girasol Premium 1.5L",
-      esNuevo: true
-    },
-    {
-      id: 2,
-      imagen: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=300&h=200&fit=crop",
-      descripcion: "Arroz Integral Premium 1kg",
-      esNuevo: true
-    },
-    {
-      id: 3,
-      imagen: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=300&h=200&fit=crop",
-      descripcion: "Café Molido Premium 500g",
-      esNuevo: true
-    },
-    {
-      id: 4,
-      imagen: "https://images.unsplash.com/photo-1574448857443-dc1d7e9c4dad?w=300&h=200&fit=crop",
-      descripcion: "Miel Natural 750ml",
-      esNuevo: true
-    },
-    {
-      id: 5,
-      imagen: "https://images.unsplash.com/photo-1628518254107-11c9dc78cbf6?w=300&h=200&fit=crop",
-      descripcion: "Pasta Italiana 500g",
-      esNuevo: true
-    },
-    {
-      id: 6,
-      imagen: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=300&h=200&fit=crop",
-      descripcion: "Quinoa Orgánica 500g",
-      esNuevo: true
-    }
-  ];
+  // placeholders para cuando no hay productos del backend (o mientras carga)
+  const placeholders = Array.from({ length: 6 }, (_, i) => ({
+    id: `ph-${i}`,
+    imagen: IMAGEN_POR_DEFECTO,
+    descripcion: 'Próximamente',
+    esNuevo: true,
+  }));
 
-  const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
+  // siempre habrá algo que renderizar: productos reales o placeholders
+  const items = (productos && productos.length > 0) ? productos : placeholders;
 
-  // Responsive: ajustar items según pantalla
+  // Responsive: ajustar items según pantalla (igual a tu versión)
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1200) {
-        setItemsToShow(4); // Desktop XL: 4 items
+        setItemsToShow(4);
       } else if (window.innerWidth >= 992) {
-        setItemsToShow(3); // Desktop: 3 items
+        setItemsToShow(3);
       } else if (window.innerWidth >= 768) {
-        setItemsToShow(2); // Tablet: 2 items
+        setItemsToShow(2);
       } else if (window.innerWidth >= 576) {
-        setItemsToShow(2); // Mobile grande: 2 items
+        setItemsToShow(2);
       } else {
-        setItemsToShow(1); // Mobile pequeño: 1 item
+        setItemsToShow(1);
       }
     };
 
@@ -67,35 +43,31 @@ const CarruselProductos = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Auto-play del carrusel
+  // Auto-play del carrusel (usa items, no rompe si son placeholders)
   useEffect(() => {
+    if (items.length === 0) return;
     const interval = setInterval(() => {
       setCurrentSlide(prev => {
-        const maxSlides = Math.max(0, productosNuevos.length - itemsToShow);
+        const maxSlides = Math.max(0, items.length - itemsToShow);
         return prev >= maxSlides ? 0 : prev + 1;
       });
     }, 4000);
-
     return () => clearInterval(interval);
-  }, [productosNuevos.length, itemsToShow]);
+  }, [items.length, itemsToShow]);
 
   const nextSlide = () => {
-    const maxSlides = Math.max(0, productosNuevos.length - itemsToShow);
-    setCurrentSlide(prev => prev >= maxSlides ? 0 : prev + 1);
+    const maxSlides = Math.max(0, items.length - itemsToShow);
+    setCurrentSlide(prev => (prev >= maxSlides ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    const maxSlides = Math.max(0, productosNuevos.length - itemsToShow);
-    setCurrentSlide(prev => prev <= 0 ? maxSlides : prev - 1);
+    const maxSlides = Math.max(0, items.length - itemsToShow);
+    setCurrentSlide(prev => (prev <= 0 ? maxSlides : prev - 1));
   };
 
-  const goToSlide = (index) => {
-    setCurrentSlide(index);
-  };
+  const goToSlide = (index) => setCurrentSlide(index);
 
-  if (productosNuevos.length === 0) return null;
-
-  const maxSlides = Math.max(0, productosNuevos.length - itemsToShow);
+  const maxSlides = Math.max(0, items.length - itemsToShow);
   const translateX = -(currentSlide * (100 / itemsToShow));
 
   return (
@@ -113,43 +85,43 @@ const CarruselProductos = () => {
 
         {/* Carrusel */}
         <div className="position-relative" style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div 
-            className="overflow-hidden" 
-            style={{ 
+          <div
+            className="overflow-hidden"
+            style={{
               borderRadius: '8px',
               backgroundColor: 'transparent',
-              padding: window.innerWidth < 768 ? '10px' : '15px' // Menos padding en mobile
+              padding: window.innerWidth < 768 ? '10px' : '15px'
             }}
           >
-            <div 
+            <div
               className="d-flex"
               style={{
                 transform: `translateX(${translateX}%)`,
                 transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                gap: window.innerWidth < 576 ? '8px' : window.innerWidth < 768 ? '10px' : '12px' // Gap adaptativo
+                gap: window.innerWidth < 576 ? '8px' : window.innerWidth < 768 ? '10px' : '12px'
               }}
             >
-              {productosNuevos.map((producto) => (
-                <div 
-                  key={producto.id} 
+              {items.map((producto) => (
+                <div
+                  key={producto.id}
                   className="flex-shrink-0"
-                  style={{ 
+                  style={{
                     width: `calc(${100 / itemsToShow}% - ${
-                      window.innerWidth < 576 ? '8px' : 
+                      window.innerWidth < 576 ? '8px' :
                       window.innerWidth < 768 ? '10px' : '12px'
-                    })` // Ancho adaptativo
+                    })`
                   }}
                 >
-                  <div 
+                  <div
                     className="card border-0 h-100 position-relative bg-white"
                     style={{
                       borderRadius: window.innerWidth < 768 ? '6px' : '8px',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       cursor: 'pointer',
-                      height: window.innerWidth < 576 ? '120px' : // Mobile pequeño
-                              window.innerWidth < 768 ? '130px' : // Mobile/Tablet
-                              '140px' // Desktop
+                      height: window.innerWidth < 576 ? '120px' :
+                              window.innerWidth < 768 ? '130px' :
+                              '140px'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-3px)';
@@ -162,9 +134,9 @@ const CarruselProductos = () => {
                   >
                     {/* Badge de nuevo */}
                     <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
-                      <span 
+                      <span
                         className="badge bg-success text-white px-2 py-1 rounded-end"
-                        style={{ 
+                        style={{
                           fontSize: window.innerWidth < 768 ? '0.6rem' : '0.65rem',
                           fontWeight: '600',
                           letterSpacing: '0.5px'
@@ -176,9 +148,9 @@ const CarruselProductos = () => {
                     </div>
 
                     {/* Imagen que ocupa toda la card */}
-                    <div 
+                    <div
                       className="position-relative overflow-hidden w-100 h-100"
-                      style={{ 
+                      style={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa'
                       }}
@@ -187,21 +159,21 @@ const CarruselProductos = () => {
                         src={producto.imagen || IMAGEN_POR_DEFECTO}
                         alt={producto.descripcion}
                         className="w-100 h-100"
-                        style={{ 
+                        style={{
                           objectFit: 'cover',
                           transition: 'transform 0.3s ease'
                         }}
-                        onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
+                        onError={(e) => { e.currentTarget.src = IMAGEN_POR_DEFECTO; }}
                         onMouseEnter={(e) => {
-                          e.target.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.transform = 'scale(1.05)';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.transform = 'scale(1)';
+                          e.currentTarget.style.transform = 'scale(1)';
                         }}
                       />
-                      
+
                       {/* Overlay con gradiente para mejor legibilidad del badge */}
-                      <div 
+                      <div
                         className="position-absolute top-0 start-0 w-100"
                         style={{
                           height: window.innerWidth < 768 ? '40px' : '50px',
@@ -219,9 +191,9 @@ const CarruselProductos = () => {
           {/* Controles de navegación */}
           {maxSlides > 0 && (
             <>
-              <button 
+              <button
                 className="btn btn-white position-absolute top-50 translate-middle-y shadow"
-                style={{ 
+                style={{
                   left: window.innerWidth < 768 ? '-8px' : '-12px',
                   width: window.innerWidth < 768 ? '30px' : '35px',
                   height: window.innerWidth < 768 ? '30px' : '35px',
@@ -239,9 +211,9 @@ const CarruselProductos = () => {
                 <ChevronLeft size={window.innerWidth < 768 ? 14 : 16} className="text-success" />
               </button>
 
-              <button 
+              <button
                 className="btn btn-white position-absolute top-50 translate-middle-y shadow"
-                style={{ 
+                style={{
                   right: window.innerWidth < 768 ? '-8px' : '-12px',
                   width: window.innerWidth < 768 ? '30px' : '35px',
                   height: window.innerWidth < 768 ? '30px' : '35px',

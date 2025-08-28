@@ -2,17 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff, Calendar, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrdenes } from '../Hooks/useOrdenes';
+import axios from 'axios'; // Asegurar que axios esté importado
 import '../index.css';
 
+
 const OrdersView = () => {
-    const { 
-        ordenes, 
-        loading, 
-        cargarOrdenes, 
-        enviarPedidoBackend, 
-        enviarTodosPendientes 
+    const {
+        ordenes,
+        loading,
+        cargarOrdenes,
+        enviarPedidoBackend,
+        enviarTodosPendientes
     } = useOrdenes();
-    
+
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +26,13 @@ const OrdersView = () => {
     const [showDateFilter, setShowDateFilter] = useState(false);
     const [filterType, setFilterType] = useState('today'); // 'today', 'date', 'all'
 
+    // NUEVOS ESTADOS PARA MODAL DE DETALLES - AGREGAR AQUÍ
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+
+    const baseURL = "https://remito-send-back.vercel.app"; // Definir baseURL
+
     // Cargar órdenes al iniciar usando el hook
     useEffect(() => {
         cargarOrdenes();
@@ -33,10 +42,10 @@ const OrdersView = () => {
     useEffect(() => {
         const handleOnline = () => setIsConnected(true);
         const handleOffline = () => setIsConnected(false);
-        
+
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        
+
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
@@ -52,12 +61,18 @@ const OrdersView = () => {
     }, []);
 
     const formatDate = useCallback((dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-CO', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
+        try {
+            // El formato ISO con 'Z' al final es válido para el constructor Date
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error formateando fecha:', error);
+            return 'Fecha inválida';
+        }
     }, []);
 
     const isToday = useCallback((dateString) => {
@@ -70,6 +85,50 @@ const OrdersView = () => {
         const date1 = new Date(dateString).toDateString();
         const date2 = new Date(compareDate).toDateString();
         return date1 === date2;
+    }, []);
+
+    // NUEVAS FUNCIONES PARA MODAL DE DETALLES - AGREGAR AQUÍ
+    const handleViewOrderDetails = useCallback(async (order) => {
+        // Solo permitir en pedidos enviados
+        if (order.status?.toLowerCase() !== 'enviado' && order.status?.toLowerCase() !== 'sent') {
+            return;
+        }
+
+        setLoadingDetails(true);
+        setShowDetailsModal(true);
+
+        try {
+            const response = await axios.get(`${baseURL}/api/pedidos/${order.idPedido || order.id}`);
+            const data = response.data;
+
+            // Normalizar nombres de campos para manejar diferentes formatos del API
+            const normalizedData = {
+                ...data,
+                // Usar el campo correcto de la base de datos
+                fechaAlta: data.fechaPedido || data.fechPredIds || data['fechap@clio'] || data.fechaAlta,
+                clientName: data.clientName || data.name,
+                idPedido: data.idPedido || data.id,
+                total: data.total || data.value
+            };
+
+            setSelectedOrderDetails(normalizedData);
+            console.log('Datos normalizados:', normalizedData);
+        } catch (error) {
+            console.error('Error cargando detalles:', error);
+            setAlert({
+                show: true,
+                type: 'error',
+                message: 'Error al cargar los detalles del pedido'
+            });
+            setShowDetailsModal(false);
+        } finally {
+            setLoadingDetails(false);
+        }
+    }, [baseURL]);
+
+    const closeDetailsModal = useCallback(() => {
+        setShowDetailsModal(false);
+        setSelectedOrderDetails(null);
     }, []);
 
     // Función para filtrar órdenes por fecha
@@ -110,7 +169,7 @@ const OrdersView = () => {
         return filtered.sort((a, b) => {
             const aStatus = a.status?.toLowerCase();
             const bStatus = b.status?.toLowerCase();
-            
+
             if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
             if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
             return (b.id || 0) - (a.id || 0);
@@ -123,10 +182,10 @@ const OrdersView = () => {
 
     const handleSendOrder = useCallback((order) => {
         if (!isConnected) {
-            setAlert({ 
-                show: true, 
-                type: 'error', 
-                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.' 
+            setAlert({
+                show: true,
+                type: 'error',
+                message: 'No hay conexión a internet. Verifique su conexión e intente nuevamente.'
             });
             return;
         }
@@ -140,14 +199,14 @@ const OrdersView = () => {
         try {
             const resultado = await enviarPedidoBackend(selectedOrder);
             const nuevoId = resultado.nuevoId || resultado.idPedido || selectedOrder.id;
-            setAlert({ 
-                show: true, 
-                type: 'success', 
-                message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}` 
+            setAlert({
+                show: true,
+                type: 'success',
+                message: `✅ Pedido enviado exitosamente! Nuevo ID: #${nuevoId}`
             });
             await cargarOrdenes();
         } catch (error) {
-            const errorMessage = error.message 
+            const errorMessage = error.message
                 ? `❌ ${error.message}`
                 : '❌ Error al enviar el pedido. Por favor, intente nuevamente.';
             setAlert({ show: true, type: 'error', message: errorMessage });
@@ -160,31 +219,31 @@ const OrdersView = () => {
 
     const handleSendAllPending = useCallback(async () => {
         if (!isConnected) {
-            setAlert({ 
-                show: true, 
-                type: 'error', 
-                message: 'No hay conexión a internet.' 
+            setAlert({
+                show: true,
+                type: 'error',
+                message: 'No hay conexión a internet.'
             });
             return;
         }
-        
+
         const confirmacion = window.confirm('¿Está seguro que desea enviar todos los pedidos pendientes?');
         if (!confirmacion) return;
-        
+
         setIsLoading(true);
         try {
             const res = await enviarTodosPendientes();
-            setAlert({ 
-                show: true, 
-                type: res.errores > 0 ? 'warning' : 'success', 
+            setAlert({
+                show: true,
+                type: res.errores > 0 ? 'warning' : 'success',
                 message: res.mensaje || 'Pedidos enviados correctamente'
             });
             await cargarOrdenes();
         } catch (err) {
-            setAlert({ 
-                show: true, 
-                type: 'error', 
-                message: err.message || 'Error al enviar pedidos pendientes' 
+            setAlert({
+                show: true,
+                type: 'error',
+                message: err.message || 'Error al enviar pedidos pendientes'
             });
         } finally {
             setIsLoading(false);
@@ -195,14 +254,14 @@ const OrdersView = () => {
     const todasOrdenes = getFilteredOrders();
 
     // Contadores basados en órdenes filtradas
-    const ordenesPendientes = todasOrdenes.filter(o => 
-        (o.status?.toLowerCase() === 'pendiente' || 
-         o.status?.toLowerCase() === 'pending')
+    const ordenesPendientes = todasOrdenes.filter(o =>
+    (o.status?.toLowerCase() === 'pendiente' ||
+        o.status?.toLowerCase() === 'pending')
     );
-    
-    const ordenesEnviadas = todasOrdenes.filter(o => 
-        (o.status?.toLowerCase() === 'enviado' || 
-         o.status?.toLowerCase() === 'sent')
+
+    const ordenesEnviadas = todasOrdenes.filter(o =>
+    (o.status?.toLowerCase() === 'enviado' ||
+        o.status?.toLowerCase() === 'sent')
     );
 
     const handleFilterChange = (type) => {
@@ -222,7 +281,7 @@ const OrdersView = () => {
             </div>
         );
     }
-    
+
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#f7dc6f' }}>
             <div className="container-fluid px-2 px-md-4 py-3">
@@ -343,7 +402,7 @@ const OrdersView = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        
+
                                         {showDateFilter && (
                                             <div className="mt-3 pt-3 border-top">
                                                 <div className="row align-items-center">
@@ -377,7 +436,7 @@ const OrdersView = () => {
                                 <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
                                     <h6 className="d-block d-md-none fw-bold text-success mb-0">📋 PEDIDOS FILTRADOS</h6>
                                     <h5 className="d-none d-md-block fw-bold text-success mb-0">📋 PEDIDOS FILTRADOS</h5>
-                                    
+
                                     {ordenesPendientes.length > 0 && (
                                         <button
                                             className="btn btn-success px-3 py-1"
@@ -400,7 +459,7 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
-                                {/* Vista móvil */}
+                                {/* Vista móvil - MODIFICAR EL NOMBRE DEL CLIENTE */}
                                 <div className="d-block d-md-none">
                                     {todasOrdenes.length > 0 ? (
                                         todasOrdenes.map((order) => (
@@ -425,7 +484,18 @@ const OrdersView = () => {
                                                         </div>
                                                         <div className="col-12 mb-2">
                                                             <div className="text-muted small">Cliente:</div>
-                                                            <div className="fw-semibold">{order.name}</div>
+                                                            {/* CAMBIO PRINCIPAL - NOMBRE CLICKEABLE SOLO EN ENVIADOS */}
+                                                            <div
+                                                                className={`fw-semibold ${order.status === 'Enviado' ? 'text-primary' : ''}`}
+                                                                style={{
+                                                                    cursor: order.status === 'Enviado' ? 'pointer' : 'default',
+                                                                    textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
+                                                                }}
+                                                                onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
+                                                                title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
+                                                            >
+                                                                {order.name}
+                                                            </div>
                                                         </div>
                                                         <div className="col-12 mb-2">
                                                             <div className="text-muted small">Valor:</div>
@@ -454,8 +524,8 @@ const OrdersView = () => {
                                                 <h5 className="text-muted">No hay órdenes para mostrar</h5>
                                                 <p className="text-muted">
                                                     {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
-                                                     filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
-                                                     'No hay pedidos disponibles.'}
+                                                        filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
+                                                            'No hay pedidos disponibles.'}
                                                 </p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
@@ -465,7 +535,7 @@ const OrdersView = () => {
                                     )}
                                 </div>
 
-                                {/* Vista desktop */}
+                                {/* Vista desktop - MODIFICAR LA CELDA DEL NOMBRE */}
                                 <div className="d-none d-md-block">
                                     {todasOrdenes.length > 0 ? (
                                         <div className="table-responsive">
@@ -487,7 +557,20 @@ const OrdersView = () => {
                                                             className={order.status === 'Enviado' ? 'table-success' : ''}
                                                         >
                                                             <td className="fw-bold">#{order.idPedido || order.id}</td>
-                                                            <td>{order.name}</td>
+                                                            {/* CAMBIO PRINCIPAL - NOMBRE CLICKEABLE SOLO EN ENVIADOS */}
+                                                            <td>
+                                                                <span
+                                                                    className={`${order.status === 'Enviado' ? 'text-primary' : ''}`}
+                                                                    style={{
+                                                                        cursor: order.status === 'Enviado' ? 'pointer' : 'default',
+                                                                        textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
+                                                                    }}
+                                                                    onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
+                                                                    title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
+                                                                >
+                                                                    {order.name}
+                                                                </span>
+                                                            </td>
                                                             <td>{formatCurrency(order.value)}</td>
                                                             <td>
                                                                 {order.fechaAlta ? (
@@ -530,8 +613,8 @@ const OrdersView = () => {
                                                 <h5 className="text-muted">No hay órdenes para mostrar</h5>
                                                 <p className="text-muted">
                                                     {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
-                                                     filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
-                                                     'No hay pedidos disponibles.'}
+                                                        filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
+                                                            'No hay pedidos disponibles.'}
                                                 </p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
@@ -541,11 +624,11 @@ const OrdersView = () => {
                                     )}
                                 </div>
                             </div>
-                            
+
                             <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
                                 <div className="d-flex justify-content-around align-items-center">
                                     <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
-                                        🛍 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
+                                        🛒 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
                                     </Link>
                                     <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
                                         ➕ <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
@@ -560,7 +643,144 @@ const OrdersView = () => {
                 </div>
             </div>
 
-            {/* Modal de confirmación */}
+            {/* NUEVO MODAL DE DETALLES - AGREGAR ANTES DEL MODAL DE CONFIRMACIÓN */}
+            <div className={`modal fade ${showDetailsModal ? 'show' : ''}`}
+                style={{ display: showDetailsModal ? 'block' : 'none' }}
+                tabIndex="-1">
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title d-flex align-items-center">
+                                <Package size={20} className="me-2" />
+                                Detalles del Pedido #{selectedOrderDetails?.idPedido || selectedOrderDetails?.id}
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={closeDetailsModal}
+                                disabled={loadingDetails}
+                            ></button>
+                        </div>
+                        <div className="modal-body">
+                            {loadingDetails ? (
+                                <div className="text-center py-4">
+                                    <div className="spinner-border text-success" role="status">
+                                        <span className="visually-hidden">Cargando detalles...</span>
+                                    </div>
+                                    <p className="mt-2 text-muted">Cargando información del pedido...</p>
+                                </div>
+                            ) : selectedOrderDetails ? (
+                                <div className="row">
+                                    {/* Información general */}
+                                    <div className="col-12 mb-4">
+                                        <div className="card bg-light">
+                                            <div className="card-body">
+                                                <h6 className="card-title text-success mb-3">Información General</h6>
+                                                <div className="row">
+                                                    <div className="col-md-6 mb-2">
+                                                        <strong>Cliente:</strong>
+                                                        <div>{selectedOrderDetails.clientName}</div>
+                                                    </div>
+                                                    <div className="col-md-6 mb-2">
+                                                        <strong>Código:</strong>
+                                                        <div>#{selectedOrderDetails.idPedido || selectedOrderDetails.id}</div>
+                                                    </div>
+                                                    <div className="col-md-6 mb-2">
+                                                        <strong>Fecha:</strong>
+                                                        <div>
+                                                            {selectedOrderDetails.fechaAlta ?
+                                                                formatDate(selectedOrderDetails.fechaAlta) :
+                                                                'Sin fecha'
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-md-6 mb-2">
+                                                        <strong>Total:</strong>
+                                                        <div className="text-success fw-bold">
+                                                            {formatCurrency(selectedOrderDetails.total)}
+                                                        </div>
+                                                    </div>
+                                                    {selectedOrderDetails.observation &&
+                                                        selectedOrderDetails.observation.trim() !== "" &&
+                                                        selectedOrderDetails.observation.trim() !== "Sin observaciones" && (
+                                                            <div className="col-12 mt-2">
+                                                                <strong>Observaciones Generales:</strong>
+                                                                <div className="bg-white p-2 rounded border">
+                                                                    {selectedOrderDetails.observation}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Productos */}
+                                    <div className="col-12">
+                                        <h6 className="text-success mb-3">Artículos</h6>
+                                        <div className="table-responsive">
+                                            <table className="table table-sm">
+                                                <thead className="table-success">
+                                                    <tr>
+                                                        <th>Artículo</th>
+                                                        <th>Cantidad</th>
+                                                        <th>Precio Unit.</th>
+                                                        <th>Subtotal</th>
+                                                        <th>Observaciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(selectedOrderDetails.productos || []).map((product, index) => (
+                                                        <tr key={index}>
+                                                            <td className="fw-semibold">
+                                                                <div>{product.descripcion || product.nombre || product.idArticulo}</div>
+                                                                <small className="text-muted">Código: {product.idArticulo}</small>
+                                                            </td>
+                                                            <td>{product.cantidad || 0}</td>
+                                                            <td>{formatCurrency(parseFloat(product.precio || 0))}</td>
+                                                            <td className="text-success">
+                                                                {formatCurrency((product.cantidad || 0) * parseFloat(product.precio || 0))}
+                                                            </td>
+                                                            <td>
+                                                                {product.observation &&
+                                                                    product.observation.trim() !== "" ? (
+                                                                    <small className="text-muted">
+                                                                        {product.observation}
+                                                                    </small>
+                                                                ) : (
+                                                                    <small className="text-muted">Sin observaciones</small>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-muted">No se pudieron cargar los detalles del pedido.</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={closeDetailsModal}
+                                disabled={loadingDetails}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {showDetailsModal && <div className="modal-backdrop fade show"></div>}
+
+            {/* Modal de confirmación - MANTENER EL MODAL EXISTENTE */}
             <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex="-1">
                 <div className="modal-dialog modal-dialog-centered modal-sm">
                     <div className="modal-content">
@@ -611,7 +831,7 @@ const OrdersView = () => {
 
             {showModal && <div className="modal-backdrop fade show"></div>}
 
-            {/* Botón de simulación de conexión */}
+            {/* Botón de simulación de conexión - MANTENER EL EXISTENTE */}
             <div className="position-fixed" style={{ bottom: '100px', right: '15px', zIndex: 1000 }}>
                 <button
                     className={`btn btn-sm ${isConnected ? 'btn-success' : 'btn-danger'}`}
