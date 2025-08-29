@@ -624,33 +624,20 @@ const OrdersView = () => {
                                     )}
                                 </div>
                             </div>
+ <nav className="fixed-bottom mb-4 bg-transparent">
+        <div className="d-flex justify-content-around align-items-center">
+          <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            📋<span className="nav-label">Catálogo</span>
 
-                            <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
-  <div className="d-flex justify-content-around align-items-center">
-
-    {/* Catálogo */}
-    <Link to="/" className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
-      🛒 
-      {/* Texto tablet/desktop normal */}
-      <span className="nav-label d-none d-md-inline fw-semibold text-white">Catálogo</span>
-    </Link>
-
-    {/* Pedido */}
-    <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
-      ➕ 
-      <span className="d-inline d-md-none fw-semibold text-white" style={{ fontSize: "0.75rem" }}>Pedido</span>
-      <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
-    </Link>
-
-    {/* Órdenes */}
-    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
-      📄 
-      <span className="d-inline d-md-none fw-semibold text-white" style={{ fontSize: "0.75rem" }}>Órdenes</span>
-      <span className="d-none d-md-inline fw-semibold text-white">Órdenes</span>
-    </Link>
-
-  </div>
-</nav>
+          </Link>
+          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            ➕ <span className="fw-semibold text-white">Pedido</span>
+          </button>
+          <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+            📄 <span className="fw-semibold text-white">Órdenes</span>
+          </Link>
+        </div>
+      </nav>
 
                         </div>
                     </div>
