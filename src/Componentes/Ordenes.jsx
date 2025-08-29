@@ -631,11 +631,8 @@ const OrdersView = () => {
     {/* Catálogo */}
     <Link to="/" className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
       🛒 
-      {/* Texto mobile más pequeño */}
-      <span className="nav-label">Catálogo</span>
-
       {/* Texto tablet/desktop normal */}
-      <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
+      <span className="nav-label d-none d-md-inline fw-semibold text-white">Catálogo</span>
     </Link>
 
     {/* Pedido */}

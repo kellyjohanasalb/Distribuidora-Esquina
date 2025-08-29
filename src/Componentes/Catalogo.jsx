@@ -109,7 +109,7 @@ const handleBuscarSeleccion = (selected) => {
                   onError={(e) => {
                     e.target.src = IMAGEN_POR_DEFECTO;
                   }}
-                  style={{ cursor: 'pointer', maxHeight: '1050px' }}
+               
                 />
               </Link>
               <div>

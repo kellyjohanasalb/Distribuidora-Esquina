@@ -55,7 +55,7 @@ header {
    🖼️ LOGO Y TÍTULO
 ======================== */
 .logo-img {
-  max-height: 80px;   /* ✅ antes height fijo → ahora responsive */
+  max-height: 120px;   /* ✅ antes height fijo → ahora responsive */
   width: auto;
   border-radius: 16px;
   object-fit: contain; /* ✅ no se deforma */
