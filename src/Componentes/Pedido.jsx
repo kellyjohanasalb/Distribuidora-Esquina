@@ -389,14 +389,13 @@ const enviarPedido = async () => {
                 >
                   <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
                   <input
-                    type="text"
-                    value={cliente}
-                    onChange={handleChange}
-                    placeholder="Nombre cliente"
-                    className="form-control form-control-sm border-0 bg-transparent text-white"
-                    style={{ width: '150px' }}
-                    maxLength={128}
-                  />
+  type="text"
+  value={cliente}
+  onChange={handleChange}
+  placeholder="Nombre cliente"
+  className="form-control form-control-sm border-0 bg-transparent text-white cliente-input"
+  maxLength={128}
+/>
                 </div>
 
                 {/* FOTO DE USUARIO */}
@@ -847,7 +846,8 @@ const enviarPedido = async () => {
       <nav className="fixed-bottom mb-4 bg-transparent">
         <div className="d-flex justify-content-around align-items-center">
           <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-            📋 <span className="fw-semibold text-white">Catálogo</span>
+            📋<span className="nav-label">Catálogo</span>
+
           </Link>
           <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             ➕ <span className="fw-semibold text-white">Pedido</span>

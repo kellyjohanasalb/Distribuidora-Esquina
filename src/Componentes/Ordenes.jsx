@@ -626,18 +626,35 @@ const OrdersView = () => {
                             </div>
 
                             <nav className="fixed-bottom" style={{ zIndex: 100, marginBottom: '15px' }}>
-                                <div className="d-flex justify-content-around align-items-center">
-                                    <Link to="/" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
-                                        🛒 <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
-                                    </Link>
-                                    <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
-                                        ➕ <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
-                                    </Link>
-                                    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-1 gap-md-2 px-3 px-md-4 py-2 shadow rounded-pill">
-                                        📄 <span className="d-none d-md-inline fw-semibold text-white">Órdenes</span>
-                                    </Link>
-                                </div>
-                            </nav>
+  <div className="d-flex justify-content-around align-items-center">
+
+    {/* Catálogo */}
+    <Link to="/" className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
+      🛒 
+      {/* Texto mobile más pequeño */}
+      <span className="nav-label">Catálogo</span>
+
+      {/* Texto tablet/desktop normal */}
+      <span className="d-none d-md-inline fw-semibold text-white">Catálogo</span>
+    </Link>
+
+    {/* Pedido */}
+    <Link to="/pedido" className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
+      ➕ 
+      <span className="d-inline d-md-none fw-semibold text-white" style={{ fontSize: "0.75rem" }}>Pedido</span>
+      <span className="d-none d-md-inline fw-semibold text-white">Pedido</span>
+    </Link>
+
+    {/* Órdenes */}
+    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-1 px-3 py-2 shadow rounded-pill">
+      📄 
+      <span className="d-inline d-md-none fw-semibold text-white" style={{ fontSize: "0.75rem" }}>Órdenes</span>
+      <span className="d-none d-md-inline fw-semibold text-white">Órdenes</span>
+    </Link>
+
+  </div>
+</nav>
+
                         </div>
                     </div>
                 </div>

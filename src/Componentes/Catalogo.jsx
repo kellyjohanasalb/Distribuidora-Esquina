@@ -64,14 +64,25 @@ const Catalogo = () => {
     !isLoading && productos.length === 0 && busqueda.trim().length < 2 && !filtroRubro;
   const mostrarCarrusel = !mostrarCargando && !filtroRubro && !busqueda.trim();
 
-  // Manejo de selección en buscador - restaurado
-  const handleBuscarSeleccion = (selected) => {
-    if (selected) {
-      seleccionarSugerencia(selected);
-    } else {
-      handleBusquedaChange({ target: { value: '' } });
-    }
-  };
+ // Manejo de selección en buscador mejorado para móvil/tablet
+const handleBuscarSeleccion = (selected) => {
+  if (selected) {
+    seleccionarSugerencia(selected);
+
+    // En móviles: aseguramos que se reinicie filtro de categoría
+    handleRubroChange({ target: { value: '' } });
+
+    // Hacer scroll automático al producto seleccionado
+    setTimeout(() => {
+      const elemento = document.getElementById(`producto-${selected.value}`);
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  } else {
+    handleBusquedaChange({ target: { value: '' } });
+  }
+};
 
   const rubroActivo = rubros.find((r) => r.id.toString() === filtroRubro);
   const nombreRubro = rubroActivo?.descripcion || 'Todos los productos';
@@ -248,7 +259,8 @@ const Catalogo = () => {
               {/* Categorías en móvil */}
               <div className="row mb-3">
                 <div className="col-12">
-                  <div className="d-flex gap-2 overflow-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+                  <div className="d-flex gap-2 overflow-auto pb-2" 
+     style={{ scrollbarWidth: 'thin', position: 'sticky', top: '70px', background: '#fff', zIndex: 10 }}>
                     <button
                       className={`btn ${!filtroRubro ? 'btn-success' : 'btn-outline-success'} flex-shrink-0`}
                       onClick={() => handleRubroChange({ target: { value: '' } })}
@@ -261,18 +273,18 @@ const Catalogo = () => {
                       const isActive = filtroRubro === rubro.id.toString();
 
                       return (
-                        <button
-                          key={rubro.id}
-                          className={`btn flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
-                          style={{
-                            backgroundColor: isActive ? colorCategoria : 'transparent',
-                            borderColor: colorCategoria,
-                            color: isActive ? 'white' : colorCategoria
-                          }}
-                          onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
-                        >
-                          {rubro.descripcion} ({productosEnRubro})
-                        </button>
+                      <button
+  key={rubro.id}
+  className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
+  style={{
+    backgroundColor: isActive ? colorCategoria : 'transparent',
+    borderColor: colorCategoria,
+    color: isActive ? 'white' : colorCategoria
+  }}
+  onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
+>
+  {rubro.descripcion} ({productosEnRubro})
+</button>
                       );
                     })}
                   </div>
@@ -379,8 +391,9 @@ const Catalogo = () => {
                       <div className="row">
                         {productosDelRubro.map((producto) => (
                           <div
-                            key={producto.idArticulo}
-                            className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
+                             key={producto.idArticulo}
+  id={`producto-${producto.idArticulo}`}
+  className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
                           >
                             <div className="card h-100 catalogo-card shadow-sm border-0">
                               <img

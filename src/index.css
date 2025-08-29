@@ -55,10 +55,17 @@ header {
    🖼️ LOGO Y TÍTULO
 ======================== */
 .logo-img {
-  height: 120px;
+  max-height: 80px;   /* ✅ antes height fijo → ahora responsive */
   width: auto;
   border-radius: 16px;
-  object-fit: cover;
+  object-fit: contain; /* ✅ no se deforma */
+}
+
+.user-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;  /* ✅ evita distorsión */
 }
 
 h1 {
@@ -82,16 +89,26 @@ h1 {
 }
 
 .catalogo-img {
-  width: 100%;                /* Asegura que use todo el ancho del contenedor padre */
-  aspect-ratio: 1 / 1;        /* 🟣 Hace que el contenedor sea cuadrado */
-  object-fit: contain;        /* Mantiene la imagen completa dentro del cuadro */
+  width: 100%;
+  aspect-ratio: 1 / 1;        
+  object-fit: contain;
   padding: 0.5rem;
   background-color: #fff;
   margin-bottom: 0.5rem;
-  border-radius: 12px;        /* Un poco más redondeado */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Ligero ajuste de sombra */
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Título de producto más limpio en mobile */
+.catalogo-card .card-title {
+  font-size: 15px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* máximo 2 líneas */
+  -webkit-box-orient: vertical;
+}
 
 /* ========================
    🧩 GRID DE PRODUCTOS
@@ -131,7 +148,10 @@ h1 {
    🎯 REACT SELECT AJUSTES
 ======================== */
 .react-select__control {
-  min-height: 36px;
+  border-radius: 30px !important;
+  min-height: 50px !important;
+  padding: 0 10px;
+  font-size: 16px;
 }
 
 .react-select__placeholder {
@@ -141,7 +161,6 @@ h1 {
 /* ========================
    🔢 INPUTS PERSONALIZADOS
 ======================== */
-/* Ocultar flechas en inputs tipo número (Chrome, Safari, Edge) */
 .input-cantidad::-webkit-inner-spin-button,
 .input-cantidad::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -156,20 +175,32 @@ h1 {
   height: 80px;
 }
 
-/* En tu CSS global */
 @media (max-width: 768px) {
   .card-header {
     padding: 0.5rem !important;
   }
+
   .fixed-bottom {
-    padding: 0 5px;
+    padding: 8px; /* más aire en mobile */
+  }
+
+  .btn {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .logo-img {
+    max-height: 60px; /* logo más chico en móvil */
+  }
+
+  h1 {
+    font-size: 1.3rem;
   }
 }
 
-
-/* Estilos adicionales para el carrusel - Agregar a index.css */
-
-/* Carrusel de productos nuevos */
+/* ========================
+   🎠 CARRUSEL
+======================== */
 .carrusel-container {
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
   position: relative;
@@ -237,7 +268,6 @@ h1 {
   pointer-events: none;
 }
 
-/* Botones de navegación */
 .carrusel-btn {
   width: 50px;
   height: 50px;
@@ -248,7 +278,6 @@ h1 {
   color: #16a34a;
 }
 
-/* Animación para botones */
 .btn-animado {
   transition: all 0.3s ease-in-out;
 }
@@ -260,4 +289,71 @@ h1 {
 
 .btn-animado:active {
   transform: scale(0.95);
+}
+
+/* ========================
+   🟢 BOTONES DE CATEGORÍAS
+======================== */
+.btn-categoria {
+  border-radius: 20px;
+  font-size: 14px;
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+
+/* ========================
+   📌 CATEGORÍAS STICKY EN MOBILE
+======================== */
+.categorias-mobile {
+  position: sticky;
+  top: 65px;
+  background: #fff;
+  z-index: 20;
+  padding: 8px 0;
+}
+@media (max-width: 992px) { /* tablets y abajo */
+  .logo-img {
+    max-height: 60px; /* más compacto */
+  }
+
+  .user-img {
+    width: 32px;
+    height: 32px;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 576px) { /* mobile */
+  .logo-img {
+    max-height: 50px;
+  }
+
+  .user-img {
+    width: 28px;
+    height: 28px;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+  }
+
+  /* input nombre cliente más corto */
+  .cliente-input {
+    max-width: 140px;
+  }
+}
+
+.nav-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+}
+
+@media (max-width: 576px) {
+  .nav-label {
+    font-size: 0.7rem;  /* texto más compacto en mobile */
+  }
 }
