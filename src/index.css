@@ -321,6 +321,10 @@ h1 {
     height: 32px;
   }
 
+  .ordenes-cliente-label {
+    font-size: 0.9rem !important; /* más compacto en tablet */
+  }
+
   header h1 {
     font-size: 1.4rem;
   }
@@ -341,8 +345,8 @@ h1 {
   }
 
   /* input nombre cliente más corto */
-  .cliente-input {
-    max-width: 140px;
+   .ordenes-cliente-label {
+    font-size: 0.8rem !important;
   }
 }
 

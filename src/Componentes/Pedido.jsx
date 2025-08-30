@@ -363,12 +363,12 @@ const enviarPedido = async () => {
           <div className="row align-items-center">
             <div className="col-12 col-md-6">
               <div className="d-flex align-items-center">
-                <img
-                  src="/logo-distruidora/logo.png"
-                  alt="Distribuidora Esquina"
-                  className="logo-img me-3" 
-                  style={{ width: '80px', height: '80px' }}  
-                />
+              <img
+  src="/logo-distruidora/logo.png"
+  alt="Distribuidora Esquina"
+  className="logo-img"
+/>
+
                 <div>
                   <h1 className="h4 mb-0 fw-bold text-success">Distribuidora Esquina</h1>
             {/*       <small className="fw-semibold text-success">ESQUINA</small> */}
@@ -393,7 +393,7 @@ const enviarPedido = async () => {
   value={cliente}
   onChange={handleChange}
   placeholder="Nombre cliente"
-  className="form-control form-control-sm border-0 bg-transparent text-white cliente-input"
+  className="form-control form-control-sm border-0 bg-transparent text-white ordenes-cliente-label"
   maxLength={128}
 />
                 </div>

@@ -298,12 +298,12 @@ const OrdersView = () => {
                             <div className="card-header py-2 py-md-3" style={{ backgroundColor: '#f7dc6f', borderRadius: '15px 15px 0 0' }}>
                                 <div className="row align-items-center">
                                     <div className="col-auto d-none d-sm-block">
-                                        <img
-                                            src="/logo-distruidora/logo.png"
-                                            alt="Distribuidora Esquina"
-                                            className="logo-img"
-                                            style={{ width: '120px', height: '120px' }}
-                                        />
+                                       <img
+  src="/logo-distruidora/logo.png"
+  alt="Distribuidora Esquina"
+  className="logo-img"
+/>
+
                                     </div>
                                     <div className="col">
                                         <h1 className="mb-0 text-success fw-bold fs-6 fs-md-5">Estados de órdenes</h1>
@@ -331,7 +331,7 @@ const OrdersView = () => {
                                                 style={{ backgroundColor: '#298143' }}
                                             >
                                                 <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
-                                                <small className="fw-semibold text-white">Cliente</small>
+                                                <small className="fw-semibold text-white ordenes-cliente-label">Cliente</small>
                                             </div>
 
                                             <div
@@ -630,9 +630,9 @@ const OrdersView = () => {
             📋<span className="nav-label">Catálogo</span>
 
           </Link>
-          <button className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+          <Link to='/pedido' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             ➕ <span className="fw-semibold text-white">Pedido</span>
-          </button>
+          </Link>
           <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
             📄 <span className="fw-semibold text-white">Órdenes</span>
           </Link>
