@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
@@ -18,8 +17,6 @@ const useCatalogo = () => {
 
   const [busqueda, setBusqueda] = useState('');
   const [filtroRubro, setFiltroRubro] = useState('');
-  const [cursor, setCursor] = useState('');
-  const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [sugerencias, setSugerencias] = useState([]);
   const [debounceTimer, setDebounceTimer] = useState(null);
@@ -29,83 +26,56 @@ const useCatalogo = () => {
   useEffect(() => {
     if (navigator.onLine) {
       fetchRubros();
-      cargarCatalogoCompleto();
+      cargarTodosCatalogo(); // Nuevo método que usa /api/products/all
     } else {
       // Modo offline: aplicar filtros a datos locales
       aplicarFiltrosLocales();
     }
   }, []);
 
-  // Debounce solo para búsqueda, filtro de rubro es inmediato
+  // Debounce para búsqueda, filtro de rubro es inmediato
   useEffect(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
     
-    // Si cambió el rubro, aplicar inmediatamente sin debounce
-    if (filtroRubro !== undefined) {
-      const newTimer = setTimeout(() => {
-        if (navigator.onLine && !catalogoCompleto && busqueda.length >= 2) {
-          resetProductos();
-        } else {
-          aplicarFiltrosLocales();
-        }
-      }, busqueda.length >= 2 ? 300 : 0); // Debounce solo si hay búsqueda activa
-      
-      setDebounceTimer(newTimer);
-    } else {
-      // Solo cambió la búsqueda
+    const newTimer = setTimeout(() => {
       aplicarFiltrosLocales();
-    }
+    }, busqueda.length >= 2 ? 300 : 0);
+    
+    setDebounceTimer(newTimer);
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [busqueda, filtroRubro]);
 
-  // Cargar catálogo completo (solo online)
-  const cargarCatalogoCompleto = async () => {
+  // NUEVO: Cargar todo el catálogo de una vez usando /api/products/all
+  const cargarTodosCatalogo = async () => {
     if (!navigator.onLine) return;
     
     setIsLoading(true);
-    let todosLosProductos = [];
-    let currentCursor = '';
-    let hasMore = true;
 
     try {
-      while (hasMore) {
-        const params = {
-          limit: 100, // Mayor límite para cargar más rápido
-          cursor: currentCursor || undefined
-        };
-
-        const response = await axios.get(
-          'https://remito-send-back.vercel.app/api/products/catalog',
-          { params }
-        );
-
-        const { items, pagination } = response.data;
-        
-        const productosFormateados = items.map(producto => ({
-          ...producto,
-          precioVenta: formatearPrecio(producto.precioVenta)
-        }));
-
-        todosLosProductos = [...todosLosProductos, ...productosFormateados];
-        currentCursor = pagination.nextCursor || '';
-        hasMore = pagination.hasNextPage;
-      }
+      const response = await axios.get('https://remito-send-back.vercel.app/api/products/all');
+      
+      const productosFormateados = response.data.map(producto => ({
+        ...producto,
+        precioVenta: formatearPrecio(producto.precioVenta)
+      }));
 
       // Guardar catálogo completo en localStorage
-      localStorage.setItem('catalogoCompleto', JSON.stringify(todosLosProductos));
-      setTodosCatalogo(todosLosProductos);
+      localStorage.setItem('catalogoCompleto', JSON.stringify(productosFormateados));
+      setTodosCatalogo(productosFormateados);
       setCatalogoCompleto(true);
 
       // Aplicar filtros iniciales
-      aplicarFiltrosLocales(todosLosProductos);
+      aplicarFiltrosLocales(productosFormateados);
 
     } catch (error) {
       console.error('Error al cargar catálogo completo:', error);
-      // Fallback a método anterior si falla
-      fetchProductos(true);
+      // Fallback: intentar usar datos guardados localmente
+      if (todosCatalogo.length > 0) {
+        aplicarFiltrosLocales();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -123,13 +93,10 @@ const useCatalogo = () => {
         p.codigo?.toLowerCase().includes(termino) ||
         p.detalle1?.toLowerCase().includes(termino)
       );
-    } else if (busqueda.trim().length === 0) {
-      // Si no hay búsqueda, mostrar todos (no filtrar por búsqueda)
-    } else {
-      // Si hay 1 carácter, no filtrar por búsqueda aún pero no mostrar todos
-      // Mantener el filtro anterior o mostrar conjunto vacío
+    } else if (busqueda.trim().length > 0 && busqueda.trim().length < 2) {
+      // Si hay 1 carácter, no mostrar productos aún
       if (!filtroRubro) {
-        productosFiltrados = []; // No mostrar productos con solo 1 carácter
+        productosFiltrados = [];
       }
     }
 
@@ -146,7 +113,6 @@ const useCatalogo = () => {
     }
 
     setProductos(productosFiltrados);
-    setHasNextPage(false); // En modo local no hay paginación
   };
 
   // Obtener rubros
@@ -161,75 +127,12 @@ const useCatalogo = () => {
     }
   };
 
-  // Reset de productos (modo online paginado)
-  const resetProductos = async () => {
-    setProductos([]);
-    setCursor('');
-    setHasNextPage(true);
-    await fetchProductos(true);
-  };
-
-  // Obtener productos paginados (solo para modo online sin catálogo completo)
-  const fetchProductos = async (initial = false) => {
-    if (!navigator.onLine) {
-      aplicarFiltrosLocales();
-      return;
-    }
-
-    if (catalogoCompleto) {
-      aplicarFiltrosLocales();
-      return;
-    }
-
-    if (!hasNextPage || isLoading) return;
-    setIsLoading(true);
-
-    const params = {
-      limit: 20,
-      cursor: initial ? undefined : cursor
-    };
-
-    if (busqueda.trim().length >= 2) {
-      params.description = busqueda.trim();
-    }
-    if (filtroRubro && !isNaN(Number(filtroRubro))) {
-      params.rubro = Number(filtroRubro);
-    }
-
-    try {
-      const response = await axios.get(
-        'https://remito-send-back.vercel.app/api/products/catalog',
-        { params }
-      );
-
-      const { items, pagination } = response.data;
-
-      const productosFormateados = items.map(producto => ({
-        ...producto,
-        precioVenta: formatearPrecio(producto.precioVenta)
-      }));
-
-      setProductos(prev =>
-        initial ? productosFormateados : [...prev, ...productosFormateados]
-      );
-
-      setCursor(pagination.nextCursor || '');
-      setHasNextPage(pagination.hasNextPage);
-    } catch (error) {
-      console.error('Error al obtener productos:', error);
-      // En caso de error, intentar usar datos locales
-      aplicarFiltrosLocales();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const formatearPrecio = (precio) => {
     const numero = parseFloat(precio);
     return isNaN(numero) ? '0.00' : numero.toFixed(2);
   };
 
-  // Generar sugerencias mejoradas con mejor lógica
+  // Generar sugerencias mejoradas
   const generarSugerencias = useCallback((valor) => {
     if (!valor || valor.length < 2) {
       setSugerencias([]);
@@ -237,14 +140,12 @@ const useCatalogo = () => {
     }
 
     const valorLimpio = valor.toLowerCase().trim();
-    const catalogoAUsar = catalogoCompleto ? todosCatalogo : productos;
     
-    const sugerenciasFiltradas = catalogoAUsar
+    const sugerenciasFiltradas = todosCatalogo
       .filter(producto => {
         const descripcion = producto.descripcion.toLowerCase();
         const codigo = producto.codigo?.toLowerCase() || '';
         
-        // Mejorar coincidencias: palabras que empiecen con el término O que lo contengan
         return descripcion.includes(valorLimpio) || 
                codigo.includes(valorLimpio) ||
                descripcion.split(' ').some(palabra => palabra.startsWith(valorLimpio));
@@ -256,7 +157,7 @@ const useCatalogo = () => {
       }));
     
     setSugerencias(sugerenciasFiltradas);
-  }, [productos, todosCatalogo, catalogoCompleto]);
+  }, [todosCatalogo]);
 
   const handleBusquedaChange = (e) => {
     const valor = e.target.value;
@@ -282,6 +183,11 @@ const useCatalogo = () => {
     setSugerencias([]);
   };
 
+  // NUEVO: Función para scroll al top
+  const scrollAlTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return {
     productos,
     rubros,
@@ -291,11 +197,12 @@ const useCatalogo = () => {
     handleBusquedaChange,
     handleRubroChange,
     seleccionarSugerencia,
-    fetchProductos,
-    hasNextPage: catalogoCompleto ? false : hasNextPage,
+    fetchProductos: cargarTodosCatalogo, // Mantener compatibilidad
+    hasNextPage: false, // Ya no hay paginación
     isLoading,
     reiniciarFiltros,
-    catalogoCompleto
+    catalogoCompleto,
+    scrollAlTop // Nueva función exportada
   };
 };
 

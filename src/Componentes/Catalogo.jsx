@@ -4,6 +4,7 @@ import useConexion from '../Hooks/useConexion.js';
 import Select from 'react-select';
 import CarruselProductos from './CarruselProdcutos.jsx';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import '../index.css';
 
 const Catalogo = () => {
@@ -16,17 +17,30 @@ const Catalogo = () => {
     handleBusquedaChange,
     handleRubroChange,
     seleccionarSugerencia,
-    fetchProductos,
-    hasNextPage,
+    // fetchProductos, // Comentado porque ya no se usa
     isLoading,
     reiniciarFiltros,
-    catalogoCompleto
+    scrollAlTop
   } = useCatalogo();
+  
+  const IMAGEN_POR_DEFECTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa' stroke='%23198754' stroke-width='2' rx='8'/%3E%3Cg transform='translate(150,80)'%3E%3Cpath d='M-20,-10 L20,-10 L20,10 L-20,10 Z M-15,-5 L15,-5 L15,5 L-15,5 Z' fill='%23198754' opacity='0.3'/%3E%3Ccircle cx='8' cy='-2' r='3' fill='%23198754'/%3E%3Cpath d='M-10,8 L-5,3 L0,8 L10,0 L15,5 L15,8 Z' fill='%23198754'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-size='14' fill='%23198754' text-anchor='middle' font-weight='500'%3EProducto sin imagen%3C/text%3E%3C/svg%3E";
 
   const online = useConexion();
 
-  const IMAGEN_POR_DEFECTO =
-    'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
+  // Estado para el modal de imagen
+  const [modalImage, setModalImage] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+
+  // Detectar scroll para mostrar botón "scroll to top"
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Colores para cada categoría
   const coloresCategoria = {
@@ -40,7 +54,7 @@ const Catalogo = () => {
     'Otros': '#95A5A6'
   };
 
-  // Opciones del buscador - restauradas de la versión original
+  // Opciones del buscador
   const opcionesProductos = sugerencias.length > 0
     ? sugerencias
     : productos.slice(0, 10).map(p => ({
@@ -64,25 +78,23 @@ const Catalogo = () => {
     !isLoading && productos.length === 0 && busqueda.trim().length < 2 && !filtroRubro;
   const mostrarCarrusel = !mostrarCargando && !filtroRubro && !busqueda.trim();
 
- // Manejo de selección en buscador mejorado para móvil/tablet
-const handleBuscarSeleccion = (selected) => {
-  if (selected) {
-    seleccionarSugerencia(selected);
+  // Manejo de selección en buscador mejorado para móvil/tablet
+  const handleBuscarSeleccion = (selected) => {
+    if (selected) {
+      seleccionarSugerencia(selected);
+      handleRubroChange({ target: { value: '' } });
 
-    // En móviles: aseguramos que se reinicie filtro de categoría
-    handleRubroChange({ target: { value: '' } });
-
-    // Hacer scroll automático al producto seleccionado
-    setTimeout(() => {
-      const elemento = document.getElementById(`producto-${selected.value}`);
-      if (elemento) {
-        elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 300);
-  } else {
-    handleBusquedaChange({ target: { value: '' } });
-  }
-};
+      // Hacer scroll automático al producto seleccionado
+      setTimeout(() => {
+        const elemento = document.getElementById(`producto-${selected.value}`);
+        if (elemento) {
+          elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    } else {
+      handleBusquedaChange({ target: { value: '' } });
+    }
+  };
 
   const rubroActivo = rubros.find((r) => r.id.toString() === filtroRubro);
   const nombreRubro = rubroActivo?.descripcion || 'Todos los productos';
@@ -91,6 +103,16 @@ const handleBuscarSeleccion = (selected) => {
   const formatearPrecio = (precio) => {
     const numero = parseFloat(precio);
     return isNaN(numero) ? '0,00' : numero.toFixed(2).replace('.', ',');
+  };
+
+  // Función para abrir modal de imagen
+  const abrirModalImagen = (imagenSrc, descripcion) => {
+    setModalImage({ src: imagenSrc, alt: descripcion });
+  };
+
+  // Función para cerrar modal de imagen
+  const cerrarModalImagen = () => {
+    setModalImage(null);
   };
 
   return (
@@ -109,7 +131,6 @@ const handleBuscarSeleccion = (selected) => {
                   onError={(e) => {
                     e.target.src = IMAGEN_POR_DEFECTO;
                   }}
-               
                 />
               </Link>
               <div>
@@ -120,7 +141,7 @@ const handleBuscarSeleccion = (selected) => {
               </div>
             </div>
 
-            {/* Buscador - RESTAURADO con Select */}
+            {/* Buscador */}
             <div className="col-12 col-md-8">
               <div className="d-flex justify-content-md-end justify-content-center">
                 <div style={{ width: '100%', maxWidth: '400px' }}>
@@ -213,7 +234,7 @@ const handleBuscarSeleccion = (selected) => {
                 })}
               </div>
 
-              {/* Filtros activos - AHORA DENTRO DEL CARD DE CATEGORÍAS */}
+              {/* Filtros activos */}
               {(busqueda || filtroRubro) && (
                 <div className="card-footer bg-light">
                   <h6 className="card-title mb-2">Filtros activos</h6>
@@ -256,11 +277,11 @@ const handleBuscarSeleccion = (selected) => {
           {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
           <div className="d-lg-none mb-3">
             <div className="container">
-              {/* Categorías en móvil */}
+              {/* Categorías en móvil - SIN FONDO */}
               <div className="row mb-3">
                 <div className="col-12">
-                  <div className="d-flex gap-2 overflow-auto pb-2" 
-     style={{ scrollbarWidth: 'thin', position: 'sticky', top: '70px', background: '#fff', zIndex: 10 }}>
+                  <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile" 
+                       style={{ scrollbarWidth: 'thin' }}>
                     <button
                       className={`btn ${!filtroRubro ? 'btn-success' : 'btn-outline-success'} flex-shrink-0`}
                       onClick={() => handleRubroChange({ target: { value: '' } })}
@@ -273,18 +294,18 @@ const handleBuscarSeleccion = (selected) => {
                       const isActive = filtroRubro === rubro.id.toString();
 
                       return (
-                      <button
-  key={rubro.id}
-  className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
-  style={{
-    backgroundColor: isActive ? colorCategoria : 'transparent',
-    borderColor: colorCategoria,
-    color: isActive ? 'white' : colorCategoria
-  }}
-  onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
->
-  {rubro.descripcion} ({productosEnRubro})
-</button>
+                        <button
+                          key={rubro.id}
+                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
+                          style={{
+                            backgroundColor: isActive ? colorCategoria : 'transparent',
+                            borderColor: colorCategoria,
+                            color: isActive ? 'white' : colorCategoria
+                          }}
+                          onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
+                        >
+                          {rubro.descripcion} ({productosEnRubro})
+                        </button>
                       );
                     })}
                   </div>
@@ -391,9 +412,9 @@ const handleBuscarSeleccion = (selected) => {
                       <div className="row">
                         {productosDelRubro.map((producto) => (
                           <div
-                             key={producto.idArticulo}
-  id={`producto-${producto.idArticulo}`}
-  className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
+                            key={producto.idArticulo}
+                            id={`producto-${producto.idArticulo}`}
+                            className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
                           >
                             <div className="card h-100 catalogo-card shadow-sm border-0">
                               <img
@@ -403,8 +424,10 @@ const handleBuscarSeleccion = (selected) => {
                                 style={{
                                   height: '180px',
                                   objectFit: 'cover',
-                                  borderRadius: '8px 8px 0 0'
+                                  borderRadius: '8px 8px 0 0',
+                                  cursor: 'pointer'
                                 }}
+                                onClick={() => abrirModalImagen(producto.imagen || IMAGEN_POR_DEFECTO, producto.descripcion)}
                                 onError={(e) => {
                                   e.target.src = IMAGEN_POR_DEFECTO;
                                 }}
@@ -433,29 +456,36 @@ const handleBuscarSeleccion = (selected) => {
                   );
                 })
               )}
-
-              {hasNextPage && !catalogoCompleto && (
-                <div className="text-center mt-4">
-                  <button
-                    onClick={() => fetchProductos()}
-                    className="btn btn-success btn-lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Cargando...
-                      </>
-                    ) : (
-                      'Ver más productos'
-                    )}
-                  </button>
-                </div>
-              )}
             </main>
           </div>
         </div>
       </div>
+
+      {/* BOTÓN SCROLL TO TOP */}
+      {showScrollTop && (
+        <button
+          className="scroll-to-top-btn"
+          onClick={scrollAlTop}
+          aria-label="Volver al inicio"
+        >
+          ↑
+        </button>
+      )}
+
+      {/* MODAL DE IMAGEN */}
+      {modalImage && (
+        <div className="image-modal-backdrop" onClick={cerrarModalImagen}>
+          <button className="image-modal-close" onClick={cerrarModalImagen} aria-label="Cerrar">
+            ×
+          </button>
+          <img
+            src={modalImage.src}
+            alt={modalImage.alt}
+            className="image-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 };
