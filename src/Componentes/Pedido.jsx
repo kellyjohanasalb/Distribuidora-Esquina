@@ -709,26 +709,28 @@ const DistribuidoraEsquina = () => {
                               </small>
                             )}
                           </td>
-                          <td style={{width: '140px'}}>
-                            <div className="d-flex gap-2 flex-wrap justify-content-center">
-                              <button
-                                className="btn btn-sm btn-info"
-                                onClick={() => setImagenModal(imagen)}
-                              >
-                                Ver Imagen
-                              </button>
-                              <button
-                                className="btn btn-sm btn-danger"
-                                onClick={() => {
-                                  if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
-                                    eliminarProducto(item.idArticulo);
-                                  }
-                                }}
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-                          </td>
+                         <td style={{width: '140px'}}>
+  <div className="d-flex flex-nowrap gap-1 justify-content-center">
+    <button
+      className="btn btn-sm btn-info"
+      onClick={() => setImagenModal(imagen)}
+      style={{ whiteSpace: 'nowrap' }}
+    >
+      Ver Imagen
+    </button>
+    <button
+      className="btn btn-sm btn-danger"
+      onClick={() => {
+        if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
+          eliminarProducto(item.idArticulo);
+        }
+      }}
+      style={{ whiteSpace: 'nowrap' }}
+    >
+      Eliminar
+    </button>
+  </div>
+</td>
                         </tr>
                       );
                     })}
