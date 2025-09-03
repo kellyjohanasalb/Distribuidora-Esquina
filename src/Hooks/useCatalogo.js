@@ -189,21 +189,22 @@ const useCatalogo = () => {
   };
 
   return {
-    productos,
-    rubros,
-    busqueda,
-    filtroRubro,
-    sugerencias,
-    handleBusquedaChange,
-    handleRubroChange,
-    seleccionarSugerencia,
-    fetchProductos: cargarTodosCatalogo, // Mantener compatibilidad
-    hasNextPage: false, // Ya no hay paginación
-    isLoading,
-    reiniciarFiltros,
-    catalogoCompleto,
-    scrollAlTop // Nueva función exportada
-  };
+  productos,
+  rubros,
+  busqueda,
+  filtroRubro,
+  sugerencias,
+  handleBusquedaChange,
+  handleRubroChange,
+  seleccionarSugerencia,
+  fetchProductos: cargarTodosCatalogo,
+  hasNextPage: false,
+  isLoading,
+  reiniciarFiltros,
+  catalogoCompleto,
+  scrollAlTop,
+  todosCatalogo // 👈 nuevo
+};
 };
 
 export default useCatalogo;

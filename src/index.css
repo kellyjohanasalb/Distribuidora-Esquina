@@ -524,4 +524,40 @@ h1 {
   .card-body {
     padding: 1rem !important;
   }
+
+  .btn-categoria {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 992px) {
+  .react-select__control {
+    margin-bottom: 12px;
+  }
+
+  .categorias-mobile {
+    top: 120px;
+    background: var(--amarillo-bg);
+    z-index: 15;
+    padding: 6px 0;
+  }
+}
+
+
+
+/* Estilo personalizado para los inputs de cantidad */
+.cantidad-input {
+  border: 1px solid #0d6efd;       /* azul Bootstrap */
+  background-color: #fff;
+  color: #0d6efd;
+  box-shadow: none;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Color azul al enfocar */
+.cantidad-input:focus {
+  border: 1px solid #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  outline: none;
 }

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useConexion from '../Hooks/useConexion.js';
-import {usePedido} from '../Hooks/usePedido.js';
+import { usePedido } from '../Hooks/usePedido.js';
 import useCatalogo from '../Hooks/useCatalogo.js'
 import '../index.css';
 
@@ -18,7 +18,7 @@ const DistribuidoraEsquina = () => {
   const modalRef = useRef(null);
   const modalContainerRef = useRef(null);
 
-  const IMAGEN_POR_DEFECTO = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg';
+  const IMAGEN_POR_DEFECTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa' stroke='%23198754' stroke-width='2' rx='8'/%3E%3Cg transform='translate(150,80)'%3E%3Cpath d='M-20,-10 L20,-10 L20,10 L-20,10 Z M-15,-5 L15,-5 L15,5 L-15,5 Z' fill='%23198754' opacity='0.3'/%3E%3Ccircle cx='8' cy='-2' r='3' fill='%23198754'/%3E%3Cpath d='M-10,8 L-5,3 L0,8 L10,0 L15,5 L15,8 Z' fill='%23198754'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-size='14' fill='%23198754' text-anchor='middle' font-weight='500'%3EProducto sin imagen%3C/text%3E%3C/svg%3E";
 
   const {
     pedido,
@@ -63,9 +63,9 @@ const DistribuidoraEsquina = () => {
     if (borrador) {
       const parsedBorrador = JSON.parse(borrador);
       // Solo mostrar si el borrador tiene contenido válido
-      if (parsedBorrador.pedido.length > 0 || 
-          parsedBorrador.cliente.trim().length > 0 || 
-          parsedBorrador.observacionGeneral.trim().length > 0) {
+      if (parsedBorrador.pedido.length > 0 ||
+        parsedBorrador.cliente.trim().length > 0 ||
+        parsedBorrador.observacionGeneral.trim().length > 0) {
         setMostrarBorrador(true);
       }
     }
@@ -117,7 +117,7 @@ const DistribuidoraEsquina = () => {
 
   const puedeEnviar = () => {
     return isOnline && esPedidoValido() && !isEnviando;
-  }; 
+  };
 
   // Manejar recuperación de borrador
   const manejarRecuperarBorrador = () => {
@@ -125,10 +125,21 @@ const DistribuidoraEsquina = () => {
     setMostrarBorrador(false);
   };
 
+  // CORREGIDO: Función que realmente elimina el borrador
   const manejarDescartarBorrador = () => {
-    descartarBorrador();
-    setMostrarBorrador(false);
-  };
+  // Eliminar borrador de localStorage
+  localStorage.removeItem('pedidoBorrador');
+
+  // Llamar a la función del hook que descarta el borrador
+  descartarBorrador();
+
+  // Limpiar el pedido actual en pantalla
+  limpiarPedido();
+
+  // Ocultar modal
+  setMostrarBorrador(false);
+};
+
 
   const agregarAlPedido = (item) => {
     const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
@@ -154,7 +165,8 @@ const DistribuidoraEsquina = () => {
     setMostrarAñadir(false);
   };
 
-  const totalProductos = pedido.reduce((total, p) => total + p.cantidad, 0);
+  const totalArticulos = pedido.length;
+
 
   const handleChange = (e) => {
     const valor = e.target.value;
@@ -288,10 +300,10 @@ const DistribuidoraEsquina = () => {
       };
       await guardarPedido(body);
       limpiarPedido();
-      
+
       // ✅ Mostrar mensaje de éxito y permanecer en la página
       alert(`✅ Pedido enviado exitosamente para ${cliente}. Puedes crear un nuevo pedido.`);
-      
+
     } catch (error) {
       console.error("❌ Error completo:", error);
       alert("Error al enviar el pedido.");
@@ -303,54 +315,63 @@ const DistribuidoraEsquina = () => {
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
       {/* MODAL DE BORRADOR DISPONIBLE */}
-      {mostrarBorrador && (
-        <div
-          className="modal fade show"
-          tabIndex="-1"
-          style={{
-            display: 'block',
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 1060,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-          }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 rounded shadow">
-              <div className="modal-header border-0 bg-warning">
-                <h5 className="modal-title fw-bold text-dark">
-                  📝 Borrador Disponible
-                </h5>
-              </div>
-              <div className="modal-body">
-                <p className="mb-3">
-                  Se detectó un pedido en progreso que no fue completado. 
-                  ¿Deseas recuperar este borrador o empezar un pedido nuevo?
-                </p>
-                <div className="d-flex justify-content-end gap-2">
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={manejarDescartarBorrador}
-                  >
-                    🗑️ Descartar
-                  </button>
-                  <button
-                    className="btn btn-warning"
-                    onClick={manejarRecuperarBorrador}
-                  >
-                    🔄 Recuperar Borrador
-                  </button>
-                </div>
-              </div>
-            </div>
+{mostrarBorrador && (
+  <div
+    className="modal fade show"
+    tabIndex="-1"
+    style={{
+      display: 'block',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      zIndex: 1060,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+    }}
+  >
+    <div className="modal-dialog modal-dialog-centered">
+      <div className="modal-content border-0 rounded shadow">
+        <div className="modal-header border-0 bg-warning">
+          <h5 className="modal-title fw-bold text-dark">
+            📝 Borrador Disponible
+          </h5>
+        </div>
+        <div className="modal-body">
+          <p className="mb-3">
+            Se detectó un pedido en progreso que no fue completado. 
+            ¿Deseas recuperar este borrador o empezar un pedido nuevo?
+          </p>
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                // 🔹 Nueva versión: descarta y limpia la pantalla
+                localStorage.removeItem('pedidoBorrador');
+                descartarBorrador();
+                limpiarPedido();   // ✅ limpia tabla, cliente y observaciones
+                setMostrarBorrador(false);
+              }}
+            >
+              🗑️ Descartar
+            </button>
+            <button
+              className="btn btn-warning"
+              onClick={() => {
+                manejarRecuperarBorrador();
+              }}
+            >
+              🔄 Recuperar Borrador
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
-      {/* HEADER */}
+
+      {/* HEADER CORREGIDO */}
       <header className="shadow-sm mb-4" style={{ backgroundColor: '#f7dc6f' }}>
         <div className="container-fluid py-3">
           <div className="row align-items-center">
@@ -360,38 +381,44 @@ const DistribuidoraEsquina = () => {
                   src="/logo-distruidora/logo.png"
                   alt="Distribuidora Esquina"
                   className="logo-img me-3"
+                  style={{ width: '80px', height: '80px' }}
                 />
                 <div>
-                  <h1 className="h4 mb-0 fw-bold text-success">Distribuidora Esquina</h1>
+                  <h1 className="h5 mb-0 fw-bold text-success">Distribuidora Esquina</h1>
                 </div>
               </div>
             </div>
             <div className="col-12 col-md-6 mt-2 mt-md-0">
-              <div className="d-flex align-items-center justify-content-md-end">
+              <div className="d-flex align-items-center justify-content-md-end flex-wrap gap-3">
                 {/* Estado de conexión */}
-                <div className={`badge ${isOnline ? 'bg-success' : 'bg-danger'} me-3`}>
+                <div className={`badge ${isOnline ? 'bg-success' : 'bg-danger'} mb-1 mb-md-0`}>
                   {isOnline ? '🟢 En línea' : '🔴 Sin conexión'}
                 </div>
 
-                {/* CLIENTE */}
+                {/* CAMPO CLIENTE MEJORADO - ALINEADO CORRECTAMENTE */}
                 <div
-                  className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
-                  style={{ backgroundColor: '#298143' }}
+                  className="d-flex align-items-center justify-content-center rounded bg-success"
+                  style={{ minWidth: '150px', height: '35px', }}
                 >
-                  <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
                   <input
                     type="text"
                     value={cliente}
                     onChange={handleChange}
-                    placeholder="Nombre cliente"
-                    className="form-control form-control-sm border-0 bg-transparent text-white ordenes-cliente-label"
+                    placeholder="Nombre Cliente"
+                    className="bg-transparent border-0 text-white text-center w-100"
+                    style={{
+                      fontSize: '0.9rem',
+                      outline: 'none'
+                    }}
                     maxLength={128}
                   />
                 </div>
 
+
+
                 {/* FOTO DE USUARIO */}
                 <div
-                  className="rounded-circle overflow-hidden"
+                  className="rounded-circle overflow-hidden mb-1 mb-md-0 border border-success"
                   style={{ width: '40px', height: '40px' }}
                 >
                   <img
@@ -420,22 +447,26 @@ const DistribuidoraEsquina = () => {
           </div>
         </div>
 
-        {/* Buscador y botón Añadir en la misma línea */}
-        <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mb-4">
+        {/* PUNTO 2 y 3: BUSCADOR Y BOTÓN AÑADIR CORREGIDOS */}
+        <div className="d-flex align-items-center gap-3 mb-4">
+          {/* PUNTO 2: BUSCADOR MÁS ANCHO CON LUPA MÁS CERCANA AL TEXTO */}
           <div className="position-relative flex-grow-1">
-            <span
-              className="position-absolute top-50 start-0 translate-middle-y ms-3"
-              style={{ fontSize: '1.2rem' }}
-            >
-              🔍
-            </span>
-            <input
-              type="text"
-              className="form-control ps-5"
-              placeholder="Buscar productos..."
-              value={busqueda}
-              onChange={handleBusquedaChange}
-            />
+            <div className="d-flex align-items-center bg-white rounded" style={{ padding: '1px 12px' }}>
+              <span className="me-1" style={{ fontSize: '1.1rem', color: '#6c757d' }}>🔍</span>
+              <input
+                type="text"
+                className="form-control border-0 bg-transparent m-2"
+                placeholder="Buscar productos..."
+                value={busqueda}
+                onChange={handleBusquedaChange}
+                style={{
+                  padding: '4px 0',
+                  fontSize: '0.95rem',
+                  boxShadow: 'none',
+                  marginLeft: '2px'
+                }}
+              />
+            </div>
 
             {busqueda.length >= 2 && productos.length > 0 && (
               <div
@@ -453,7 +484,7 @@ const DistribuidoraEsquina = () => {
                   <table className="table table-bordered table-sm mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th style={{width: '80px'}}>Código</th>
+                        <th style={{ width: '80px' }}>Código</th>
                         <th>Artículo</th>
                         <th>Unitario</th>
                         <th className="text-center">Acciones</th>
@@ -462,7 +493,7 @@ const DistribuidoraEsquina = () => {
                     <tbody>
                       {productos.map((item) => (
                         <tr key={item.idArticulo}>
-                          <td style={{width: '80px'}}>{item.idArticulo}</td>
+                          <td style={{ width: '80px' }}>{item.idArticulo}</td>
                           <td>{item.descripcion}</td>
                           <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
                           <td className="text-center">
@@ -497,16 +528,16 @@ const DistribuidoraEsquina = () => {
               </div>
             )}
           </div>
-          
-          {/* Botón Añadir - MÁS ANCHO */}
+
+          {/* PUNTO 3: BOTÓN AÑADIR EN LA MISMA LÍNEA */}
           <button
-            className="btn btn-success rounded-pill btn-animado d-flex align-items-center justify-content-center"
+            className="btn btn-success rounded-pill d-flex align-items-center justify-content-center"
             onClick={() => setMostrarAñadir(!mostrarAñadir)}
             style={{
-              minWidth: '180px',
-              width: 'auto',
-              padding: '0.5rem 1.5rem',
-              fontSize: '1.05rem'
+              height: '45px',
+              width: '140px',
+              fontSize: '0.95rem',
+              flexShrink: 0
             }}
           >
             <span className="me-2">➕</span>
@@ -563,7 +594,7 @@ const DistribuidoraEsquina = () => {
                     <table className="table table-bordered table-sm">
                       <thead className="table-light">
                         <tr>
-                          <th style={{width: '80px'}}>Código</th>
+                          <th style={{ width: '80px' }}>Código</th>
                           <th>Artículo</th>
                           <th>Unitario</th>
                           <th className="text-center">Acciones</th>
@@ -572,7 +603,7 @@ const DistribuidoraEsquina = () => {
                       <tbody>
                         {items.map((item) => (
                           <tr key={item.idArticulo}>
-                            <td style={{width: '80px'}}>{item.idArticulo}</td>
+                            <td style={{ width: '80px' }}>{item.idArticulo}</td>
                             <td>{item.descripcion}</td>
                             <td>${parseFloat(item.precioVenta).toFixed(2)}</td>
                             <td className="text-center">
@@ -609,7 +640,7 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-        {/* Lista de productos agregados CON FONDO BLANCO - MEJORADA */}
+        {/* PUNTO 4: TABLA DE PRODUCTOS AGREGADOS CORREGIDA */}
         {pedido.length > 0 && (
           <div className="card shadow-sm mb-3">
             <div className="card-body p-0">
@@ -617,11 +648,11 @@ const DistribuidoraEsquina = () => {
                 <table className="table table-bordered table-sm mb-0">
                   <thead className="table-light">
                     <tr>
-                      <th style={{width: '80px'}}>Código</th>
-                      <th style={{width: '35%'}}>Artículo</th>
-                      <th style={{width: '120px'}}>Cantidad</th>
-                      <th>Observación</th>
-                      <th style={{width: '140px'}}>Acciones</th>
+                      <th style={{ width: '80px' }}>Código</th>
+                      <th style={{ width: '250px' }}>Artículo</th>
+                      <th style={{ width: '140px' }}>Cantidad</th>
+                      <th style={{ width: '200px' }}>Observación</th>
+                      <th style={{ width: '180px' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -631,17 +662,18 @@ const DistribuidoraEsquina = () => {
 
                       return (
                         <tr key={item.idArticulo}>
-                          <td style={{width: '80px'}}>{item.idArticulo}</td>
-                          <td style={{width: '35%'}}>
+                          <td style={{ width: '80px' }}>{item.idArticulo}</td>
+                          <td style={{ width: '250px' }}>
                             <div className="text-truncate" title={item.articulo}>
                               {item.articulo}
                             </div>
                           </td>
-                          <td style={{width: '120px'}}>
-                            <div className="d-flex align-items-center justify-content-center">
+                          {/* PUNTO 4: CANTIDAD MEJORADA SIN FLECHAS Y CON BOTONES SEPARADOS */}
+                          <td style={{ width: '140px' }}>
+                            <div className="d-flex align-items-center justify-content-center gap-2">
                               <button
-                                className="btn btn-sm btn-outline-secondary p-1"
-                                style={{ width: '30px', height: '30px' }}
+                                className="btn btn-sm btn-outline-secondary"
+                                style={{ width: '28px', height: '28px', padding: '0', fontSize: '0.8rem' }}
                                 onClick={() =>
                                   actualizarProducto(item.idArticulo, {
                                     cantidad: item.cantidad > 1 ? item.cantidad - 1 : 1,
@@ -651,17 +683,16 @@ const DistribuidoraEsquina = () => {
                               >
                                 −
                               </button>
+
                               <input
                                 type="number"
                                 min="1"
                                 max="9999"
-                                className="form-control form-control-sm text-center mx-1"
-                                style={{ width: '60px', height: '30px' }}
-                                value={item.cantidad === 0 ? "" : item.cantidad}
+                                value={item.cantidad === 0 ? "" : item.cantidad}  // permite "" temporalmente
                                 onChange={(e) => {
                                   const valor = e.target.value;
                                   if (valor === "") {
-                                    actualizarProducto(item.idArticulo, { cantidad: 0 });
+                                    actualizarProducto(item.idArticulo, { cantidad: 0 }); // estado vacío
                                     return;
                                   }
                                   const numero = parseInt(valor);
@@ -675,10 +706,20 @@ const DistribuidoraEsquina = () => {
                                     cantidad: isNaN(valor) || valor < 1 ? 1 : Math.min(valor, 9999)
                                   });
                                 }}
+                                className="text-center cantidad-input"
+                                style={{
+                                  width: '60px',
+                                  height: '30px',
+                                  fontSize: '0.9rem',
+                                  borderRadius: '6px',
+                                  outline: 'none'
+                                }}
                               />
+
+
                               <button
-                                className="btn btn-sm btn-outline-secondary p-1"
-                                style={{ width: '30px', height: '30px' }}
+                                className="btn btn-sm btn-outline-secondary"
+                                style={{ width: '28px', height: '28px', padding: '0', fontSize: '0.8rem' }}
                                 onClick={() =>
                                   actualizarProducto(item.idArticulo, {
                                     cantidad: Math.min(item.cantidad + 1, 9999),
@@ -689,8 +730,9 @@ const DistribuidoraEsquina = () => {
                                 +
                               </button>
                             </div>
+
                           </td>
-                          <td>
+                          <td style={{ width: '200px' }}>
                             <input
                               type="text"
                               className="form-control form-control-sm"
@@ -702,35 +744,36 @@ const DistribuidoraEsquina = () => {
                                 })
                               }
                               placeholder="Observación (opcional)"
+                              style={{ fontSize: '0.8rem' }}
                             />
                             {item.observacion && (
-                              <small className="text-muted">
+                              <small className="text-muted" style={{ fontSize: '0.7rem' }}>
                                 {item.observacion.length}/512
                               </small>
                             )}
                           </td>
-                         <td style={{width: '140px'}}>
-  <div className="d-flex flex-nowrap gap-1 justify-content-center">
-    <button
-      className="btn btn-sm btn-info"
-      onClick={() => setImagenModal(imagen)}
-      style={{ whiteSpace: 'nowrap' }}
-    >
-      Ver Imagen
-    </button>
-    <button
-      className="btn btn-sm btn-danger"
-      onClick={() => {
-        if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
-          eliminarProducto(item.idArticulo);
-        }
-      }}
-      style={{ whiteSpace: 'nowrap' }}
-    >
-      Eliminar
-    </button>
-  </div>
-</td>
+                          {/* PUNTO 4: BOTONES SEPARADOS CON MÁS ESPACIO */}
+                          <td style={{ width: '200px' }}>
+                            <div className="d-flex gap-3 justify-content-center">
+                              <button
+                                className="btn btn-sm btn-info"
+                                onClick={() => setImagenModal(imagen)}
+                              >
+                                Ver Imagen
+                              </button>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar "${item.articulo}" del pedido?`)) {
+                                    eliminarProducto(item.idArticulo);
+                                  }
+                                }}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+
                         </tr>
                       );
                     })}
@@ -750,7 +793,6 @@ const DistribuidoraEsquina = () => {
                 <ul className="mb-0 ps-3">
                   {!cliente.trim() && <li>Ingrese el nombre del cliente</li>}
                   {cliente.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
-                  {pedido.some(p => p.cantidad < 1 || p.cantidad > 9999) && <li>Las cantidades deben estar entre 1 y 9999</li>}
                   {observacionGeneral && observacionGeneral.length > 512 && <li>La observación general no puede exceder 512 caracteres</li>}
                   {pedido.some(p => p.observacion && p.observacion.length > 512) && <li>Las observaciones de productos no pueden exceder 512 caracteres</li>}
                 </ul>
@@ -761,7 +803,7 @@ const DistribuidoraEsquina = () => {
             <div className="p-0 rounded h-80">
               <p className="text-success mb-2 fw-bold">Total de Artículos:</p>
               <div className="text-center">
-                <span className="display-4 fw-bold text-success">{totalProductos}</span>
+                <span className="display-4 fw-bold text-success">{totalArticulos}</span>
               </div>
             </div>
           </div>
@@ -807,7 +849,7 @@ const DistribuidoraEsquina = () => {
           >
             ❌ Deshacer
           </button>
-          
+
           <div className="d-flex gap-3 order-0 order-md-1">
             <button
               className="btn btn-outline-success fw-semibold px-4 py-2"
@@ -902,6 +944,21 @@ const DistribuidoraEsquina = () => {
           </div>
         </div>
       )}
+
+      {/* ESTILOS CSS PARA OCULTAR FLECHAS DEL INPUT NUMBER */}
+      <style jsx>{`
+        /* Ocultar flechas en Chrome, Safari, Edge */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        
+        /* Ocultar flechas en Firefox */
+        input[type="number"] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
     </div>
   );
 };

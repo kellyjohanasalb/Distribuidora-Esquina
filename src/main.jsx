@@ -1,4 +1,4 @@
-import './polyfills';
+
 import ErrorBoundary from "../src/Componentes/ErrorBoundaries";
 import React from 'react';
 import ReactDOM from 'react-dom/client';

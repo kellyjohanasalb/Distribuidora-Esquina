@@ -20,9 +20,10 @@ const Catalogo = () => {
     // fetchProductos, // Comentado porque ya no se usa
     isLoading,
     reiniciarFiltros,
-    scrollAlTop
+    scrollAlTop,
+    todosCatalogo, // 👈 agregarlo aquí
   } = useCatalogo();
-  
+
   const IMAGEN_POR_DEFECTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa' stroke='%23198754' stroke-width='2' rx='8'/%3E%3Cg transform='translate(150,80)'%3E%3Cpath d='M-20,-10 L20,-10 L20,10 L-20,10 Z M-15,-5 L15,-5 L15,5 L-15,5 Z' fill='%23198754' opacity='0.3'/%3E%3Ccircle cx='8' cy='-2' r='3' fill='%23198754'/%3E%3Cpath d='M-10,8 L-5,3 L0,8 L10,0 L15,5 L15,8 Z' fill='%23198754'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-size='14' fill='%23198754' text-anchor='middle' font-weight='500'%3EProducto sin imagen%3C/text%3E%3C/svg%3E";
 
   const online = useConexion();
@@ -58,9 +59,9 @@ const Catalogo = () => {
   const opcionesProductos = sugerencias.length > 0
     ? sugerencias
     : productos.slice(0, 10).map(p => ({
-        value: p.idArticulo,
-        label: p.descripcion,
-      }));
+      value: p.idArticulo,
+      label: p.descripcion,
+    }));
 
   // Agrupar productos por rubro
   const productosPorRubro = {};
@@ -123,7 +124,7 @@ const Catalogo = () => {
           <div className="row align-items-center g-5 py-2">
             {/* Logo y título */}
             <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
-              <Link to="/pedido">
+              <Link to="/login">
                 <img
                   src="/logo-distruidora/logo.png"
                   alt="Distribuidora Esquina"
@@ -135,9 +136,9 @@ const Catalogo = () => {
               </Link>
               <div>
                 <h1 className="text-success fw-bold fs-3 m-0" style={{ whiteSpace: 'nowrap' }}>Distribuidora Esquina</h1>
-                <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
-                  {online ? '🟢 En línea' : '🔴 Offline'}
-                </small>
+              <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
+  {online ? '🟢 En línea' : '🔴 Offline'}
+</small>
               </div>
             </div>
 
@@ -196,24 +197,24 @@ const Catalogo = () => {
               </div>
               <div className="list-group list-group-flush">
                 <button
-                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                    !filtroRubro ? 'active' : ''
-                  }`}
+                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${!filtroRubro ? 'active' : ''
+                    }`}
                   onClick={() => handleRubroChange({ target: { value: '' } })}
                 >
                   <span>Todos los productos</span>
-                  <span className="badge bg-secondary rounded-pill">{productos.length}</span>
+                  <span className="badge bg-secondary rounded-pill">{todosCatalogo.length}</span>
+
                 </button>
                 {rubros.map((rubro) => {
-                  const productosEnRubro = productos.filter((p) => p.idRubro === rubro.id).length;
+                  const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
+
                   const colorCategoria = coloresCategoria[rubro.descripcion] || coloresCategoria['Otros'];
 
                   return (
                     <button
                       key={rubro.id}
-                      className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                        filtroRubro === rubro.id.toString() ? 'active' : ''
-                      }`}
+                      className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filtroRubro === rubro.id.toString() ? 'active' : ''
+                        }`}
                       onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
                       style={{
                         borderLeft:
@@ -242,9 +243,9 @@ const Catalogo = () => {
                     <div className="mb-2">
                       <span className="badge bg-primary me-2 d-inline-flex align-items-center">
                         Búsqueda: "{busqueda}"
-                        <button 
-                          type="button" 
-                          className="btn-close btn-close-white ms-2" 
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white ms-2"
                           style={{ fontSize: '0.6rem' }}
                           onClick={() => handleBusquedaChange({ target: { value: '' } })}
                           aria-label="Eliminar filtro de búsqueda"
@@ -256,9 +257,9 @@ const Catalogo = () => {
                     <div className="mb-2">
                       <span className="badge bg-info me-2 d-inline-flex align-items-center">
                         Categoría: {nombreRubro}
-                        <button 
-                          type="button" 
-                          className="btn-close btn-close-white ms-2" 
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white ms-2"
                           style={{ fontSize: '0.6rem' }}
                           onClick={() => handleRubroChange({ target: { value: '' } })}
                           aria-label="Eliminar filtro de categoría"
@@ -280,8 +281,8 @@ const Catalogo = () => {
               {/* Categorías en móvil - SIN FONDO */}
               <div className="row mb-3">
                 <div className="col-12">
-                  <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile" 
-                       style={{ scrollbarWidth: 'thin' }}>
+                  <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile"
+                    style={{ scrollbarWidth: 'thin' }}>
                     <button
                       className={`btn ${!filtroRubro ? 'btn-success' : 'btn-outline-success'} flex-shrink-0`}
                       onClick={() => handleRubroChange({ target: { value: '' } })}
@@ -321,9 +322,9 @@ const Catalogo = () => {
                       {busqueda && (
                         <span className="badge bg-primary">
                           Búsqueda: "{busqueda}"
-                          <button 
-                            type="button" 
-                            className="btn-close btn-close-white ms-2" 
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white ms-2"
                             style={{ fontSize: '0.6rem' }}
                             onClick={() => handleBusquedaChange({ target: { value: '' } })}
                           ></button>
@@ -332,9 +333,9 @@ const Catalogo = () => {
                       {filtroRubro && (
                         <span className="badge bg-info">
                           {nombreRubro}
-                          <button 
-                            type="button" 
-                            className="btn-close btn-close-white ms-2" 
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white ms-2"
                             style={{ fontSize: '0.6rem' }}
                             onClick={() => handleRubroChange({ target: { value: '' } })}
                           ></button>
@@ -417,21 +418,23 @@ const Catalogo = () => {
                             className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
                           >
                             <div className="card h-100 catalogo-card shadow-sm border-0">
-                              <img
-                                src={producto.imagen || IMAGEN_POR_DEFECTO}
-                                alt={producto.descripcion}
-                                className="card-img-top"
-                                style={{
-                                  height: '180px',
-                                  objectFit: 'cover',
-                                  borderRadius: '8px 8px 0 0',
-                                  cursor: 'pointer'
-                                }}
-                                onClick={() => abrirModalImagen(producto.imagen || IMAGEN_POR_DEFECTO, producto.descripcion)}
-                                onError={(e) => {
-                                  e.target.src = IMAGEN_POR_DEFECTO;
-                                }}
-                              />
+                             <img
+  src={producto.imagen || IMAGEN_POR_DEFECTO}
+  alt={producto.descripcion}
+  className="card-img-top"
+  style={{
+    height: '180px',
+    objectFit: 'contain',   // 🔹 ahora muestra la imagen completa
+    backgroundColor: '#f8f9fa', // 🔹 fondo claro para que no quede vacío
+    borderRadius: '8px 8px 0 0',
+    cursor: 'pointer'
+  }}
+  onClick={() => abrirModalImagen(producto.imagen || IMAGEN_POR_DEFECTO, producto.descripcion)}
+  onError={(e) => {
+    e.target.src = IMAGEN_POR_DEFECTO;
+  }}
+/>
+
                               <div className="card-body text-center d-flex flex-column">
                                 <h6 className="card-title fw-bold mb-2" style={{ fontSize: '0.95rem' }}>
                                   {producto.descripcion}

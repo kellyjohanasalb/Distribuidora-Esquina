@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff, Calendar, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -52,6 +53,9 @@ const OrdersView = () => {
         };
     }, []);
 
+
+
+
     const formatCurrency = useCallback((value) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
@@ -62,8 +66,11 @@ const OrdersView = () => {
 
     const formatDate = useCallback((dateString) => {
         try {
-            // El formato ISO con 'Z' al final es válido para el constructor Date
+            // Manejar tanto formato ISO como otros formatos de fecha
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return 'Fecha inválida';
+            }
             return date.toLocaleDateString('es-CO', {
                 year: 'numeric',
                 month: '2-digit',
@@ -81,11 +88,70 @@ const OrdersView = () => {
         return today === orderDate;
     }, []);
 
+    // Reemplaza la función isSameDate con esta versión mejorada
     const isSameDate = useCallback((dateString, compareDate) => {
-        const date1 = new Date(dateString).toDateString();
-        const date2 = new Date(compareDate).toDateString();
-        return date1 === date2;
+        try {
+            if (!dateString || !compareDate) return false;
+
+            // Convertir ambas fechas a la misma zona horaria (UTC)
+            const date1 = new Date(dateString);
+            const date2 = new Date(compareDate);
+
+            if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+                console.error('Fecha inválida:', dateString, compareDate);
+                return false;
+            }
+
+            // Ajustar ambas fechas a UTC para comparación
+            const utcDate1 = Date.UTC(
+                date1.getUTCFullYear(),
+                date1.getUTCMonth(),
+                date1.getUTCDate()
+            );
+
+            const utcDate2 = Date.UTC(
+                date2.getUTCFullYear(),
+                date2.getUTCMonth(),
+                date2.getUTCDate()
+            );
+
+            // Comparar las fechas UTC
+            return utcDate1 === utcDate2;
+        } catch (error) {
+            console.error('Error en isSameDate:', error);
+            return false;
+        }
     }, []);
+
+    // Agrega este useEffect justo después de la definición de isSameDate
+    useEffect(() => {
+        console.log('=== DEPURACIÓN DE FECHAS ===');
+        console.log('Fecha seleccionada:', selectedDate);
+        console.log('Tipo de filtro:', filterType);
+        console.log('Total de órdenes:', ordenes.length);
+
+        if (filterType === 'date') {
+            const ordenesFiltradas = ordenes.filter(o => {
+                if (o.status?.toLowerCase() === 'pendiente') return true;
+                return o.fechaAlta && isSameDate(o.fechaAlta, selectedDate);
+            });
+
+            console.log('Órdenes que coinciden con la fecha:', ordenesFiltradas);
+
+            // Mostrar información detallada de cada orden
+            ordenes.forEach((order, index) => {
+                if (order.fechaAlta) {
+                    console.log(`Orden ${index}:`, {
+                        id: order.id,
+                        status: order.status,
+                        fechaAlta: order.fechaAlta,
+                        fechaFormateada: formatDate(order.fechaAlta),
+                        coincide: isSameDate(order.fechaAlta, selectedDate)
+                    });
+                }
+            });
+        }
+    }, [filterType, selectedDate, ordenes, isSameDate, formatDate]);
 
     // NUEVAS FUNCIONES PARA MODAL DE DETALLES - AGREGAR AQUÍ
     const handleViewOrderDetails = useCallback(async (order) => {
@@ -131,13 +197,24 @@ const OrdersView = () => {
         setSelectedOrderDetails(null);
     }, []);
 
-    // Función para filtrar órdenes por fecha
+    // Actualiza la función getFilteredOrders
+    // En la función getFilteredOrders, agreguemos más depuración
     const getFilteredOrders = useCallback(() => {
         let filtered = [...ordenes];
-
+        console.log('Aplicando filtro. Tipo:', filterType, 'Fecha:', selectedDate);
+        // Agrega esto temporalmente en tu función getFilteredOrders
+        console.log('Comparando fechas:');
+        console.log('Fecha seleccionada (UTC):', new Date(selectedDate).toUTCString());
+        ordenes.forEach(order => {
+            if (order.fechaAlta) {
+                console.log('Fecha orden (UTC):', new Date(order.fechaAlta).toUTCString());
+                console.log('¿Coinciden?', isSameDate(order.fechaAlta, selectedDate));
+            }
+        });
         // Si no hay conexión, solo mostrar pendientes
         if (!isConnected) {
             filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
+            console.log('Sin conexión. Mostrando solo pendientes:', filtered.length);
         }
 
         // Aplicar filtros de fecha
@@ -149,6 +226,7 @@ const OrdersView = () => {
                     // Enviados solo si son de hoy
                     return o.fechaAlta && isToday(o.fechaAlta);
                 });
+                console.log('Filtro hoy. Resultados:', filtered.length);
                 break;
             case 'date':
                 filtered = filtered.filter(o => {
@@ -157,9 +235,11 @@ const OrdersView = () => {
                     // Enviados solo si son de la fecha seleccionada
                     return o.fechaAlta && isSameDate(o.fechaAlta, selectedDate);
                 });
+                console.log('Filtro fecha específica. Resultados:', filtered.length);
                 break;
             case 'all':
                 // Mostrar todo (ya filtrado por conexión arriba)
+                console.log('Filtro todos. Resultados:', filtered.length);
                 break;
             default:
                 break;
@@ -298,11 +378,11 @@ const OrdersView = () => {
                             <div className="card-header py-2 py-md-3" style={{ backgroundColor: '#f7dc6f', borderRadius: '15px 15px 0 0' }}>
                                 <div className="row align-items-center">
                                     <div className="col-auto d-none d-sm-block">
-                                       <img
-  src="/logo-distruidora/logo.png"
-  alt="Distribuidora Esquina"
-  className="logo-img"
-/>
+                                        <img
+                                            src="/logo-distruidora/logo.png"
+                                            alt="Distribuidora Esquina"
+                                            className="logo-img"
+                                        />
 
                                     </div>
                                     <div className="col">
@@ -323,8 +403,8 @@ const OrdersView = () => {
                                     <div className="col-auto">
                                         <div className="d-flex align-items-center">
                                             <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
-                                                {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
-                                            </div>
+  {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
+</div>
 
                                             <div
                                                 className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
@@ -403,6 +483,7 @@ const OrdersView = () => {
                                             </div>
                                         </div>
 
+
                                         {showDateFilter && (
                                             <div className="mt-3 pt-3 border-top">
                                                 <div className="row align-items-center">
@@ -421,7 +502,10 @@ const OrdersView = () => {
                                                     <div className="col-auto">
                                                         <button
                                                             className="btn btn-success btn-sm"
-                                                            onClick={() => handleFilterChange('date')}
+                                                            onClick={() => {
+                                                                setFilterType('date');
+                                                                setShowDateFilter(false);
+                                                            }}
                                                         >
                                                             <Filter size={14} className="me-1" />
                                                             Aplicar
@@ -612,9 +696,19 @@ const OrdersView = () => {
                                                 <Package size={64} className="text-muted mb-3" />
                                                 <h5 className="text-muted">No hay órdenes para mostrar</h5>
                                                 <p className="text-muted">
-                                                    {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
-                                                        filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
-                                                            'No hay pedidos disponibles.'}
+                                                    {filterType === 'today'
+                                                        ? 'No hay pedidos para el día de hoy.'
+                                                        : filterType === 'date'
+                                                            ? `No hay pedidos para la fecha ${formatDate(selectedDate)}.`
+                                                            : 'No hay pedidos disponibles.'
+                                                    }
+                                                    {filterType === 'date' && (
+                                                        <div className="mt-2">
+                                                            <small className="text-info">
+                                                                💡 Sugerencia: Verifica que la fecha esté en el formato correcto (AAAA-MM-DD)
+                                                            </small>
+                                                        </div>
+                                                    )}
                                                 </p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
@@ -624,20 +718,20 @@ const OrdersView = () => {
                                     )}
                                 </div>
                             </div>
- <nav className="fixed-bottom mb-4 bg-transparent">
-        <div className="d-flex justify-content-around align-items-center">
-          <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-            📋<span className="nav-label">Catálogo</span>
+                            <nav className="fixed-bottom mb-4 bg-transparent">
+                                <div className="d-flex justify-content-around align-items-center">
+                                    <Link to="/" className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+                                        📋<span className="nav-label">Catálogo</span>
 
-          </Link>
-          <Link to='/pedido' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-            ➕ <span className="fw-semibold text-white">Pedido</span>
-          </Link>
-          <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
-            📄 <span className="fw-semibold text-white">Órdenes</span>
-          </Link>
-        </div>
-      </nav>
+                                    </Link>
+                                    <Link to='/pedido' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+                                        ➕ <span className="fw-semibold text-white">Pedido</span>
+                                    </Link>
+                                    <Link to='/ordenes' className="btn btn-success d-flex align-items-center gap-2 px-4 py-2 shadow rounded-pill">
+                                        📄 <span className="fw-semibold text-white">Órdenes</span>
+                                    </Link>
+                                </div>
+                            </nav>
 
                         </div>
                     </div>
