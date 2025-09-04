@@ -4,7 +4,7 @@ import useConexion from '../Hooks/useConexion.js';
 import Select from 'react-select';
 import CarruselProductos from './CarruselProdcutos.jsx';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../index.css';
 
 const Catalogo = () => {
@@ -17,11 +17,10 @@ const Catalogo = () => {
     handleBusquedaChange,
     handleRubroChange,
     seleccionarSugerencia,
-    // fetchProductos, // Comentado porque ya no se usa
     isLoading,
     reiniciarFiltros,
     scrollAlTop,
-    todosCatalogo, // 👈 agregarlo aquí
+    todosCatalogo,
   } = useCatalogo();
 
   const IMAGEN_POR_DEFECTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa' stroke='%23198754' stroke-width='2' rx='8'/%3E%3Cg transform='translate(150,80)'%3E%3Cpath d='M-20,-10 L20,-10 L20,10 L-20,10 Z M-15,-5 L15,-5 L15,5 L-15,5 Z' fill='%23198754' opacity='0.3'/%3E%3Ccircle cx='8' cy='-2' r='3' fill='%23198754'/%3E%3Cpath d='M-10,8 L-5,3 L0,8 L10,0 L15,5 L15,8 Z' fill='%23198754'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-size='14' fill='%23198754' text-anchor='middle' font-weight='500'%3EProducto sin imagen%3C/text%3E%3C/svg%3E";
@@ -31,7 +30,8 @@ const Catalogo = () => {
   // Estado para el modal de imagen
   const [modalImage, setModalImage] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-
+  const [menuIsOpenSelect, setMenuIsOpenSelect] = useState(false);
+  const selectRef = useRef(null);
 
   // Detectar scroll para mostrar botón "scroll to top"
   useEffect(() => {
@@ -41,6 +41,23 @@ const Catalogo = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Efecto para detectar clicks fuera del select y cerrar el menú
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setMenuIsOpenSelect(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   // Colores para cada categoría
@@ -53,6 +70,11 @@ const Catalogo = () => {
     'Panadería': '#F1C40F',
     'Frutas y Verduras': '#2ECC71',
     'Otros': '#95A5A6'
+  };
+
+  // Función para obtener el color de una categoría
+  const obtenerColorCategoria = (nombreCategoria) => {
+    return coloresCategoria[nombreCategoria] || coloresCategoria['Otros'];
   };
 
   // Opciones del buscador
@@ -119,7 +141,7 @@ const Catalogo = () => {
   return (
     <>
       {/* HEADER */}
-      <header className="bg-yellow shadow-sm w-150 border-bottom">
+      <header className="bg-yellow shadow-sm w-150 border-bottom" style={{ zIndex: 1000 }}>
         <div className="container">
           <div className="row align-items-center g-5 py-2">
             {/* Logo y título */}
@@ -136,14 +158,14 @@ const Catalogo = () => {
               </Link>
               <div>
                 <h1 className="text-success fw-bold fs-3 m-0" style={{ whiteSpace: 'nowrap' }}>Distribuidora Esquina</h1>
-              <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
-  {online ? '🟢 En línea' : '🔴 Offline'}
-</small>
+                <small className={`fw-bold ${online ? 'text-success' : 'text-danger'}`}>
+                  {online ? '🟢 En línea' : '🔴 Offline'}
+                </small>
               </div>
             </div>
 
             {/* Buscador */}
-            <div className="col-12 col-md-8">
+            <div className="col-12 col-md-8" ref={selectRef}>
               <div className="d-flex justify-content-md-end justify-content-center">
                 <div style={{ width: '100%', maxWidth: '400px' }}>
                   <Select
@@ -161,6 +183,8 @@ const Catalogo = () => {
                     loadingMessage={() => "Buscando..."}
                     filterOption={null}
                     menuIsOpen={busqueda.length >= 2 && sugerencias.length > 0 ? undefined : false}
+                    onMenuOpen={() => setMenuIsOpenSelect(true)}
+                    onMenuClose={() => setMenuIsOpenSelect(false)}
                     styles={{
                       control: (provided) => ({
                         ...provided,
@@ -173,7 +197,11 @@ const Catalogo = () => {
                       placeholder: (provided) => ({
                         ...provided,
                         color: '#999'
-                      })
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        zIndex: 9999,
+                      }),
                     }}
                   />
                 </div>
@@ -203,12 +231,10 @@ const Catalogo = () => {
                 >
                   <span>Todos los productos</span>
                   <span className="badge bg-secondary rounded-pill">{todosCatalogo.length}</span>
-
                 </button>
                 {rubros.map((rubro) => {
                   const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
-
-                  const colorCategoria = coloresCategoria[rubro.descripcion] || coloresCategoria['Otros'];
+                  const colorCategoria = obtenerColorCategoria(rubro.descripcion);
 
                   return (
                     <button
@@ -217,10 +243,9 @@ const Catalogo = () => {
                         }`}
                       onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
                       style={{
-                        borderLeft:
-                          filtroRubro === rubro.id.toString()
-                            ? `4px solid ${colorCategoria}`
-                            : `4px solid transparent`
+                        borderLeft: `4px solid ${colorCategoria}`,
+                        backgroundColor: filtroRubro === rubro.id.toString() ? `${colorCategoria}20` : 'transparent',
+                        color: filtroRubro === rubro.id.toString() ? colorCategoria : 'inherit'
                       }}
                     >
                       <span>{rubro.descripcion}</span>
@@ -276,9 +301,9 @@ const Catalogo = () => {
           </div>
 
           {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
-          <div className="d-lg-none mb-3">
+          <div className="d-lg-none mb-3" style={{ display: menuIsOpenSelect ? 'none' : 'block' }}>
             <div className="container">
-              {/* Categorías en móvil - SIN FONDO */}
+              {/* Categorías en móvil */}
               <div className="row mb-3">
                 <div className="col-12">
                   <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile"
@@ -291,17 +316,18 @@ const Catalogo = () => {
                     </button>
                     {rubros.map((rubro) => {
                       const productosEnRubro = productos.filter((p) => p.idRubro === rubro.id).length;
-                      const colorCategoria = coloresCategoria[rubro.descripcion] || coloresCategoria['Otros'];
+                      const colorCategoria = obtenerColorCategoria(rubro.descripcion);
                       const isActive = filtroRubro === rubro.id.toString();
 
                       return (
                         <button
                           key={rubro.id}
-                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : 'btn-outline-secondary'}`}
+                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : ''}`}
                           style={{
                             backgroundColor: isActive ? colorCategoria : 'transparent',
                             borderColor: colorCategoria,
-                            color: isActive ? 'white' : colorCategoria
+                            color: isActive ? 'white' : colorCategoria,
+                            fontWeight: isActive ? 'bold' : 'normal'
                           }}
                           onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
                         >
@@ -393,7 +419,7 @@ const Catalogo = () => {
                 </div>
               ) : (
                 Object.entries(productosPorRubro).map(([rubro, productosDelRubro]) => {
-                  const colorCategoria = coloresCategoria[rubro] || coloresCategoria['Otros'];
+                  const colorCategoria = obtenerColorCategoria(rubro);
 
                   return (
                     <div key={rubro} className="mb-5">
@@ -401,9 +427,24 @@ const Catalogo = () => {
                       {(!filtroRubro || Object.keys(productosPorRubro).length > 1) && (
                         <div className="d-flex justify-content-between align-items-center mb-3">
                           <h5 className="mb-0 fw-semibold d-flex align-items-center" style={{ color: colorCategoria }}>
-                            <span>{rubro}</span>
+                            <span
+                              style={{
+                                padding: '0.5rem 1rem',
+                                backgroundColor: `${colorCategoria}20`,
+                                borderRadius: '20px'
+                              }}
+                            >
+                              {rubro}
+                            </span>
                           </h5>
-                          <span className="badge text-white" style={{ backgroundColor: colorCategoria }}>
+                          <span
+                            className="badge text-white"
+                            style={{
+                              backgroundColor: colorCategoria,
+                              padding: '0.5rem 1rem',
+                              borderRadius: '20px'
+                            }}
+                          >
                             {productosDelRubro.length} producto{productosDelRubro.length !== 1 ? 's' : ''}
                           </span>
                         </div>
@@ -417,24 +458,37 @@ const Catalogo = () => {
                             id={`producto-${producto.idArticulo}`}
                             className="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4"
                           >
-                            <div className="card h-100 catalogo-card shadow-sm border-0">
-                             <img
-  src={producto.imagen || IMAGEN_POR_DEFECTO}
-  alt={producto.descripcion}
-  className="card-img-top"
-  style={{
-    height: '180px',
-    objectFit: 'contain',   // 🔹 ahora muestra la imagen completa
-    backgroundColor: '#f8f9fa', // 🔹 fondo claro para que no quede vacío
-    borderRadius: '8px 8px 0 0',
-    cursor: 'pointer'
-  }}
-  onClick={() => abrirModalImagen(producto.imagen || IMAGEN_POR_DEFECTO, producto.descripcion)}
-  onError={(e) => {
-    e.target.src = IMAGEN_POR_DEFECTO;
-  }}
-/>
-
+                            <div
+                              className="card h-100 catalogo-card shadow-sm border-0"
+                              style={{
+                                borderTop: `4px solid ${colorCategoria}`,
+                                transition: 'all 0.3s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-5px)';
+                                e.currentTarget.style.boxShadow = `0 8px 16px ${colorCategoria}40`;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+                              }}
+                            >
+                              <img
+                                src={producto.imagen || IMAGEN_POR_DEFECTO}
+                                alt={producto.descripcion}
+                                className="card-img-top"
+                                style={{
+                                  height: '180px',
+                                  objectFit: 'contain',
+                                  backgroundColor: '#f8f9fa',
+                                  borderRadius: '8px 8px 0 0',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => abrirModalImagen(producto.imagen || IMAGEN_POR_DEFECTO, producto.descripcion)}
+                                onError={(e) => {
+                                  e.target.src = IMAGEN_POR_DEFECTO;
+                                }}
+                              />
                               <div className="card-body text-center d-flex flex-column">
                                 <h6 className="card-title fw-bold mb-2" style={{ fontSize: '0.95rem' }}>
                                   {producto.descripcion}

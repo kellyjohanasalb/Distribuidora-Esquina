@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Star, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Sparkles, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import useProductosNuevos from '../Hooks/useProdcutosNuevos';
 
 // SVG inline para mejor rendimiento
@@ -19,41 +19,77 @@ const ImagenPlaceholder = () => (
 );
 
 const CarruselProductos = () => {
-  const { productos, loading } = useProductosNuevos();
+  const { productos, loading, error } = useProductosNuevos();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [itemsToShow, setItemsToShow] = useState(4);
+  const [imageErrors, setImageErrors] = useState(new Set());
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   });
 
-  // Función para validar URLs de imagen
+  // Función mejorada para validar URLs de imagen
   const isValidImageUrl = useCallback((url) => {
-    if (!url || typeof url !== 'string') return false;
+    if (!url || typeof url !== 'string' || url.trim() === '') return false;
     
-    // Verificar si es una URL válida o data URL
+    const cleanUrl = url.trim();
+    
     try {
-      const parsedUrl = new URL(url, window.location.origin);
-      // Permitir solo URLs HTTP/HTTPS o data URLs de imagen
-      return parsedUrl.protocol === 'http:' || 
-             parsedUrl.protocol === 'https:' || 
-             parsedUrl.protocol === 'data:';
+      const parsedUrl = new URL(cleanUrl);
+      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        return parsedUrl.hostname.length > 0;
+      }
+      return parsedUrl.protocol === 'data:';
     } catch (e) {
-      // Si falla la construcción de URL, verificar si es una ruta relativa válida
-      return /^[./]?[a-zA-Z0-9_/-]+\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+      return /^[./]?[\w/-]+\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(cleanUrl);
     }
   }, []);
 
-  // placeholders para cuando no hay productos del backend (o mientras carga)
+  // Manejar errores de imagen
+  const handleImageError = useCallback((productId, imageUrl) => {
+    console.error(`❌ Error cargando imagen del producto ${productId}: ${imageUrl}`);
+    setImageErrors(prev => new Set([...prev, productId]));
+  }, []);
+
+  const handleImageLoad = useCallback((productId, imageUrl) => {
+    console.log(`✅ Imagen cargada exitosamente para producto ${productId}: ${imageUrl}`);
+    setImageErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(productId);
+      return newSet;
+    });
+  }, []);
+
+  // Placeholders mejorados con más variedad
   const placeholders = Array.from({ length: 6 }, (_, i) => ({
-    id: `ph-${i}`,
+    id: `placeholder-${i}`,
     imagen: null,
-    descripcion: 'Próximamente',
+    descripcion: i === 0 ? 'Próximamente' : `Producto ${i + 1}`,
+    precio: (i + 1) * 500,
     esNuevo: true,
   }));
 
-  // siempre habrá algo que renderizar: productos reales o placeholders
   const items = (productos && productos.length > 0) ? productos : placeholders;
+
+  // Debug mejorado
+  useEffect(() => {
+    console.log('🔍 Estado del carrusel:', { 
+      loading, 
+      error, 
+      productosLength: productos?.length,
+      itemsLength: items?.length,
+      imageErrors: Array.from(imageErrors)
+    });
+    
+    if (productos && productos.length > 0) {
+      console.log('📦 Productos disponibles:', productos.map(p => ({
+        id: p.id,
+        descripcion: p.descripcion,
+        tieneImagen: !!p.imagen,
+        imagen: p.imagen
+      })));
+    }
+  }, [loading, error, productos, items, imageErrors]);
 
   // Efecto para manejar el redimensionamiento de la ventana
   useEffect(() => {
@@ -79,17 +115,19 @@ const CarruselProductos = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Auto-play del carrusel (usa items, no rompe si son placeholders)
+  // Auto-play del carrusel
   useEffect(() => {
-    if (items.length === 0) return;
+    if (items.length === 0 || loading) return;
+    
     const interval = setInterval(() => {
       setCurrentSlide(prev => {
         const maxSlides = Math.max(0, items.length - itemsToShow);
         return prev >= maxSlides ? 0 : prev + 1;
       });
     }, 4000);
+    
     return () => clearInterval(interval);
-  }, [items.length, itemsToShow]);
+  }, [items.length, itemsToShow, loading]);
 
   const nextSlide = () => {
     const maxSlides = Math.max(0, items.length - itemsToShow);
@@ -106,7 +144,7 @@ const CarruselProductos = () => {
   const maxSlides = Math.max(0, items.length - itemsToShow);
   const translateX = -(currentSlide * (100 / itemsToShow));
 
-  // Valores responsivos basados en windowSize
+  // Valores responsivos
   const isSmallScreen = windowSize.width < 768;
   const isXSmallScreen = windowSize.width < 576;
   
@@ -133,6 +171,25 @@ const CarruselProductos = () => {
             <Sparkles className="text-success" size={18} />
           </div>
           <p className="text-muted small">Descubre nuestras últimas incorporaciones</p>
+          
+          {/* Estado de conexión mejorado */}
+          {loading && (
+            <div className="alert alert-info d-flex align-items-center small">
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Cargando...</span>
+              </div>
+              <span>Conectando con el servidor...</span>
+            </div>
+          )}
+          
+          {error && (
+            <div className="alert alert-warning d-flex align-items-center small">
+              <WifiOff size={16} className="me-2 text-warning" />
+              <div className="text-start">
+                <strong>Conexión limitada:</strong> {error}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Carrusel */}
@@ -149,103 +206,135 @@ const CarruselProductos = () => {
               className="d-flex"
               style={{
                 transform: `translateX(${translateX}%)`,
-                transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                transition: loading ? 'none' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                 gap: gapSize
               }}
             >
-              {items.map((producto) => (
-                <div
-                  key={producto.id}
-                  className="flex-shrink-0"
-                  style={{ width: itemWidth }}
-                >
+              {items.map((producto) => {
+                const hasValidImage = isValidImageUrl(producto.imagen);
+                const hasImageError = imageErrors.has(producto.id);
+                const shouldShowImage = hasValidImage && !hasImageError;
+                
+                return (
                   <div
-                    className="card border-0 h-100 position-relative bg-white"
-                    style={{
-                      borderRadius: borderRadius,
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      cursor: 'pointer',
-                      height: cardHeight
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-3px)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                    }}
+                    key={producto.id}
+                    className="flex-shrink-0"
+                    style={{ width: itemWidth }}
                   >
-                    {/* Badge de nuevo */}
-                    <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
-                      <span
-                        className="badge bg-success text-white px-2 py-1 rounded-end"
-                        style={{
-                          fontSize: badgeFontSize,
-                          fontWeight: '600',
-                          letterSpacing: '0.5px'
-                        }}
-                      >
-                        <Star size={starSize} className="me-1" fill="currentColor" />
-                        NUEVO
-                      </span>
-                    </div>
-
-                    {/* Imagen que ocupa toda la card */}
                     <div
-                      className="position-relative overflow-hidden w-100 h-100"
+                      className="card border-0 h-100 position-relative bg-white"
                       style={{
-                        borderRadius: '8px',
-                        backgroundColor: '#f8f9fa'
+                        borderRadius: borderRadius,
+                        transition: 'all 0.3s ease',
+                        boxShadow: loading ? '0 2px 8px rgba(0,0,0,0.05)' : '0 2px 8px rgba(0,0,0,0.1)',
+                        cursor: 'pointer',
+                        height: cardHeight,
+                        opacity: loading ? 0.7 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!loading) {
+                          e.currentTarget.style.transform = 'translateY(-3px)';
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!loading) {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        }
                       }}
                     >
-                      {isValidImageUrl(producto.imagen) ? (
-                        <img
-                          src={producto.imagen}
-                          alt={producto.descripcion}
-                          className="w-100 h-100"
+                      {/* Badge de nuevo */}
+                      <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
+                        <span
+                          className="badge bg-success text-white px-2 py-1 rounded-end"
                           style={{
-                            objectFit: 'cover',
-                            transition: 'transform 0.3s ease'
+                            fontSize: badgeFontSize,
+                            fontWeight: '600',
+                            letterSpacing: '0.5px'
                           }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextSibling.style.display = 'block';
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
-                        />
-                      ) : null}
-                      
-                      {/* Mostrar placeholder si la imagen no es válida o falla */}
-                      <div 
-                        className="w-100 h-100 d-flex align-items-center justify-content-center"
-                        style={{
-                          display: isValidImageUrl(producto.imagen) ? 'none' : 'flex',
-                          padding: '10px'
-                        }}
-                      >
-                        <ImagenPlaceholder />
+                        >
+                          <Star size={starSize} className="me-1" fill="currentColor" />
+                          NUEVO
+                        </span>
                       </div>
 
-                      {/* Overlay con gradiente para mejor legibilidad del badge */}
+                      {/* Loading overlay */}
+                      {loading && (
+                        <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-50" style={{ zIndex: 3 }}>
+                          <div className="spinner-border text-success" role="status">
+                            <span className="visually-hidden">Cargando...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Contenido de la imagen */}
                       <div
-                        className="position-absolute top-0 start-0 w-100"
+                        className="position-relative overflow-hidden w-100 h-100"
                         style={{
-                          height: gradientHeight,
-                          background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%)',
-                          pointerEvents: 'none'
+                          borderRadius: '8px',
+                          backgroundColor: '#f8f9fa'
                         }}
-                      />
+                      >
+                        {shouldShowImage ? (
+                          <img
+                            src={producto.imagen}
+                            alt={producto.descripcion}
+                            className="w-100 h-100"
+                            style={{
+                              objectFit: 'cover',
+                              transition: 'transform 0.3s ease'
+                            }}
+                            onError={() => handleImageError(producto.id, producto.imagen)}
+                            onLoad={() => handleImageLoad(producto.id, producto.imagen)}
+                            onMouseEnter={(e) => {
+                              if (!loading) {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!loading) {
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div 
+                            className="w-100 h-100 d-flex align-items-center justify-content-center"
+                            style={{ padding: '10px' }}
+                          >
+                            <ImagenPlaceholder />
+                          </div>
+                        )}
+
+                        {/* Overlay con gradiente */}
+                        <div
+                          className="position-absolute top-0 start-0 w-100"
+                          style={{
+                            height: gradientHeight,
+                            background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%)',
+                            pointerEvents: 'none'
+                          }}
+                        />
+
+                        {/* Descripción del producto - MODIFICADO PARA MEJOR LEGIBILIDAD */}
+                        <div
+                          className="position-absolute bottom-0 start-0 w-100 text-center p-2"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.7)',
+                            fontSize: isSmallScreen ? '0.7rem' : '0.8rem',
+                            color: 'white',
+                            fontWeight: '600',
+                            textShadow: '0 1px 3px rgba(0,0,0,0.9)'
+                          }}
+                        >
+                          {producto.descripcion}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -296,7 +385,7 @@ const CarruselProductos = () => {
         </div>
 
         {/* Indicadores */}
-        {maxSlides > 0 && (
+        {maxSlides > 0 && !loading && (
           <div className="d-flex justify-content-center mt-3 gap-1">
             {Array.from({ length: maxSlides + 1 }).map((_, index) => (
               <button

@@ -159,6 +159,21 @@ h1 {
   font-size: 0.875rem;
 }
 
+/* Ajustes para el menú del select en dispositivos móviles */
+@media (max-width: 992px) {
+  .react-select__menu {
+    position: relative !important;
+    margin-top: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    z-index: 9999;
+  }
+  
+  .react-select__menu-list {
+    max-height: 300px !important;
+  }
+}
+
 /* ========================
    🔢 INPUTS PERSONALIZADOS
 ======================== */
@@ -544,8 +559,6 @@ h1 {
   }
 }
 
-
-
 /* Estilo personalizado para los inputs de cantidad */
 .cantidad-input {
   border: 1px solid #0d6efd;       /* azul Bootstrap */
@@ -560,4 +573,168 @@ h1 {
   border: 1px solid #0d6efd;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
   outline: none;
+}
+
+/* Mejoras específicas para móviles y tablets */
+@media (max-width: 992px) {
+  .react-select__control {
+    margin-bottom: 0;
+  }
+  
+  .react-select__menu {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90% !important;
+    max-width: 400px !important;
+    z-index: 10000 !important;
+  }
+  
+  .categorias-mobile {
+    position: relative;
+    top: 0;
+    background: var(--amarillo-bg);
+    z-index: 999;
+    padding: 10px 0;
+    margin-top: 0;
+  }
+  
+  /* Asegurar que el header tenga suficiente espacio */
+  header {
+    padding-bottom: 10px;
+  }
+}
+
+/* Ajustes para tablets */
+@media (min-width: 768px) and (max-width: 992px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .catalogo-card .card-title {
+    font-size: 14px;
+  }
+}
+
+/* Mejoras de visualización para móviles pequeños */
+@media (max-width: 576px) {
+  .logo-img {
+    max-height: 40px !important;
+  }
+  
+  header h1 {
+    font-size: 1.1rem !important;
+  }
+  
+  .btn-categoria {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  
+  .categorias-mobile {
+    padding: 8px 0;
+  }
+}
+
+/* Asegurar que el menú del select no se superponga */
+.react-select__menu {
+  z-index: 10000 !important;
+}
+
+/* Mejorar la visualización de las categorías en móvil */
+.categorias-mobile {
+  background: linear-gradient(to bottom, var(--amarillo-bg), transparent);
+  padding: 10px 0;
+  margin-top: 10px;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Ajustar el espacio entre el buscador y las categorías */
+@media (max-width: 992px) {
+  .container-fluid.my-3 {
+    margin-top: 0 !important;
+  }
+}
+
+/* Mejoras específicas para móviles y tablets */
+@media (max-width: 992px) {
+  .react-select__control {
+    margin-bottom: 0;
+  }
+  
+  .react-select__menu {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90% !important;
+    max-width: 400px !important;
+    z-index: 10000 !important;
+  }
+  
+  .categorias-mobile {
+    position: relative;
+    top: 0;
+    background: var(--amarillo-bg);
+    z-index: 999;
+    padding: 10px 0;
+    margin-top: 0;
+  }
+  
+  /* Asegurar que el header tenga suficiente espacio */
+  header {
+    padding-bottom: 10px;
+  }
+}
+
+/* Ajustes para tablets */
+@media (min-width: 768px) and (max-width: 992px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .catalogo-card .card-title {
+    font-size: 14px;
+  }
+}
+
+/* Mejoras de visualización para móviles pequeños */
+@media (max-width: 576px) {
+  .logo-img {
+    max-height: 40px !important;
+  }
+  
+  header h1 {
+    font-size: 1.1rem !important;
+  }
+  
+  .btn-categoria {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  
+  .categorias-mobile {
+    padding: 8px 0;
+  }
+}
+
+/* Asegurar que el menú del select no se superponga */
+.react-select__menu {
+  z-index: 10000 !important;
+}
+
+/* Mejorar la visualización de las categorías en móvil */
+.categorias-mobile {
+  background: linear-gradient(to bottom, var(--amarillo-bg), transparent);
+  padding: 10px 0;
+  margin-top: 10px;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Ajustar el espacio entre el buscador y las categorías */
+@media (max-width: 992px) {
+  .container-fluid.my-3 {
+    margin-top: 0 !important;
+  }
 }

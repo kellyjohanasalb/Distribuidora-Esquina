@@ -10,9 +10,10 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ← Estado de carga
 
   // Verificar autenticación al cargar
-  useEffect(() => {
+    useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const authStatus = localStorage.getItem('isAuthenticated');
     
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(savedUser));
       setIsAuthenticated(true);
     }
+    setLoading(false); // ← Finalizar carga
   }, []);
 
   // Configurar el cierre de sesión automático a las 23:59
@@ -58,11 +60,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('isAuthenticated');
   };
 
-  const value = {
+    const value = {
     isAuthenticated,
     user,
     login,
-    logout
+    logout,
+    loading // ← Exponer estado de carga
   };
 
   return (

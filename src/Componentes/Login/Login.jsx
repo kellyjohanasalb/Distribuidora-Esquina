@@ -10,7 +10,6 @@ const Login = () => {
     password: ''
   });
   const [error, setError] = useState('');
-  /* const [rememberMe, setRememberMe] = useState(false); */
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -56,7 +55,6 @@ const Login = () => {
       login({ 
         username: user.username, 
         name: user.name,
-       /*  rememberMe  */
       });
       navigate('/pedido');
     } else {
@@ -80,12 +78,12 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <div className="input-group">
-              <span className="input-group-text bg-transparent text-white border-end-0">
+              <span className="input-group-text">
                 <i className="fas fa-user"></i>
               </span>
               <input 
                 type="text" 
-                className="form-control border-start-0" 
+                className="form-control" 
                 placeholder="Usuario o correo electrónico"
                 name="username"
                 value={formData.username}
@@ -95,14 +93,14 @@ const Login = () => {
             </div>
           </div>
           
-          <div className="mb-3">
+          <div className="mb-3 password-input-container">
             <div className="input-group">
-              <span className="input-group-text bg-transparent text-white border-end-0">
+              <span className="input-group-text">
                 <i className="fas fa-lock"></i>
               </span>
               <input 
                 type={showPassword ? "text" : "password"} 
-                className="form-control border-start-0" 
+                className="form-control" 
                 placeholder="Contraseña"
                 name="password"
                 value={formData.password}
@@ -110,28 +108,29 @@ const Login = () => {
                 required
               />
               <span 
-                className="input-group-text bg-transparent text-white border-start-0 toggle-password"
+                className="input-group-text toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
                 <i className={showPassword ? "fas fa-eye" : "fas fa-eye-slash"}></i>
               </span>
             </div>
+            <div className="password-hint">
+              <small>Haz clic en el ojo para ver la contraseña</small>
+            </div>
           </div>
           
-          {/* <div className="mb-3 form-check">
-            <input 
-              type="checkbox" 
-              className="form-check-input" 
-              id="rememberMe" 
-              checked={rememberMe}
-              onChange={() => setRememberMe(!rememberMe)}
-            />
-            <label className="form-check-label" htmlFor="rememberMe">
-              Recordar mi cuenta
-            </label>
-          </div> */}
-          
           <button type="submit" className="btn btn-login">Iniciar Sesión</button>
+          
+          <div className="text-center mt-3">
+            <button 
+              type="button" 
+              className="btn btn-catalog"
+              onClick={() => navigate('/catalogo')}
+            >
+              Ver Catálogo
+            </button>
+          </div>
         </form>
       </div>
     </div>
