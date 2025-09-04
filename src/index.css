@@ -738,3 +738,152 @@ h1 {
     margin-top: 0 !important;
   }
 }
+
+
+/* Ajustes específicos para mobile */
+@media (max-width: 768px) {
+  /* Mejorar visibilidad del botón Añadir en mobile */
+  .btn-success {
+    padding: 12px 20px !important;
+    font-size: 1.1rem !important;
+  }
+  
+  /* Asegurar que los elementos se apilen correctamente */
+  .d-flex.flex-column {
+    gap: 15px !important;
+  }
+  
+  /* Mejorar el input de búsqueda en mobile */
+  .position-relative.w-100 {
+    margin-bottom: 0;
+  }
+  
+  /* Ajustar espaciado general en mobile */
+  .container-fluid.px-4 {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* Mejorar visibilidad en dispositivos muy pequeños */
+@media (max-width: 576px) {
+  .btn-success {
+    font-size: 1rem !important;
+    padding: 10px 16px !important;
+  }
+  
+  /* Ajustar el header en mobile */
+  header .d-flex.align-items-center {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  /* Mejorar el campo de cliente */
+  .bg-success input {
+    font-size: 0.9rem !important;
+    padding: 8px !important;
+  }
+}
+
+
+/* Para móvil: botón Añadir debajo del buscador */
+@media (max-width: 767.98px) {
+  .d-md-inline-flex {
+    width: 100% !important;
+    margin-top: 10px;
+  }
+}
+
+/* Para desktop/tablet: botón Añadir en la misma línea */
+@media (min-width: 768px) {
+  .d-md-inline-flex {
+    width: 140px !important;
+  }
+}
+
+/* Ajustes específicos para el logo en móviles */
+@media (max-width: 767.98px) {
+    .card-header .row.align-items-center {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .card-header .col-auto:first-child {
+        margin-bottom: 10px;
+    }
+    
+    .card-header .col {
+        margin-bottom: 10px;
+    }
+}
+
+/* Ajustes para tablets */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .logo-img {
+        max-height: 80px;
+    }
+}
+
+
+.observacion-general {
+  background-color: #e9ecef !important; /* gris Bootstrap */
+  color: #000000 !important;
+  min-height: 100px;
+  resize: vertical;
+  border: 1px solid #ced4da !important; /* borde gris claro */
+  border-radius: 6px; /* para que se vea más elegante */
+  padding: 10px;      /* un poco de espacio interno */
+}
+
+
+/* Estilo para el placeholder */
+.observacion-general::placeholder {
+  color: #6c757d !important; /* Color gris para el placeholder */
+  opacity: 1 !important; /* Asegura que sea visible */
+}
+
+.observacion-general::-webkit-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.observacion-general::-moz-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.observacion-general:-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.observacion-general:-moz-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+/* Estilos para el placeholder del buscador */
+.form-control::placeholder {
+  color: #6c757d !important; /* gris oscuro */
+  opacity: 1 !important;    /* asegura que sea visible */
+}
+
+.form-control::-webkit-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.form-control::-moz-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.form-control:-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.form-control:-moz-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}

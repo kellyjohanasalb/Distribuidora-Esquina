@@ -447,39 +447,40 @@ const DistribuidoraEsquina = () => {
           </div>
         </div>
 
-        {/* PUNTO 2 y 3: BUSCADOR Y BOTÓN AÑADIR CORREGIDOS */}
-        <div className="d-flex align-items-center gap-3 mb-4">
-          {/* PUNTO 2: BUSCADOR MÁS ANCHO CON LUPA MÁS CERCANA AL TEXTO */}
-          <div className="position-relative flex-grow-1">
-            <div className="d-flex align-items-center bg-white rounded" style={{ padding: '1px 12px' }}>
-              <span className="me-1" style={{ fontSize: '1.1rem', color: '#6c757d' }}>🔍</span>
-              <input
-                type="text"
-                className="form-control border-0 bg-transparent m-2"
-                placeholder="Buscar productos..."
-                value={busqueda}
-                onChange={handleBusquedaChange}
-                style={{
-                  padding: '4px 0',
-                  fontSize: '0.95rem',
-                  boxShadow: 'none',
-                  marginLeft: '2px'
-                }}
-              />
-            </div>
+{/* PUNTO 2 y 3: BUSCADOR Y BOTÓN AÑADIR CON DISEÑO RESPONSIVE */}
+<div className="d-flex flex-column flex-md-row align-items-stretch gap-3 mb-4">
+  {/* BUSCADOR - OCUPA TODO EL ANCHO EN TODAS LAS VISTAS */}
+  <div className="position-relative flex-grow-1">
+    <div className="d-flex align-items-center bg-white rounded" style={{ padding: '1px 12px' }}>
+      <span className="me-1" style={{ fontSize: '1.1rem', color: '#6c757d' }}>🔍</span>
+      <input
+        type="text"
+        className="form-control border-0 bg-transparent m-2"
+        placeholder="Buscar productos..."
+        value={busqueda}
+        onChange={handleBusquedaChange}
+        style={{
+          padding: '4px 0',
+          fontSize: '0.95rem',
+          boxShadow: 'none',
+          marginLeft: '2px',
+          color: '#000000'
+        }}
+      />
+    </div>
 
-            {busqueda.length >= 2 && productos.length > 0 && (
-              <div
-                className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
-                style={{
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  maxHeight: '300px',
-                  overflowY: 'auto',
-                  zIndex: 1000
-                }}
-              >
+    {busqueda.length >= 2 && productos.length > 0 && (
+      <div
+        className="position-absolute bg-white shadow rounded mt-2 p-2 z-3"
+        style={{
+          top: '100%',
+          left: 0,
+          right: 0,
+          maxHeight: '300px',
+          overflowY: 'auto',
+          zIndex: 1000
+        }}
+      >
                 <div className="table-responsive">
                   <table className="table table-bordered table-sm mb-0">
                     <thead className="table-light">
@@ -529,21 +530,21 @@ const DistribuidoraEsquina = () => {
             )}
           </div>
 
-          {/* PUNTO 3: BOTÓN AÑADIR EN LA MISMA LÍNEA */}
-          <button
-            className="btn btn-success rounded-pill d-flex align-items-center justify-content-center"
-            onClick={() => setMostrarAñadir(!mostrarAñadir)}
-            style={{
-              height: '45px',
-              width: '140px',
-              fontSize: '0.95rem',
-              flexShrink: 0
-            }}
-          >
-            <span className="me-2">➕</span>
-            Añadir
-          </button>
-        </div>
+          {/* BOTÓN AÑADIR - COMPORTAMIENTO RESPONSIVE */}
+  <button
+    className="btn btn-success rounded-pill d-flex align-items-center justify-content-center d-md-inline-flex"
+    onClick={() => setMostrarAñadir(!mostrarAñadir)}
+    style={{
+      height: '45px',
+      width: '140px',
+      fontSize: '0.95rem',
+      flexShrink: 0
+    }}
+  >
+    <span className="me-2">➕</span>
+    Añadir
+  </button>
+</div>
 
         {/* MODAL FLOTANTE PARA AÑADIR PRODUCTOS */}
         {mostrarAñadir && (
@@ -809,34 +810,31 @@ const DistribuidoraEsquina = () => {
           </div>
         </div>
 
-        {/* Observación General - MÁS ANCHA */}
-        <div className="mb-4">
-          <div className="d-flex align-items-center mb-2">
-            <h5 className="mb-0 me-2">Observación General</h5>
-          </div>
-          <textarea
-            className="form-control rounded-0 border-0 border-bottom"
-            rows={3}
-            placeholder="Instrucciones, comentarios o notas para este pedido..."
-            value={observacionGeneral}
-            maxLength={512}
-            onChange={(e) => guardarObservacionGeneral(e.target.value)}
-            style={{
-              minHeight: '100px',
-              resize: 'vertical',
-              backgroundColor: '#F0F0F0',
-              borderBottom: '2px solid #298143 !important'
-            }}
-          />
-          <div className="d-flex justify-content-end mt-1">
-            {observacionGeneral && (
-              <small className="text-muted">
-                {observacionGeneral.length}/512 caracteres
-              </small>
-            )}
-          </div>
-        </div>
-
+ {/* Observación General - MÁS ANCHA */}
+<div className="mb-4">
+  <div className="d-flex align-items-center mb-2">
+    <h5 className="mb-0 me-2">Observación General</h5>
+  </div>
+  <textarea
+    className="form-control rounded-0 border-0 border-bottom observacion-general"
+    rows={3}
+    placeholder="Instrucciones, comentarios o notas para este pedido..."
+    value={observacionGeneral}
+    maxLength={512}
+    onChange={(e) => guardarObservacionGeneral(e.target.value)}
+    style={{
+      backgroundColor: '#f8f9fa', // Fondo gris claro
+      color: '#000000' // Texto negro
+    }}
+  />
+  <div className="d-flex justify-content-end mt-1">
+    {observacionGeneral && (
+      <small className="text-muted">
+        {observacionGeneral.length}/512 caracteres
+      </small>
+    )}
+  </div>
+</div>
         {/* Botones de acción (Deshacer, Guardar y Enviar) */}
         <div className="d-flex justify-content-end align-items-center my-4 gap-3 flex-wrap">
           <button

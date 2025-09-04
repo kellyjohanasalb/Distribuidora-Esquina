@@ -309,13 +309,19 @@ const Catalogo = () => {
                   <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile"
                     style={{ scrollbarWidth: 'thin' }}>
                     <button
-                      className={`btn ${!filtroRubro ? 'btn-success' : 'btn-outline-success'} flex-shrink-0`}
+                      className={`btn flex-shrink-0 ${!filtroRubro ? 'text-white' : ''}`}
+                      style={{
+                        backgroundColor: !filtroRubro ? obtenerColorCategoria('Todos los productos') : 'transparent',
+                        borderColor: obtenerColorCategoria('Todos los productos'),
+                        color: !filtroRubro ? 'white' : obtenerColorCategoria('Todos los productos'),
+                        fontWeight: !filtroRubro ? 'bold' : 'normal'
+                      }}
                       onClick={() => handleRubroChange({ target: { value: '' } })}
                     >
-                      Todos ({productos.length})
+                      Todos ({todosCatalogo.length})
                     </button>
                     {rubros.map((rubro) => {
-                      const productosEnRubro = productos.filter((p) => p.idRubro === rubro.id).length;
+                      const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
                       const colorCategoria = obtenerColorCategoria(rubro.descripcion);
                       const isActive = filtroRubro === rubro.id.toString();
 

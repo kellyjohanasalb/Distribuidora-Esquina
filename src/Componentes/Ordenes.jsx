@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff, Calendar, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrdenes } from '../Hooks/useOrdenes';
-import axios from 'axios'; // Asegurar que axios esté importado
+import axios from 'axios';
 import '../index.css';
-
 
 const OrdersView = () => {
     const {
@@ -52,9 +50,6 @@ const OrdersView = () => {
             window.removeEventListener('offline', handleOffline);
         };
     }, []);
-
-
-
 
     const formatCurrency = useCallback((value) => {
         return new Intl.NumberFormat('es-CO', {
@@ -198,19 +193,10 @@ const OrdersView = () => {
     }, []);
 
     // Actualiza la función getFilteredOrders
-    // En la función getFilteredOrders, agreguemos más depuración
     const getFilteredOrders = useCallback(() => {
         let filtered = [...ordenes];
         console.log('Aplicando filtro. Tipo:', filterType, 'Fecha:', selectedDate);
-        // Agrega esto temporalmente en tu función getFilteredOrders
-        console.log('Comparando fechas:');
-        console.log('Fecha seleccionada (UTC):', new Date(selectedDate).toUTCString());
-        ordenes.forEach(order => {
-            if (order.fechaAlta) {
-                console.log('Fecha orden (UTC):', new Date(order.fechaAlta).toUTCString());
-                console.log('¿Coinciden?', isSameDate(order.fechaAlta, selectedDate));
-            }
-        });
+        
         // Si no hay conexión, solo mostrar pendientes
         if (!isConnected) {
             filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
@@ -375,16 +361,25 @@ const OrdersView = () => {
                                 minHeight: '100vh'
                             }}
                         >
+                            {/* HEADER MODIFICADO - Logo visible en todos los dispositivos */}
                             <div className="card-header py-2 py-md-3" style={{ backgroundColor: '#f7dc6f', borderRadius: '15px 15px 0 0' }}>
                                 <div className="row align-items-center">
-                                    <div className="col-auto d-none d-sm-block">
+                                    {/* Logo - Visible en todos los dispositivos */}
+                                    <div className="col-auto">
                                         <img
                                             src="/logo-distruidora/logo.png"
                                             alt="Distribuidora Esquina"
-                                            className="logo-img"
+                                            className="logo-img d-none d-md-block" // Visible en desktop/tablet
+                                            style={{ maxHeight: '120px' }}
                                         />
-
+                                        <img
+                                            src="/logo-distruidora/logo.png"
+                                            alt="Distribuidora Esquina"
+                                            className="d-md-none" // Visible en móvil
+                                            style={{ maxHeight: '50px', borderRadius: '8px' }}
+                                        />
                                     </div>
+                                    
                                     <div className="col">
                                         <h1 className="mb-0 text-success fw-bold fs-6 fs-md-5">Estados de órdenes</h1>
                                         <div className="row mt-2">
@@ -400,11 +395,12 @@ const OrdersView = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    
                                     <div className="col-auto">
                                         <div className="d-flex align-items-center">
                                             <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
-  {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
-</div>
+                                                {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
+                                            </div>
 
                                             <div
                                                 className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
@@ -482,7 +478,6 @@ const OrdersView = () => {
                                                 </button>
                                             </div>
                                         </div>
-
 
                                         {showDateFilter && (
                                             <div className="mt-3 pt-3 border-top">
