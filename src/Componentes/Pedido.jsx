@@ -396,23 +396,24 @@ const DistribuidoraEsquina = () => {
                 </div>
 
                 {/* CAMPO CLIENTE MEJORADO - ALINEADO CORRECTAMENTE */}
-                <div
-                  className="d-flex align-items-center justify-content-center rounded bg-success"
-                  style={{ minWidth: '150px', height: '35px', }}
-                >
-                  <input
-                    type="text"
-                    value={cliente}
-                    onChange={handleChange}
-                    placeholder="Nombre Cliente"
-                    className="bg-transparent border-0 text-white text-center w-100"
-                    style={{
-                      fontSize: '0.9rem',
-                      outline: 'none'
-                    }}
-                    maxLength={128}
-                  />
-                </div>
+            <div
+  className="d-flex align-items-center justify-content-center rounded bg-success"
+  style={{ minWidth: '150px', height: '35px' }}
+>
+  <input
+    type="text"
+    value={cliente}
+    onChange={handleChange}
+    placeholder="Nombre Cliente"
+    className="bg-transparent border-0 text-center w-100 input-cliente"
+    style={{
+      fontSize: '0.9rem',
+      outline: 'none',
+      color: 'white', // Aseguramos color blanco
+    }}
+    maxLength={128}
+  />
+</div>
 
 
 
@@ -785,30 +786,31 @@ const DistribuidoraEsquina = () => {
           </div>
         )}
 
-        {/* Validación y Total de Artículos en la MISMA LÍNEA */}
-        <div className="row mb-9">
-          <div className="col-12 col-md-4 mb-3 mb-md-0 ps-0">
-            {!esPedidoValido() && pedido.length > 0 && (
-              <div className="alert alert-warning mb-0 h-20" role="alert">
-                <h6 className="mb-2">Revise los siguientes puntos para poder enviar:</h6>
-                <ul className="mb-0 ps-3">
-                  {!cliente.trim() && <li>Ingrese el nombre del cliente</li>}
-                  {cliente.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
-                  {observacionGeneral && observacionGeneral.length > 512 && <li>La observación general no puede exceder 512 caracteres</li>}
-                  {pedido.some(p => p.observacion && p.observacion.length > 512) && <li>Las observaciones de productos no pueden exceder 512 caracteres</li>}
-                </ul>
-              </div>
-            )}
-          </div>
-          <div className="col-12 col-md-4 ps-5">
-            <div className="p-0 rounded h-80">
-              <p className="text-success mb-2 fw-bold">Total de Artículos:</p>
-              <div className="text-center">
-                <span className="display-4 fw-bold text-success">{totalArticulos}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Validación y Total de Artículos en la MISMA LÍNEA */}
+<div className="row mb-9">
+  <div className="col-12 col-md-4 mb-3 mb-md-0 ps-0">
+    {!esPedidoValido() && pedido.length > 0 && (
+      <div className="alert alert-warning mb-0 h-20" role="alert">
+        <h6 className="mb-2">Revise los siguientes puntos para poder enviar:</h6>
+        <ul className="mb-0 ps-3">
+          {!cliente.trim() && <li>Ingrese el nombre del cliente</li>}
+          {cliente.trim().length > 128 && <li>El nombre del cliente no puede exceder 128 caracteres</li>}
+          {observacionGeneral && observacionGeneral.length > 512 && <li>La observación general no puede exceder 512 caracteres</li>}
+          {pedido.some(p => p.observacion && p.observacion.length > 512) && <li>Las observaciones de productos no pueden exceder 512 caracteres</li>}
+        </ul>
+      </div>
+    )}
+  </div>
+  <div className="col-12 col-md-4">
+    {/* MODIFICADO: Centrado del total de artículos */}
+    <div className="d-flex flex-column align-items-center justify-content-center p-0 rounded h-80">
+      <p className="text-success mb-2 fw-bold">Total de Artículos:</p>
+      <div className="text-center">
+        <span className="display-4 fw-bold text-success">{totalArticulos}</span>
+      </div>
+    </div>
+  </div>
+</div>
 
  {/* Observación General - MÁS ANCHA */}
 <div className="mb-4">

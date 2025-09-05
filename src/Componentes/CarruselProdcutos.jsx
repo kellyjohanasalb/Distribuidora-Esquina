@@ -19,7 +19,7 @@ const ImagenPlaceholder = () => (
 );
 
 const CarruselProductos = () => {
-  const { productos, loading, error } = useProductosNuevos();
+  const { productos, loading, error, isOnline, isFromCache } = useProductosNuevos();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [itemsToShow, setItemsToShow] = useState(4);
   const [imageErrors, setImageErrors] = useState(new Set());
@@ -60,7 +60,7 @@ const CarruselProductos = () => {
     });
   }, []);
 
-  // Placeholders mejorados con más variedad
+  // Placeholders para cuando está cargando
   const placeholders = Array.from({ length: 6 }, (_, i) => ({
     id: `placeholder-${i}`,
     imagen: null,
@@ -70,26 +70,6 @@ const CarruselProductos = () => {
   }));
 
   const items = (productos && productos.length > 0) ? productos : placeholders;
-
-  // Debug mejorado
-  useEffect(() => {
-    console.log('🔍 Estado del carrusel:', { 
-      loading, 
-      error, 
-      productosLength: productos?.length,
-      itemsLength: items?.length,
-      imageErrors: Array.from(imageErrors)
-    });
-    
-    if (productos && productos.length > 0) {
-      console.log('📦 Productos disponibles:', productos.map(p => ({
-        id: p.id,
-        descripcion: p.descripcion,
-        tieneImagen: !!p.imagen,
-        imagen: p.imagen
-      })));
-    }
-  }, [loading, error, productos, items, imageErrors]);
 
   // Efecto para manejar el redimensionamiento de la ventana
   useEffect(() => {
@@ -144,37 +124,38 @@ const CarruselProductos = () => {
   const maxSlides = Math.max(0, items.length - itemsToShow);
   const translateX = -(currentSlide * (100 / itemsToShow));
 
-  // Valores responsivos
+  // Valores responsivos - Tarjetas más compactas
   const isSmallScreen = windowSize.width < 768;
   const isXSmallScreen = windowSize.width < 576;
   
-  const cardHeight = isXSmallScreen ? '120px' : isSmallScreen ? '130px' : '140px';
-  const badgeFontSize = isSmallScreen ? '0.6rem' : '0.65rem';
-  const starSize = isSmallScreen ? 7 : 8;
-  const chevronSize = isSmallScreen ? 14 : 16;
-  const controlButtonSize = isSmallScreen ? '30px' : '35px';
-  const controlButtonPosition = isSmallScreen ? '-8px' : '-12px';
-  const gapSize = isXSmallScreen ? '8px' : isSmallScreen ? '10px' : '12px';
+  // Ajustar altura de la tarjeta para hacerla más compacta
+  const cardHeight = isXSmallScreen ? '180px' : isSmallScreen ? '200px' : '220px';
+  const imageHeight = isXSmallScreen ? '110px' : isSmallScreen ? '130px' : '150px';
+  const badgeFontSize = isSmallScreen ? '0.55rem' : '0.6rem';
+  const starSize = isSmallScreen ? 6 : 7;
+  const chevronSize = isSmallScreen ? 12 : 14;
+  const controlButtonSize = isSmallScreen ? '25px' : '30px';
+  const controlButtonPosition = isSmallScreen ? '-6px' : '-10px';
+  const gapSize = isXSmallScreen ? '6px' : isSmallScreen ? '8px' : '10px';
   const itemWidth = `calc(${100 / itemsToShow}% - ${gapSize})`;
-  const borderRadius = isSmallScreen ? '6px' : '8px';
-  const gradientHeight = isSmallScreen ? '40px' : '50px';
-  const indicatorSize = isSmallScreen ? '6px' : '8px';
+  const borderRadius = isSmallScreen ? '5px' : '6px';
+  const indicatorSize = isSmallScreen ? '5px' : '6px';
 
   return (
-    <div className="py-4 mb-3" style={{ backgroundColor: '#f7dc6f' }}>
+    <div className="py-3 mb-2" style={{ backgroundColor: '#f7dc6f' }}>
       <div className="container">
         {/* Título de la sección */}
-        <div className="text-center mb-4">
-          <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
-            <Sparkles className="text-success" size={18} />
-            <h4 className="text-success fw-bold m-0">Productos Nuevos</h4>
-            <Sparkles className="text-success" size={18} />
+        <div className="text-center mb-3">
+          <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
+            <Sparkles className="text-success" size={16} />
+            <h4 className="text-success fw-bold m-0" style={{ fontSize: isSmallScreen ? '1.1rem' : '1.3rem' }}>Productos Nuevos</h4>
+            <Sparkles className="text-success" size={16} />
           </div>
-          <p className="text-muted small">Descubre nuestras últimas incorporaciones</p>
+          <p className="text-muted small mb-0">Descubre nuestras últimas incorporaciones</p>
           
           {/* Estado de conexión mejorado */}
           {loading && (
-            <div className="alert alert-info d-flex align-items-center small">
+            <div className="alert alert-info d-flex align-items-center small mt-2 py-1">
               <div className="spinner-border spinner-border-sm me-2" role="status">
                 <span className="visually-hidden">Cargando...</span>
               </div>
@@ -183,10 +164,15 @@ const CarruselProductos = () => {
           )}
           
           {error && (
-            <div className="alert alert-warning d-flex align-items-center small">
-              <WifiOff size={16} className="me-2 text-warning" />
+            <div className="alert alert-warning d-flex align-items-center small mt-2 py-1">
+              {isOnline ? (
+                <AlertCircle size={14} className="me-2 text-warning" />
+              ) : (
+                <WifiOff size={14} className="me-2 text-warning" />
+              )}
               <div className="text-start">
-                <strong>Conexión limitada:</strong> {error}
+                <strong style={{ fontSize: '0.8rem' }}>{isFromCache ? 'Modo offline:' : 'Error:'}</strong> 
+                <span style={{ fontSize: '0.8rem' }}> {error}</span>
               </div>
             </div>
           )}
@@ -197,9 +183,9 @@ const CarruselProductos = () => {
           <div
             className="overflow-hidden"
             style={{
-              borderRadius: '8px',
+              borderRadius: '6px',
               backgroundColor: 'transparent',
-              padding: isSmallScreen ? '10px' : '15px'
+              padding: isSmallScreen ? '8px' : '12px'
             }}
           >
             <div
@@ -226,32 +212,32 @@ const CarruselProductos = () => {
                       style={{
                         borderRadius: borderRadius,
                         transition: 'all 0.3s ease',
-                        boxShadow: loading ? '0 2px 8px rgba(0,0,0,0.05)' : '0 2px 8px rgba(0,0,0,0.1)',
+                        boxShadow: loading ? '0 1px 4px rgba(0,0,0,0.05)' : '0 2px 6px rgba(0,0,0,0.1)',
                         cursor: 'pointer',
                         height: cardHeight,
                         opacity: loading ? 0.7 : 1
                       }}
                       onMouseEnter={(e) => {
                         if (!loading) {
-                          e.currentTarget.style.transform = 'translateY(-3px)';
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!loading) {
                           e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
                         }
                       }}
                     >
                       {/* Badge de nuevo */}
                       <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
                         <span
-                          className="badge bg-success text-white px-2 py-1 rounded-end"
+                          className="badge bg-success text-white px-1 py-1 rounded-end"
                           style={{
                             fontSize: badgeFontSize,
                             fontWeight: '600',
-                            letterSpacing: '0.5px'
+                            letterSpacing: '0.3px'
                           }}
                         >
                           <Star size={starSize} className="me-1" fill="currentColor" />
@@ -262,28 +248,32 @@ const CarruselProductos = () => {
                       {/* Loading overlay */}
                       {loading && (
                         <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-50" style={{ zIndex: 3 }}>
-                          <div className="spinner-border text-success" role="status">
+                          <div className="spinner-border text-success" style={{ width: '1.5rem', height: '1.5rem' }} role="status">
                             <span className="visually-hidden">Cargando...</span>
                           </div>
                         </div>
                       )}
 
-                      {/* Contenido de la imagen */}
+                      {/* Contenido de la imagen - ALTURA FIJA */}
                       <div
-                        className="position-relative overflow-hidden w-100 h-100"
+                        className="position-relative overflow-hidden w-100 d-flex align-items-center justify-content-center"
                         style={{
-                          borderRadius: '8px',
-                          backgroundColor: '#f8f9fa'
+                          borderRadius: `${borderRadius} ${borderRadius} 0 0`,
+                          backgroundColor: '#f8f9fa',
+                          height: imageHeight,
+                          padding: '8px'
                         }}
                       >
                         {shouldShowImage ? (
                           <img
                             src={producto.imagen}
                             alt={producto.descripcion}
-                            className="w-100 h-100"
+                            className="h-100"
                             style={{
-                              objectFit: 'cover',
-                              transition: 'transform 0.3s ease'
+                              objectFit: 'contain',
+                              transition: 'transform 0.3s ease',
+                              maxWidth: '100%',
+                              maxHeight: '100%'
                             }}
                             onError={() => handleImageError(producto.id, producto.imagen)}
                             onLoad={() => handleImageLoad(producto.id, producto.imagen)}
@@ -301,31 +291,34 @@ const CarruselProductos = () => {
                         ) : (
                           <div 
                             className="w-100 h-100 d-flex align-items-center justify-content-center"
-                            style={{ padding: '10px' }}
+                            style={{ padding: '5px' }}
                           >
                             <ImagenPlaceholder />
                           </div>
                         )}
+                      </div>
 
-                        {/* Overlay con gradiente */}
+                      {/* Información del producto - SOLO NOMBRE, SIN PRECIO */}
+                      <div
+                        className="w-100 p-1 text-center d-flex align-items-center justify-content-center"
+                        style={{
+                          height: `calc(${cardHeight} - ${imageHeight})`,
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: '0 0 6px 6px'
+                        }}
+                      >
                         <div
-                          className="position-absolute top-0 start-0 w-100"
+                          className="fw-semibold"
                           style={{
-                            height: gradientHeight,
-                            background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%)',
-                            pointerEvents: 'none'
-                          }}
-                        />
-
-                        {/* Descripción del producto - MODIFICADO PARA MEJOR LEGIBILIDAD */}
-                        <div
-                          className="position-absolute bottom-0 start-0 w-100 text-center p-2"
-                          style={{
-                            background: 'rgba(0, 0, 0, 0.7)',
                             fontSize: isSmallScreen ? '0.7rem' : '0.8rem',
                             color: 'white',
-                            fontWeight: '600',
-                            textShadow: '0 1px 3px rgba(0,0,0,0.9)'
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.2',
+                            padding: '0 4px'
                           }}
                         >
                           {producto.descripcion}
@@ -339,7 +332,7 @@ const CarruselProductos = () => {
           </div>
 
           {/* Controles de navegación */}
-          {maxSlides > 0 && (
+          {maxSlides > 0 && !loading && (
             <>
               <button
                 className="btn btn-white position-absolute top-50 translate-middle-y shadow"
@@ -386,7 +379,7 @@ const CarruselProductos = () => {
 
         {/* Indicadores */}
         {maxSlides > 0 && !loading && (
-          <div className="d-flex justify-content-center mt-3 gap-1">
+          <div className="d-flex justify-content-center mt-2 gap-1">
             {Array.from({ length: maxSlides + 1 }).map((_, index) => (
               <button
                 key={index}
