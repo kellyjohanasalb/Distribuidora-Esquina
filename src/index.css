@@ -681,3 +681,47 @@ input[type="text"].buscador-input-pedido::placeholder {
   color: #000000 !important;
   background-color: white !important;
 }
+
+/* MEJORAS PARA VISTA MÓVIL DE ÓRDENES */
+@media (max-width: 767.98px) {
+  .ordenes-cliente-label {
+    display: none;
+  }
+  
+  .fixed-bottom {
+    background: linear-gradient(transparent, #f7dc6f 30%);
+    padding-bottom: 1rem;
+  }
+  
+  .fixed-bottom .btn {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    min-width: 60px;
+  }
+  
+  /* Mejorar visualización de badges */
+  .badge {
+    font-size: 0.75rem;
+  }
+  
+  /* Ajustar padding en cards */
+  .card-body {
+    padding: 1rem;
+  }
+}
+
+/* Mejoras específicas para tablets */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .table td, .table th {
+    padding: 0.5rem;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Ajustar navbar inferior en tablet */
+  .fixed-bottom .btn {
+    padding: 0.5rem 1rem;
+  }
+}

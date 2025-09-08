@@ -196,7 +196,7 @@ const OrdersView = () => {
     const getFilteredOrders = useCallback(() => {
         let filtered = [...ordenes];
         console.log('Aplicando filtro. Tipo:', filterType, 'Fecha:', selectedDate);
-        
+
         // Si no hay conexión, solo mostrar pendientes
         if (!isConnected) {
             filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
@@ -379,7 +379,7 @@ const OrdersView = () => {
                                             style={{ maxHeight: '50px', borderRadius: '8px' }}
                                         />
                                     </div>
-                                    
+
                                     <div className="col">
                                         <h1 className="mb-0 text-success fw-bold fs-6 fs-md-5">Estados de órdenes</h1>
                                         <div className="row mt-2">
@@ -395,7 +395,7 @@ const OrdersView = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="col-auto">
                                         <div className="d-flex align-items-center">
                                             <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
@@ -449,69 +449,69 @@ const OrdersView = () => {
                                     </div>
                                 )}
 
-                                {/* Filtros de Fecha */}
-                                {/* Filtros de Fecha */}
-<div className="card mb-3 filtro-fecha-card">
-  <div className="card-body p-3">
-    <div className="d-flex flex-wrap align-items-center justify-content-between">
-      <div className="d-flex align-items-center mb-2 mb-md-0">
-        <Calendar size={20} className="text-warning me-2" />
-        <span className="fw-semibold text-dark">Filtrar por fecha:</span>
-      </div>
-      <div className="d-flex flex-wrap gap-2">
-        <button
-          className={`btn btn-sm ${filterType === 'today' ? 'btn-filtro-activo' : 'btn-filtro'}`}
-          onClick={() => handleFilterChange('today')}
-        >
-          📅 Hoy
-        </button>
-        <button
-          className={`btn btn-sm ${filterType === 'date' ? 'btn-filtro-activo' : 'btn-filtro'}`}
-          onClick={() => setShowDateFilter(!showDateFilter)}
-        >
-          🗓️ Fecha específica
-        </button>
-        <button
-          className={`btn btn-sm ${filterType === 'all' ? 'btn-filtro-activo' : 'btn-filtro'}`}
-          onClick={() => handleFilterChange('all')}
-        >
-          📋 Todos
-        </button>
-      </div>
-    </div>
 
-    {showDateFilter && (
-      <div className="mt-3 pt-3 border-top">
-        <div className="row align-items-center">
-          <div className="col-auto">
-            <label className="form-label mb-0">Seleccionar fecha:</label>
-          </div>
-          <div className="col-auto">
-            <input
-              type="date"
-              className="form-control form-control-sm input-fecha"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-            />
-          </div>
-          <div className="col-auto">
-            <button
-              className="btn btn-success btn-sm"
-              onClick={() => {
-                setFilterType('date');
-                setShowDateFilter(false);
-              }}
-            >
-              <Filter size={14} className="me-1" />
-              Aplicar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
+                                {/* Filtros de Fecha */}
+                                <div className="card mb-3 filtro-fecha-card">
+                                    <div className="card-body p-3">
+                                        <div className="d-flex flex-wrap align-items-center justify-content-between">
+                                            <div className="d-flex align-items-center mb-2 mb-md-0">
+                                                <Calendar size={20} className="text-warning me-2" />
+                                                <span className="fw-semibold text-dark">Filtrar por fecha:</span>
+                                            </div>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'today' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+                                                    onClick={() => handleFilterChange('today')}
+                                                >
+                                                    📅 Hoy
+                                                </button>
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'date' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+                                                    onClick={() => setShowDateFilter(!showDateFilter)}
+                                                >
+                                                    🗓️ Fecha específica
+                                                </button>
+                                                <button
+                                                    className={`btn btn-sm ${filterType === 'all' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+                                                    onClick={() => handleFilterChange('all')}
+                                                >
+                                                    📋 Todos
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {showDateFilter && (
+                                            <div className="mt-3 pt-3 border-top">
+                                                <div className="row align-items-center">
+                                                    <div className="col-auto">
+                                                        <label className="form-label mb-0">Seleccionar fecha:</label>
+                                                    </div>
+                                                    <div className="col-auto">
+                                                        <input
+                                                            type="date"
+                                                            className="form-control form-control-sm input-fecha"
+                                                            value={selectedDate}
+                                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                                            max={new Date().toISOString().split('T')[0]}
+                                                        />
+                                                    </div>
+                                                    <div className="col-auto">
+                                                        <button
+                                                            className="btn btn-success btn-sm"
+                                                            onClick={() => {
+                                                                setFilterType('date');
+                                                                setShowDateFilter(false);
+                                                            }}
+                                                        >
+                                                            <Filter size={14} className="me-1" />
+                                                            Aplicar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
 
                                 <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -541,62 +541,75 @@ const OrdersView = () => {
                                 </div>
 
                                 {/* Vista móvil - MODIFICAR EL NOMBRE DEL CLIENTE */}
-                                <div className="d-block d-md-none">
-                                    {todasOrdenes.length > 0 ? (
-                                        todasOrdenes.map((order) => (
-                                            <div
-                                                key={order.id}
-                                                className={`card mb-3 ${order.status === 'Pendiente' ? 'border-warning' : 'border-success bg-light'}`}
-                                            >
-                                                <div className="card-body p-3">
-                                                    <div className="row align-items-center">
-                                                        <div className="col-12 mb-2">
-                                                            <div className="d-flex justify-content-between align-items-center">
-                                                                <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
-                                                                <span className={`badge px-2 py-1 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                                                    {order.status}
-                                                                </span>
-                                                            </div>
-                                                            {order.fechaAlta && (
-                                                                <small className="text-muted">
-                                                                    📅 {formatDate(order.fechaAlta)}
-                                                                </small>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-12 mb-2">
-                                                            <div className="text-muted small">Cliente:</div>
-                                                            {/* CAMBIO PRINCIPAL - NOMBRE CLICKEABLE SOLO EN ENVIADOS */}
-                                                            <div
-                                                                className={`fw-semibold ${order.status === 'Enviado' ? 'text-primary' : ''}`}
-                                                                style={{
-                                                                    cursor: order.status === 'Enviado' ? 'pointer' : 'default',
-                                                                    textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
-                                                                }}
-                                                                onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
-                                                                title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
-                                                            >
-                                                                {order.name}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-12 mb-2">
-                                                            <div className="text-muted small">Valor:</div>
-                                                            <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
-                                                        </div>
-                                                        <div className="col-12">
-                                                            {order.status === 'Pendiente' && (
-                                                                <button
-                                                                    className="btn btn-success btn-sm w-100"
-                                                                    onClick={() => handleSendOrder(order)}
-                                                                    disabled={isLoading || !isConnected}
-                                                                >
-                                                                    <Send size={16} className="me-1" />
-                                                                    Enviar
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                               <div className="d-block d-md-none">
+  {todasOrdenes.length > 0 ? (
+    todasOrdenes.map((order) => (
+      <div
+        key={order.id}
+        className={`card mb-3 ${order.status === 'Pendiente' ? 'border-warning' : 'border-success'}`}
+        style={{ borderRadius: '12px' }}
+      >
+        <div className="card-body p-3">
+          {/* Encabezado con ID y Estado */}
+          <div className="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
+              {order.fechaAlta && (
+                <small className="text-muted">
+                  📅 {formatDate(order.fechaAlta)}
+                </small>
+              )}
+            </div>
+            <span className={`badge px-2 py-1 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
+              {order.status}
+            </span>
+          </div>
+          
+          {/* Información del cliente */}
+          <div className="mb-2">
+            <div className="text-muted small">Cliente:</div>
+            <div
+              className={`fw-semibold ${order.status === 'Enviado' ? 'text-primary' : ''}`}
+              style={{
+                cursor: order.status === 'Enviado' ? 'pointer' : 'default',
+                textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
+              }}
+              onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
+              title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
+            >
+              {order.name}
+            </div>
+          </div>
+          
+          {/* Valor del pedido */}
+          <div className="mb-3">
+            <div className="text-muted small">Valor:</div>
+            <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
+          </div>
+          
+          {/* Botón de acción */}
+          <div className="d-grid gap-2">
+            {order.status === 'Pendiente' ? (
+              <button
+                className="btn btn-success btn-sm"
+                onClick={() => handleSendOrder(order)}
+                disabled={isLoading || !isConnected}
+              >
+                <Send size={16} className="me-1" />
+                Enviar
+              </button>
+            ) : (
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => handleViewOrderDetails(order)}
+              >
+                <Package size={16} className="me-1" />
+                Ver Detalles
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
                                         ))
                                     ) : (
                                         !loading && (

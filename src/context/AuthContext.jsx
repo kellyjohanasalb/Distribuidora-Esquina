@@ -10,62 +10,76 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ← Estado de carga
+  const [loading, setLoading] = useState(true);
 
   // Verificar autenticación al cargar
-    useEffect(() => {
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const tokenExpiration = localStorage.getItem('tokenExpiration');
     const savedUser = localStorage.getItem('user');
-    const authStatus = localStorage.getItem('isAuthenticated');
-    
-    if (savedUser && authStatus === 'true') {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
+
+    if (token && tokenExpiration && savedUser) {
+      // Verificar si el token aún es válido (no ha expirado)
+      const now = new Date().getTime();
+      if (now < parseInt(tokenExpiration)) {
+        setUser(JSON.parse(savedUser));
+        setIsAuthenticated(true);
+        
+        // Programar cierre de sesión automático
+        const timeout = parseInt(tokenExpiration) - now;
+        setTimeout(() => {
+          logout();
+          window.location.href = '/login';
+        }, timeout);
+      } else {
+        // Token expirado, limpiar localStorage
+        logout();
+      }
     }
-    setLoading(false); // ← Finalizar carga
+    setLoading(false);
   }, []);
 
-  // Configurar el cierre de sesión automático a las 23:59
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
+  const login = (userData, token) => {
+    // Calcular expiración a medianoche (23:59:59)
     const now = new Date();
-    const night = new Date();
-    night.setHours(23, 59, 0, 0);
+    const midnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23, 59, 59
+    );
+    const expirationTime = midnight.getTime();
 
-    const timeout = night.getTime() - now.getTime();
+    // Guardar en localStorage
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('tokenExpiration', expirationTime.toString());
+    localStorage.setItem('user', JSON.stringify(userData));
 
-    const timer = setTimeout(() => {
-      logout();
-      // Puedes redirigir al login si lo deseas
-      window.location.href = '/login';
-    }, timeout);
-
-    return () => clearTimeout(timer);
-  }, [isAuthenticated]);
-
-  const login = (userData) => {
     setIsAuthenticated(true);
     setUser(userData);
-    
-    if (userData.rememberMe) {
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('isAuthenticated', 'true');
-    }
+
+    // Programar cierre de sesión automático a medianoche
+    const timeout = expirationTime - now.getTime();
+    setTimeout(() => {
+      logout();
+      window.location.href = '/login';
+    }, timeout);
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('tokenExpiration');
     localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
   };
 
-    const value = {
+  const value = {
     isAuthenticated,
     user,
     login,
     logout,
-    loading // ← Exponer estado de carga
+    loading
   };
 
   return (

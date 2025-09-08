@@ -6,10 +6,11 @@ import './Login.css';
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -29,38 +30,59 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    // Validación simple
-    if (!formData.username || !formData.password) {
-      setError('Por favor, completa todos los campos');
-      return;
+  if (!formData.email || !formData.password) {
+    setError('Por favor, completa todos los campos');
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const response = await fetch('https://remito-send-back.vercel.app/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password
+      })
+    });
+
+    const data = await response.json();
+    console.log('Response status:', response.status);
+    console.log('Response data:', data);
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error en la autenticación');
     }
-
-    // Datos quemados para prueba
-    const users = [
-      { username: 'admin', password: 'admin123', name: 'Administrador' },
-      { username: 'lore1', password: 'lore123', name: 'Lore Pérez' },
-      { username: 'kelly', password: 'kelly123', name: 'Kelly Sabb' }
-    ];
-
-    const user = users.find(u => 
-      u.username === formData.username && u.password === formData.password
-    );
-
-    if (user) {
-      // Login exitoso
-      login({ 
-        username: user.username, 
-        name: user.name,
-      });
+    
+    // Corregido: buscar el token en 'access_token' primero
+    const token = data['access_token'] || data['access-token'] || data['access-teker'];
+    
+    if (token) {
+      login({
+        username: data.username,
+        email: data.email,
+        userId: data.user_id
+      }, token);
+      
       navigate('/pedido');
     } else {
-      setError('Credenciales incorrectas. Intente con admin/admin123 o kelly/kelly123');
+      throw new Error('No se recibió token de acceso');
     }
-  };
+  } catch (error) {
+    console.error('Login error:', error);
+    setError(error.message || 'Error al conectar con el servidor');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="login-container">
@@ -72,42 +94,42 @@ const Login = () => {
           <h2 className="mb-3">Distribuidora-Esquina</h2>
           <p className="mb-4">Ingresa a tu cuenta para continuar</p>
         </div>
-        
+
         {error && <div className="alert alert-danger">{error}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <div className="input-group">
               <span className="input-group-text">
                 <i className="fas fa-user"></i>
               </span>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Usuario o correo electrónico"
-                name="username"
-                value={formData.username}
+              <input
+                type="email"
+                className="form-control"
+                placeholder="Correo electrónico"
+                name="email"
+                value={formData.email}
                 onChange={handleInputChange}
                 required
               />
             </div>
           </div>
-          
+
           <div className="mb-3 password-input-container">
             <div className="input-group">
               <span className="input-group-text">
                 <i className="fas fa-lock"></i>
               </span>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                className="form-control" 
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-control"
                 placeholder="Contraseña"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
                 required
               />
-              <span 
+              <span
                 className="input-group-text toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
@@ -119,12 +141,18 @@ const Login = () => {
               <small>Haz clic en el ojo para ver la contraseña</small>
             </div>
           </div>
-          
-          <button type="submit" className="btn btn-login">Iniciar Sesión</button>
-          
+
+          <button
+            type="submit"
+            className="btn btn-login"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          </button>
+
           <div className="text-center mt-3">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-catalog"
               onClick={() => navigate('/catalogo')}
             >
