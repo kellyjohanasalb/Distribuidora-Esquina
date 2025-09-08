@@ -59,11 +59,14 @@ const Login = () => {
       console.log('Response status:', response.status);
       console.log('Response data:', data);
 
-      if (!response.ok) {
-        if (response.status === 401) {
-  throw new Error('Correo o contraseña incorrectos');
+   if (!response.ok) {
+  console.log('Error response:', response.status, data);
+  if (response.status === 401) {
+    throw new Error('Correo o contraseña incorrectos');
+  } else {
+    throw new Error(data.message || 'Error en la autenticación');
+  }
 }
-      }
       
       const token = data['access_token'] || data['access-token'] || data['access-teker'];
       
@@ -98,7 +101,12 @@ const Login = () => {
           <p className="mb-4">Ingresa a tu cuenta para continuar</p>
         </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && (
+  <div className="alert alert-danger" style={{animation: 'fadeIn 0.5s ease-in'}}>
+    <i className="fas fa-exclamation-circle me-2"></i>
+    {error}
+  </div>
+)}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
