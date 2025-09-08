@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -80,6 +81,7 @@ const Login = () => {
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Error al conectar con el servidor');
+      console.log('Error message set:', error.message);
     } finally {
       setIsLoading(false);
     }
