@@ -30,59 +30,63 @@ const Login = () => {
     });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  if (!formData.email || !formData.password) {
-    setError('Por favor, completa todos los campos');
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    const response = await fetch('https://remito-send-back.vercel.app/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password
-      })
-    });
-
-    const data = await response.json();
-    console.log('Response status:', response.status);
-    console.log('Response data:', data);
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Error en la autenticación');
+    if (!formData.email || !formData.password) {
+      setError('Por favor, completa todos los campos');
+      setIsLoading(false);
+      return;
     }
-    
-    // Corregido: buscar el token en 'access_token' primero
-    const token = data['access_token'] || data['access-token'] || data['access-teker'];
-    
-    if (token) {
-      login({
-        username: data.username,
-        email: data.email,
-        userId: data.user_id
-      }, token);
+
+    try {
+      const response = await fetch('https://remito-send-back.vercel.app/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        // Mostrar mensaje específico para credenciales incorrectas
+        if (response.status === 401) {
+          throw new Error('Correo o contraseña incorrectos');
+        } else {
+          throw new Error(data.message || 'Error en la autenticación');
+        }
+      }
       
-      navigate('/pedido');
-    } else {
-      throw new Error('No se recibió token de acceso');
+      const token = data['access_token'] || data['access-token'] || data['access-teker'];
+      
+      if (token) {
+        login({
+          username: data.username,
+          email: data.email,
+          userId: data.user_id
+        }, token);
+        
+        navigate('/pedido');
+      } else {
+        throw new Error('No se recibió token de acceso');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message || 'Error al conectar con el servidor');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    setError(error.message || 'Error al conectar con el servidor');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="login-container">

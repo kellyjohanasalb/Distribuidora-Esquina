@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3)), 
-              url('/logo-distruidora/logo.png'); /* Ruta corregida */
+              url('/logo-distruidora/logo.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -47,7 +47,7 @@
   width: 120px;
   height: 120px;
   border-radius: 15px;
-  background-image: url('/logo-distruidora/logo.png'); /* Ruta corregida */
+  background-image: url('/logo-distruidora/logo.png');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -64,7 +64,7 @@
   display: none;
 }
 
-/* Estilos para el grupo de entrada - MODIFICADO */
+/* Estilos para el grupo de entrada */
 .input-group {
   margin-bottom: 15px;
   position: relative;
@@ -87,7 +87,7 @@
   min-width: 45px;
 }
 
-/* Campos de entrada - MODIFICADO (sin márgenes internos excesivos) */
+/* Campos de entrada */
 .form-control {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -117,12 +117,12 @@
   outline: none;
 }
 
-/* Estilos específicos para el campo de contraseña - MEJORADO */
+/* Estilos específicos para el campo de contraseña */
 .password-input-container {
   position: relative;
 }
 
-/* Ojito MUY visible - MODIFICADO */
+/* Ojito visible */
 .toggle-password {
   cursor: pointer;
   transition: all 0.3s ease;
@@ -141,7 +141,7 @@
   background: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Mejora específica para el icono del ojito - MÁS GRANDE */
+/* Mejora específica para el icono del ojito */
 .toggle-password i {
   font-size: 1.4rem;
   width: 24px;
@@ -216,6 +216,7 @@
   padding: 10px 15px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  text-align: center;
 }
 
 /* Mejoras de responsividad para móviles */

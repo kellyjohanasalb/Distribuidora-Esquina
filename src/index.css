@@ -331,21 +331,27 @@ h1 {
 }
 
 .btn-todos {
-  background-color: #6c757d;
-  border: 1px solid #6c757d;
-  color: white;
+  background-color: white !important; /* Fondo blanco cuando no está activo */
+  border: 1px solid #198754 !important;
+  color: #198754 !important;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.85rem;
   white-space: nowrap;
   transition: all 0.2s ease;
 }
-
-.btn-todos.active,
-.btn-todos:hover {
-  background-color: #495057;
-  border-color: #495057;
+.btn-todos.active {
+  background-color: #198754 !important; /* Fondo verde cuando está activo */
+  border-color: #198754 !important;
+  color: white !important;
 }
+
+.btn-todos:hover {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+  color: white !important;
+}
+
 
 .btn-categoria {
   background-color: white;
