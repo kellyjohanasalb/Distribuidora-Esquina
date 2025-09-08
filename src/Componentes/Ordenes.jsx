@@ -450,67 +450,69 @@ const OrdersView = () => {
                                 )}
 
                                 {/* Filtros de Fecha */}
-                                <div className="card mb-3" style={{ backgroundColor: '#fff3cd' }}>
-                                    <div className="card-body p-3">
-                                        <div className="d-flex flex-wrap align-items-center justify-content-between">
-                                            <div className="d-flex align-items-center mb-2 mb-md-0">
-                                                <Calendar size={20} className="text-warning me-2" />
-                                                <span className="fw-semibold text-dark">Filtrar por fecha:</span>
-                                            </div>
-                                            <div className="d-flex flex-wrap gap-2">
-                                                <button
-                                                    className={`btn btn-sm ${filterType === 'today' ? 'btn-warning' : 'btn-outline-warning'}`}
-                                                    onClick={() => handleFilterChange('today')}
-                                                >
-                                                    📅 Hoy
-                                                </button>
-                                                <button
-                                                    className={`btn btn-sm ${filterType === 'date' ? 'btn-warning' : 'btn-outline-warning'}`}
-                                                    onClick={() => setShowDateFilter(!showDateFilter)}
-                                                >
-                                                    🗓️ Fecha específica
-                                                </button>
-                                                <button
-                                                    className={`btn btn-sm ${filterType === 'all' ? 'btn-warning' : 'btn-outline-warning'}`}
-                                                    onClick={() => handleFilterChange('all')}
-                                                >
-                                                    📋 Todos
-                                                </button>
-                                            </div>
-                                        </div>
+                                {/* Filtros de Fecha */}
+<div className="card mb-3 filtro-fecha-card">
+  <div className="card-body p-3">
+    <div className="d-flex flex-wrap align-items-center justify-content-between">
+      <div className="d-flex align-items-center mb-2 mb-md-0">
+        <Calendar size={20} className="text-warning me-2" />
+        <span className="fw-semibold text-dark">Filtrar por fecha:</span>
+      </div>
+      <div className="d-flex flex-wrap gap-2">
+        <button
+          className={`btn btn-sm ${filterType === 'today' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+          onClick={() => handleFilterChange('today')}
+        >
+          📅 Hoy
+        </button>
+        <button
+          className={`btn btn-sm ${filterType === 'date' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+          onClick={() => setShowDateFilter(!showDateFilter)}
+        >
+          🗓️ Fecha específica
+        </button>
+        <button
+          className={`btn btn-sm ${filterType === 'all' ? 'btn-filtro-activo' : 'btn-filtro'}`}
+          onClick={() => handleFilterChange('all')}
+        >
+          📋 Todos
+        </button>
+      </div>
+    </div>
 
-                                        {showDateFilter && (
-                                            <div className="mt-3 pt-3 border-top">
-                                                <div className="row align-items-center">
-                                                    <div className="col-auto">
-                                                        <label className="form-label mb-0">Seleccionar fecha:</label>
-                                                    </div>
-                                                    <div className="col-auto">
-                                                        <input
-                                                            type="date"
-                                                            className="form-control form-control-sm"
-                                                            value={selectedDate}
-                                                            onChange={(e) => setSelectedDate(e.target.value)}
-                                                            max={new Date().toISOString().split('T')[0]}
-                                                        />
-                                                    </div>
-                                                    <div className="col-auto">
-                                                        <button
-                                                            className="btn btn-success btn-sm"
-                                                            onClick={() => {
-                                                                setFilterType('date');
-                                                                setShowDateFilter(false);
-                                                            }}
-                                                        >
-                                                            <Filter size={14} className="me-1" />
-                                                            Aplicar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+    {showDateFilter && (
+      <div className="mt-3 pt-3 border-top">
+        <div className="row align-items-center">
+          <div className="col-auto">
+            <label className="form-label mb-0">Seleccionar fecha:</label>
+          </div>
+          <div className="col-auto">
+            <input
+              type="date"
+              className="form-control form-control-sm input-fecha"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+          <div className="col-auto">
+            <button
+              className="btn btn-success btn-sm"
+              onClick={() => {
+                setFilterType('date');
+                setShowDateFilter(false);
+              }}
+            >
+              <Filter size={14} className="me-1" />
+              Aplicar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
 
                                 <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
                                     <h6 className="d-block d-md-none fw-bold text-success mb-0">📋 PEDIDOS FILTRADOS</h6>

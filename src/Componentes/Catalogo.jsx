@@ -31,7 +31,18 @@ const Catalogo = () => {
   const [modalImage, setModalImage] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [menuIsOpenSelect, setMenuIsOpenSelect] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const selectRef = useRef(null);
+
+  // Detectar cambios en el tamaño de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Detectar scroll para mostrar botón "scroll to top"
   useEffect(() => {
@@ -59,6 +70,19 @@ const Catalogo = () => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
+
+  // Efecto para manejar el scroll del body en móviles
+  useEffect(() => {
+    if (menuIsOpenSelect && windowWidth < 768) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [menuIsOpenSelect, windowWidth]);
 
   // Colores para cada categoría
   const coloresCategoria = {
@@ -138,12 +162,45 @@ const Catalogo = () => {
     setModalImage(null);
   };
 
+  // Estilos dinámicos para el select basados en el tamaño de pantalla
+  const getSelectStyles = () => {
+  const baseStyles = {
+    control: (provided, state) => ({
+      ...provided,
+      borderRadius: '25px',
+      paddingLeft: '10px',
+      fontSize: '16px',
+      border: '2px solid #198754',
+      minHeight: '48px',
+      boxShadow: state.isFocused ? '0 0 0 0.2rem rgba(25, 135, 84, 0.25)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+      '&:hover': {
+        borderColor: '#198754',
+      }
+    }),
+    placeholder: (provided) => ({
+      ...provided,
+      color: '#6c757d',
+      fontSize: '0.875rem'
+    }),
+    menu: (provided) => ({
+      ...provided,
+      zIndex: 10000,
+      borderRadius: '12px',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+      border: '1px solid #dee2e6',
+      overflow: 'hidden'
+    }),
+  };
+
+  return baseStyles;
+};
+
   return (
     <>
       {/* HEADER */}
-      <header className="bg-yellow shadow-sm w-150 border-bottom" style={{ zIndex: 1000 }}>
+      <header className="bg-yellow shadow-sm w-150 border-bottom" style={{ zIndex: 1050 }}>
         <div className="container">
-          <div className="row align-items-center g-5 py-2">
+          <div className="row align-items-center g-3 py-2">
             {/* Logo y título */}
             <div className="col-12 col-md-4 d-flex align-items-center gap-3 justify-content-md-start justify-content-center">
               <Link to="/login">
@@ -165,9 +222,9 @@ const Catalogo = () => {
             </div>
 
             {/* Buscador */}
-            <div className="col-12 col-md-8" ref={selectRef}>
+            <div className="col-12 col-md-8 select-container" ref={selectRef}>
               <div className="d-flex justify-content-md-end justify-content-center">
-                <div style={{ width: '100%', maxWidth: '400px' }}>
+                <div style={{ width: '100%', maxWidth: '400px', position: 'relative' }}>
                   <Select
                     options={opcionesProductos}
                     onInputChange={(inputValue) => {
@@ -183,26 +240,15 @@ const Catalogo = () => {
                     loadingMessage={() => "Buscando..."}
                     filterOption={null}
                     menuIsOpen={busqueda.length >= 2 && sugerencias.length > 0 ? undefined : false}
-                    onMenuOpen={() => setMenuIsOpenSelect(true)}
-                    onMenuClose={() => setMenuIsOpenSelect(false)}
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        borderRadius: '25px',
-                        paddingLeft: '10px',
-                        fontSize: '16px',
-                        border: '2px solid #ddd',
-                        minHeight: '48px'
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#999'
-                      }),
-                      menu: (provided) => ({
-                        ...provided,
-                        zIndex: 9999,
-                      }),
+                    onMenuOpen={() => {
+                      setMenuIsOpenSelect(true);
                     }}
+                    onMenuClose={() => {
+                      setMenuIsOpenSelect(false);
+                    }}
+                  /*   menuPortalTarget={windowWidth < 768 ? document.body : undefined} */
+                    menuShouldScrollIntoView={false}
+                    styles={getSelectStyles()}
                   />
                 </div>
               </div>
@@ -234,7 +280,6 @@ const Catalogo = () => {
                 </button>
                 {rubros.map((rubro) => {
                   const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
-                  const colorCategoria = obtenerColorCategoria(rubro.descripcion);
 
                   return (
                     <button
@@ -242,17 +287,9 @@ const Catalogo = () => {
                       className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filtroRubro === rubro.id.toString() ? 'active' : ''
                         }`}
                       onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
-                      style={{
-                        borderLeft: `4px solid ${colorCategoria}`,
-                        backgroundColor: filtroRubro === rubro.id.toString() ? `${colorCategoria}20` : 'transparent',
-                        color: filtroRubro === rubro.id.toString() ? colorCategoria : 'inherit'
-                      }}
                     >
                       <span>{rubro.descripcion}</span>
-                      <span
-                        className="badge rounded-pill text-white"
-                        style={{ backgroundColor: colorCategoria }}
-                      >
+                      <span className="badge bg-light text-dark rounded-pill">
                         {productosEnRubro}
                       </span>
                     </button>
@@ -301,7 +338,7 @@ const Catalogo = () => {
           </div>
 
           {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
-          <div className="d-lg-none mb-3" style={{ display: menuIsOpenSelect ? 'none' : 'block' }}>
+          <div className={`d-lg-none mb-3 ${menuIsOpenSelect && windowWidth < 768 ? 'hidden-when-select-open' : ''}`}>
             <div className="container">
               {/* Categorías en móvil */}
               <div className="row mb-3">
@@ -309,32 +346,19 @@ const Catalogo = () => {
                   <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile"
                     style={{ scrollbarWidth: 'thin' }}>
                     <button
-                      className={`btn flex-shrink-0 ${!filtroRubro ? 'text-white' : ''}`}
-                      style={{
-                        backgroundColor: !filtroRubro ? obtenerColorCategoria('Todos los productos') : 'transparent',
-                        borderColor: obtenerColorCategoria('Todos los productos'),
-                        color: !filtroRubro ? 'white' : obtenerColorCategoria('Todos los productos'),
-                        fontWeight: !filtroRubro ? 'bold' : 'normal'
-                      }}
+                      className={`btn btn-todos flex-shrink-0 ${!filtroRubro ? 'active' : ''}`}
                       onClick={() => handleRubroChange({ target: { value: '' } })}
                     >
                       Todos ({todosCatalogo.length})
                     </button>
                     {rubros.map((rubro) => {
                       const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
-                      const colorCategoria = obtenerColorCategoria(rubro.descripcion);
                       const isActive = filtroRubro === rubro.id.toString();
 
                       return (
                         <button
                           key={rubro.id}
-                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'text-white' : ''}`}
-                          style={{
-                            backgroundColor: isActive ? colorCategoria : 'transparent',
-                            borderColor: colorCategoria,
-                            color: isActive ? 'white' : colorCategoria,
-                            fontWeight: isActive ? 'bold' : 'normal'
-                          }}
+                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'active' : ''}`}
                           onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
                         >
                           {rubro.descripcion} ({productosEnRubro})

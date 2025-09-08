@@ -453,22 +453,23 @@ const DistribuidoraEsquina = () => {
   {/* BUSCADOR - OCUPA TODO EL ANCHO EN TODAS LAS VISTAS */}
   <div className="position-relative flex-grow-1">
     <div className="d-flex align-items-center bg-white rounded" style={{ padding: '1px 12px' }}>
-      <span className="me-1" style={{ fontSize: '1.1rem', color: '#6c757d' }}>🔍</span>
-      <input
-        type="text"
-        className="form-control border-0 bg-transparent m-2"
-        placeholder="Buscar productos..."
-        value={busqueda}
-        onChange={handleBusquedaChange}
-        style={{
-          padding: '4px 0',
-          fontSize: '0.95rem',
-          boxShadow: 'none',
-          marginLeft: '2px',
-          color: '#000000'
-        }}
-      />
-    </div>
+  <span className="me-1" style={{ fontSize: '1.1rem', color: '#6c757d' }}>🔍</span>
+  <input
+    type="text"
+    className="form-control border-0 m-2 buscador-input-pedido"
+    placeholder="Buscar productos..."
+    value={busqueda}
+    onChange={handleBusquedaChange}
+    style={{
+      padding: '4px 0',
+      fontSize: '0.95rem',
+      boxShadow: 'none',
+      marginLeft: '2px',
+      color: '#000000', // Texto negro
+      backgroundColor: 'white', // Fondo blanco
+    }}
+  />
+</div>
 
     {busqueda.length >= 2 && productos.length > 0 && (
       <div

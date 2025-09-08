@@ -14,6 +14,14 @@ body {
   font-family: 'Segoe UI', sans-serif;
 }
 
+/* Prevenir que el contenido de fondo se desplace cuando el select está abierto */
+.body-no-scroll {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
 /* ========================
    📦 CONTENEDORES
 ======================== */
@@ -40,15 +48,17 @@ body {
 /* ========================
    🏠 ENCABEZADO
 ======================== */
-header {
+.catalog-header {
   border: none !important;
   margin-bottom: 0 !important;
-}
-
-.bg-custom-header {
-  background-color: var(--amarillo-bg);
+  z-index: 1050 !important;
+  background-color: var(--amarillo-bg) !important;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+}
+
+.bg-yellow {
+  background-color: var(--amarillo-bg) !important;
 }
 
 /* ========================
@@ -117,104 +127,6 @@ h1 {
 .product-grid {
   display: grid;
   gap: 1.5rem;
-}
-
-/* ========================
-   📱 RESPONSIVE
-======================== */
-@media screen and (orientation: portrait) {
-  .product-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media screen and (orientation: landscape) {
-  .product-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 768px) {
-  .main-content {
-    max-width: 1024px;
-    padding: 32px;
-  }
-
-  .product-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  }
-}
-
-/* ========================
-   🎯 REACT SELECT AJUSTES
-======================== */
-.react-select__control {
-  border-radius: 30px !important;
-  min-height: 50px !important;
-  padding: 0 10px;
-  font-size: 16px;
-}
-
-.react-select__placeholder {
-  font-size: 0.875rem;
-}
-
-/* Ajustes para el menú del select en dispositivos móviles */
-@media (max-width: 992px) {
-  .react-select__menu {
-    position: relative !important;
-    margin-top: 0 !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    z-index: 9999;
-  }
-  
-  .react-select__menu-list {
-    max-height: 300px !important;
-  }
-}
-
-/* ========================
-   🔢 INPUTS PERSONALIZADOS
-======================== */
-.input-cantidad::-webkit-inner-spin-button,
-.input-cantidad::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-
-.input-cantidad {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-
-.spacer-bottom {
-  height: 80px;
-}
-
-@media (max-width: 768px) {
-  .card-header {
-    padding: 0.5rem !important;
-  }
-
-  .fixed-bottom {
-    padding: 8px;
-  }
-
-  .btn {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-  }
-
-  .logo-img {
-    max-height: 60px;
-  }
-
-  h1 {
-    font-size: 1.3rem;
-  }
 }
 
 /* ========================
@@ -297,62 +209,186 @@ h1 {
   color: #16a34a;
 }
 
-.btn-animado {
-  transition: all 0.3s ease-in-out;
-}
-
-.btn-animado:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.btn-animado:active {
-  transform: scale(0.95);
-}
-
 /* ========================
-   🟢 BOTONES DE CATEGORIAS
+   🔍 CONTENEDOR DEL BUSCADOR
 ======================== */
-.btn-categoria {
-  border-radius: 20px;
-  font-size: 14px;
-  padding: 6px 14px;
-  white-space: nowrap;
+.select-container {
+  position: relative;
 }
 
 /* ========================
-   📌 CATEGORIAS STICKY EN MOBILE
+   🎯 REACT SELECT AJUSTES
+======================== */
+.react-select__control {
+  border-radius: 30px !important;
+  min-height: 50px !important;
+  padding: 0 10px;
+  font-size: 16px;
+  border: 2px solid #198754 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  background: white !important;
+}
+
+.react-select__control:hover {
+  border-color: #198754 !important;
+  box-shadow: 0 2px 8px rgba(25, 135, 84, 0.15) !important;
+}
+
+.react-select__control--is-focused {
+  border-color: #198754 !important;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+}
+
+.react-select__placeholder {
+  font-size: 0.875rem;
+  color: #6c757d !important;
+}
+
+.react-select__input-container {
+  color: #495057;
+}
+
+.react-select__single-value {
+  color: #495057;
+}
+
+.react-select__menu {
+  z-index: 10000 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #dee2e6 !important;
+  overflow: hidden !important;
+}
+
+.react-select__menu-list {
+  padding: 0 !important;
+}
+
+.react-select__option {
+  padding: 12px 16px !important;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.react-select__option:last-child {
+  border-bottom: none;
+}
+
+.react-select__option--is-focused {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+}
+
+.react-select__option--is-selected {
+  background-color: #198754 !important;
+  color: white !important;
+}
+
+/* ========================
+   🔢 INPUTS PERSONALIZADOS
+======================== */
+.input-cantidad::-webkit-inner-spin-button,
+.input-cantidad::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.input-cantidad {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Estilo personalizado para los inputs de cantidad */
+.cantidad-input {
+  border: 1px solid #0d6efd;
+  background-color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+/* ========================
+   📱 CATEGORÍAS MOBILE
 ======================== */
 .categorias-mobile {
-  position: sticky;
-  top: 65px;
-  background: transparent !important;
-  z-index: 20;
-  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #198754 #f8f9fa;
+}
+
+.categorias-mobile::-webkit-scrollbar {
+  height: 6px;
+}
+
+.categorias-mobile::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.categorias-mobile::-webkit-scrollbar-thumb {
+  background: #198754;
+  border-radius: 3px;
+}
+
+.btn-todos {
+  background-color: #6c757d;
+  border: 1px solid #6c757d;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-todos.active,
+.btn-todos:hover {
+  background-color: #495057;
+  border-color: #495057;
+}
+
+.btn-categoria {
+  background-color: white;
+  border: 1px solid #198754;
+  color: #198754;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-categoria.active,
+.btn-categoria:hover {
+  background-color: #198754;
+  border-color: #198754;
+  color: white;
 }
 
 /* ========================
-   🔄 BOTON SCROLL TO TOP
+   ⬆️ SCROLL TO TOP
 ======================== */
 .scroll-to-top-btn {
   position: fixed;
-  bottom: 80px;
+  bottom: 20px;
   right: 20px;
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  background: rgba(22, 163, 74, 0.9);
-  border: none;
+  background-color: #198754;
   color: white;
-  font-size: 18px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   transition: all 0.3s ease;
 }
 
 .scroll-to-top-btn:hover {
-  background: rgba(22, 163, 74, 1);
-  transform: scale(1.1);
+  background-color: #157347;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* ========================
@@ -362,557 +398,286 @@ h1 {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
-  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10000;
   cursor: pointer;
 }
 
 .image-modal-content {
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  cursor: default;
 }
 
 .image-modal-close {
   position: absolute;
   top: 20px;
-  right: 20px;
-  background: rgba(255, 255, 255, 0.9);
+  right: 30px;
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  color: #333;
-  cursor: pointer;
-}
-
-@media (max-width: 992px) {
-  .logo-img {
-    max-height: 60px;
-  }
-
-  .user-img {
-    width: 32px;
-    height: 32px;
-  }
-
-  .ordenes-cliente-label {
-    font-size: 0.9rem !important;
-  }
-
-  header h1 {
-    font-size: 1.4rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .logo-img {
-    max-height: 50px;
-  }
-
-  .user-img {
-    width: 28px;
-    height: 28px;
-  }
-
-  header h1 {
-    font-size: 1.1rem;
-  }
-
-  .ordenes-cliente-label {
-    font-size: 0.8rem !important;
-  }
-}
-
-.nav-label {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 2rem;
   color: white;
+  cursor: pointer;
+  z-index: 10001;
+  padding: 10px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
 }
 
-@media (max-width: 576px) {
-  .nav-label {
-    font-size: 0.7rem;
-  }
+.image-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* index.css - Agregar al final del archivo */
-
-/* Ajustes para las tablas en dispositivos móviles */
-@media (max-width: 768px) {
-  .table-responsive {
-    font-size: 0.85rem;
-  }
-  
-  .table th, .table td {
-    padding: 0.4rem;
-  }
-  
-  .btn-sm {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.75rem;
-  }
+/* ========================
+   📱 HEADER RESPONSIVE
+======================== */
+.header-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* Mejoras para el modal de añadir productos en móviles */
-@media (max-width: 576px) {
-  .modal-content {
-    margin: 10px;
-    width: calc(100% - 20px);
-  }
-}
-
-/* Ajustes específicos para la tabla de productos añadidos */
-.table th:nth-child(1),
-.table td:nth-child(1) {
-  width: 80px !important;
-}
-
-.table th:nth-child(3),
-.table td:nth-child(3) {
-  width: 120px !important;
-}
-
-.table th:nth-child(5),
-.table td:nth-child(5) {
-  width: 140px !important;
-}
-
-/* Agregar estos estilos al archivo index.css */
-
-/* Ajustes para el botón Añadir en diferentes dispositivos */
-@media (max-width: 576px) {
-  .btn-animado {
-    width: 100% !important;
-    margin-top: 0.5rem;
-    min-width: auto !important;
-  }
-}
-
-@media (min-width: 577px) and (max-width: 768px) {
-  .btn-animado {
-    min-width: 160px !important;
-    padding: 0.5rem 1.25rem !important;
-  }
-}
-
-/* Asegurar que el contenedor flex se comporte correctamente */
-.d-flex.flex-column.flex-md-row {
-  align-items: stretch;
-}
-
-/* Mejora visual para el input de búsqueda */
-.form-control.ps-5 {
-  padding-left: 3rem !important;
-}
-
-/* Ajustes para la sección de validación y total */
-@media (max-width: 768px) {
-  .alert-warning {
-    font-size: 0.85rem !important;
-  }
-  
-  .alert-warning h6 {
-    font-size: 0.95rem !important;
-  }
-}
-
-/* Ajustes para el área de observaciones */
-.form-control {
+.search-wrapper {
   width: 100%;
+  max-width: 400px;
 }
 
-/* Mejoras de responsividad general */
-@media (max-width: 768px) {
-  .container-fluid.px-4 {
-    padding-left: 15px !important;
-    padding-right: 15px !important;
+.header-status {
+  font-size: 0.9rem;
+}
+
+/* Para tablets (768px a 991px) */
+@media (max-width: 991.98px) {
+  .catalog-header {
+    padding: 0.5rem 0;
   }
   
-  .card-body {
-    padding: 1rem !important;
-  }
-
-  .btn-categoria {
-    font-size: 12px;
-    padding: 4px 10px;
-  }
-}
-
-@media (max-width: 992px) {
-  .react-select__control {
-    margin-bottom: 12px;
-  }
-
-  .categorias-mobile {
-    top: 120px;
-    background: var(--amarillo-bg);
-    z-index: 15;
-    padding: 6px 0;
-  }
-}
-
-/* Estilo personalizado para los inputs de cantidad */
-.cantidad-input {
-  border: 1px solid #0d6efd;       /* azul Bootstrap */
-  background-color: #fff;
-  color: #0d6efd;
-  box-shadow: none;
-  transition: all 0.2s ease-in-out;
-}
-
-/* Color azul al enfocar */
-.cantidad-input:focus {
-  border: 1px solid #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-  outline: none;
-}
-
-/* Mejoras específicas para móviles y tablets */
-@media (max-width: 992px) {
-  .react-select__control {
-    margin-bottom: 0;
-  }
-  
-  .react-select__menu {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90% !important;
-    max-width: 400px !important;
-    z-index: 10000 !important;
-  }
-  
-  .categorias-mobile {
-    position: relative;
-    top: 0;
-    background: var(--amarillo-bg);
-    z-index: 999;
-    padding: 10px 0;
-    margin-top: 0;
-  }
-  
-  /* Asegurar que el header tenga suficiente espacio */
-  header {
-    padding-bottom: 10px;
-  }
-}
-
-/* Ajustes para tablets */
-@media (min-width: 768px) and (max-width: 992px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .catalogo-card .card-title {
-    font-size: 14px;
-  }
-}
-
-/* Mejoras de visualización para móviles pequeños */
-@media (max-width: 576px) {
   .logo-img {
-    max-height: 40px !important;
+    max-height: 80px;
   }
   
-  header h1 {
-    font-size: 1.1rem !important;
-  }
-  
-  .btn-categoria {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-  
-  .categorias-mobile {
-    padding: 8px 0;
-  }
-}
-
-/* Asegurar que el menú del select no se superponga */
-.react-select__menu {
-  z-index: 10000 !important;
-}
-
-/* Mejorar la visualización de las categorías en móvil */
-.categorias-mobile {
-  background: linear-gradient(to bottom, var(--amarillo-bg), transparent);
-  padding: 10px 0;
-  margin-top: 10px;
-  border-radius: 0 0 10px 10px;
-}
-
-/* Ajustar el espacio entre el buscador y las categorías */
-@media (max-width: 992px) {
-  .container-fluid.my-3 {
-    margin-top: 0 !important;
-  }
-}
-
-/* Mejoras específicas para móviles y tablets */
-@media (max-width: 992px) {
-  .react-select__control {
-    margin-bottom: 0;
-  }
-  
-  .react-select__menu {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90% !important;
-    max-width: 400px !important;
-    z-index: 10000 !important;
-  }
-  
-  .categorias-mobile {
-    position: relative;
-    top: 0;
-    background: var(--amarillo-bg);
-    z-index: 999;
-    padding: 10px 0;
-    margin-top: 0;
-  }
-  
-  /* Asegurar que el header tenga suficiente espacio */
-  header {
-    padding-bottom: 10px;
-  }
-}
-
-/* Ajustes para tablets */
-@media (min-width: 768px) and (max-width: 992px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .catalogo-card .card-title {
-    font-size: 14px;
-  }
-}
-
-/* Mejoras de visualización para móviles pequeños */
-@media (max-width: 576px) {
-  .logo-img {
-    max-height: 40px !important;
-  }
-  
-  header h1 {
-    font-size: 1.1rem !important;
-  }
-  
-  .btn-categoria {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-  
-  .categorias-mobile {
-    padding: 8px 0;
-  }
-}
-
-/* Asegurar que el menú del select no se superponga */
-.react-select__menu {
-  z-index: 10000 !important;
-}
-
-/* Mejorar la visualización de las categorías en móvil */
-.categorias-mobile {
-  background: linear-gradient(to bottom, var(--amarillo-bg), transparent);
-  padding: 10px 0;
-  margin-top: 10px;
-  border-radius: 0 0 10px 10px;
-}
-
-/* Ajustar el espacio entre el buscador y las categorías */
-@media (max-width: 992px) {
-  .container-fluid.my-3 {
-    margin-top: 0 !important;
-  }
-}
-
-
-/* Ajustes específicos para mobile */
-@media (max-width: 768px) {
-  /* Mejorar visibilidad del botón Añadir en mobile */
-  .btn-success {
-    padding: 12px 20px !important;
-    font-size: 1.1rem !important;
-  }
-  
-  /* Asegurar que los elementos se apilen correctamente */
-  .d-flex.flex-column {
-    gap: 15px !important;
-  }
-  
-  /* Mejorar el input de búsqueda en mobile */
-  .position-relative.w-100 {
-    margin-bottom: 0;
-  }
-  
-  /* Ajustar espaciado general en mobile */
-  .container-fluid.px-4 {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-}
-
-/* Mejorar visibilidad en dispositivos muy pequeños */
-@media (max-width: 576px) {
-  .btn-success {
-    font-size: 1rem !important;
-    padding: 10px 16px !important;
-  }
-  
-  /* Ajustar el header en mobile */
-  header .d-flex.align-items-center {
-    flex-direction: column;
+  h1.text-success {
+    font-size: 1.5rem !important;
+    white-space: normal !important;
     text-align: center;
   }
   
-  /* Mejorar el campo de cliente */
-  .bg-success input {
-    font-size: 0.9rem !important;
-    padding: 8px !important;
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem !important;
   }
-}
-
-
-/* Para móvil: botón Añadir debajo del buscador */
-@media (max-width: 767.98px) {
-  .d-md-inline-flex {
+  
+  .select-container {
+    margin-top: 1rem;
+    width: 100%;
+  }
+  
+  .search-wrapper {
     width: 100% !important;
-    margin-top: 10px;
+    max-width: 100% !important;
   }
 }
 
-/* Para desktop/tablet: botón Añadir en la misma línea */
-@media (min-width: 768px) {
-  .d-md-inline-flex {
-    width: 140px !important;
-  }
-}
-
-/* Ajustes específicos para el logo en móviles */
+/* Para móviles (menos de 768px) */
 @media (max-width: 767.98px) {
-    .card-header .row.align-items-center {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .card-header .col-auto:first-child {
-        margin-bottom: 10px;
-    }
-    
-    .card-header .col {
-        margin-bottom: 10px;
-    }
+  .logo-img {
+    max-height: 60px;
+  }
+  
+  h1.text-success {
+    font-size: 1.3rem !important;
+  }
+  
+  .header-status {
+    font-size: 0.8rem;
+  }
+  
+  .select-container {
+    width: 100%;
+  }
+  
+  /* Menú modal en móviles */
+  .react-select__menu-portal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
+    padding: 20px;
+  }
+
+  .react-select__menu-portal .react-select__menu {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    margin: 0 auto;
+  }
+  
+  /* Ocultar contenido cuando el select está abierto en móvil */
+  .hidden-when-select-open {
+    display: none !important;
+  }
 }
 
-/* Ajustes para tablets */
-@media (min-width: 768px) and (max-width: 991.98px) {
-    .logo-img {
-        max-height: 80px;
-    }
+/* Agregar estos estilos al final del archivo */
+/* 🎨 Fondo más claro del contenedor de filtros */
+.filtro-fecha-card {
+  background-color: #fff9e6 !important; /* amarillo claro suave */
+  border: 1px solid #ffe066 !important;
 }
 
 
-.observacion-general {
-  background-color: #e9ecef !important; /* gris Bootstrap */
-  color: #000000 !important;
-  min-height: 100px;
-  resize: vertical;
-  border: 1px solid #ced4da !important; /* borde gris claro */
-  border-radius: 6px; /* para que se vea más elegante */
-  padding: 10px;      /* un poco de espacio interno */
+/* 🎨 Botones personalizados para filtros */
+.btn-filtro {
+  background-color: transparent !important;
+  border: 1px solid #ffd43b !important;
+  color: #000 !important;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
 }
 
-
-/* Estilo para el placeholder */
-.observacion-general::placeholder {
-  color: #6c757d !important; /* Color gris para el placeholder */
-  opacity: 1 !important; /* Asegura que sea visible */
+.btn-filtro:hover {
+  background-color: #ffe066 !important;
+  color: #000 !important;
 }
 
-.observacion-general::-webkit-input-placeholder {
-  color: #6c757d !important;
-  opacity: 1 !important;
+.btn-filtro-activo {
+  background-color: #ffcc00 !important;
+  border: 1px solid #ffcc00 !important;
+  color: #000 !important;
+  font-weight: 600;
 }
 
-.observacion-general::-moz-placeholder {
-  color: #6c757d !important;
-  opacity: 1 !important;
+/* 🎨 Input de fecha */
+.input-fecha {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #ffd43b !important;
 }
 
-.observacion-general:-ms-input-placeholder {
-  color: #6c757d !important;
-  opacity: 1 !important;
+/* Forzar el texto del selector de fecha en todos los navegadores */
+.input-fecha::-webkit-datetime-edit,
+.input-fecha::-webkit-datetime-edit-text,
+.input-fecha::-webkit-datetime-edit-month-field,
+.input-fecha::-webkit-datetime-edit-day-field,
+.input-fecha::-webkit-datetime-edit-year-field {
+  color: #000 !important;
 }
 
-.observacion-general:-moz-placeholder {
-  color: #6c757d !important;
-  opacity: 1 !important;
-}
-
-/* Estilos para el placeholder del buscador */
+/* Estilos para el input de búsqueda */
 .form-control::placeholder {
-  color: #6c757d !important; /* gris oscuro */
-  opacity: 1 !important;    /* asegura que sea visible */
+  color: #6c757d !important;
+  opacity: 1 !important;
 }
 
+.form-control {
+  color: #000000 !important;
+}
+
+/* Para navegadores WebKit (Chrome, Safari) */
 .form-control::-webkit-input-placeholder {
   color: #6c757d !important;
   opacity: 1 !important;
 }
 
+/* Para Firefox */
 .form-control::-moz-placeholder {
   color: #6c757d !important;
   opacity: 1 !important;
 }
 
+/* Para Internet Explorer */
 .form-control:-ms-input-placeholder {
   color: #6c757d !important;
   opacity: 1 !important;
 }
 
-.form-control:-moz-placeholder {
+/* Para Microsoft Edge */
+.form-control::-ms-input-placeholder {
   color: #6c757d !important;
   opacity: 1 !important;
 }
 
-/* En index.css */
-.input-cliente {
-  color: white !important;
+
+/* ESTILOS ESPECÍFICOS PARA EL BUSCADOR EN PEDIDO */
+.buscador-input-pedido {
+  color: #000000 !important;
+  background-color: white !important;
 }
 
-.input-cliente::placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-/* Estilo para el placeholder del input del cliente */
-.bg-success input::placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
+.buscador-input-pedido::placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
 }
 
-.bg-success input::-webkit-input-placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Para navegadores WebKit (Chrome, Safari) */
+.buscador-input-pedido::-webkit-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
 }
 
-.bg-success input::-moz-placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Para Firefox */
+.buscador-input-pedido::-moz-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
 }
 
-.bg-success input:-ms-input-placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Para Internet Explorer */
+.buscador-input-pedido:-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
 }
 
-.bg-success input:-moz-placeholder {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Para Microsoft Edge */
+.buscador-input-pedido::-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+/* Forzar estilos para el input de búsqueda en Pedido */
+input.buscador-input-pedido {
+  color: #000000 !important;
+  background-color: white !important;
+}
+
+input.buscador-input-pedido::placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+/* Estilos de alta prioridad */
+input[type="text"].buscador-input-pedido {
+  color: #000000 !important;
+  background-color: white !important;
+  caret-color: #000000 !important;
+}
+
+input[type="text"].buscador-input-pedido::placeholder {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+/* Sobrescribir cualquier estilo de Bootstrap u otros */
+.form-control.buscador-input-pedido {
+  color: #000000 !important;
+  background-color: white !important;
 }
