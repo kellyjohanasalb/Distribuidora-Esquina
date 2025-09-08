@@ -59,12 +59,9 @@ const Login = () => {
       console.log('Response data:', data);
 
       if (!response.ok) {
-        // Mostrar mensaje específico para credenciales incorrectas
         if (response.status === 401) {
-          throw new Error('Correo o contraseña incorrectos');
-        } else {
-          throw new Error(data.message || 'Error en la autenticación');
-        }
+  throw new Error('Correo o contraseña incorrectos');
+}
       }
       
       const token = data['access_token'] || data['access-token'] || data['access-teker'];
