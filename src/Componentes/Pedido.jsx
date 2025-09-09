@@ -737,18 +737,18 @@ const DistribuidoraEsquina = () => {
                           </td>
                           <td style={{ width: '200px' }}>
                             <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              value={item.observacion}
-                              maxLength={512}
-                              onChange={(e) =>
-                                actualizarProducto(item.idArticulo, {
-                                  observacion: e.target.value,
-                                })
-                              }
-                              placeholder="Observación (opcional)"
-                              style={{ fontSize: '0.8rem' }}
-                            />
+  type="text"
+  className="form-control form-control-sm observacion-producto"
+  value={item.observacion}
+  maxLength={512}
+  onChange={(e) =>
+    actualizarProducto(item.idArticulo, {
+      observacion: e.target.value,
+    })
+  }
+  placeholder="Observación (opcional)"
+  style={{ fontSize: '0.8rem' }}
+/>
                             {item.observacion && (
                               <small className="text-muted" style={{ fontSize: '0.7rem' }}>
                                 {item.observacion.length}/512
@@ -819,7 +819,7 @@ const DistribuidoraEsquina = () => {
     <h5 className="mb-0 me-2">Observación General</h5>
   </div>
   <textarea
-    className="form-control rounded-0 border-0 border-bottom observacion-general"
+     className="form-control rounded-0 border-0 border-bottom observacion-general"
     rows={3}
     placeholder="Instrucciones, comentarios o notas para este pedido..."
     value={observacionGeneral}
