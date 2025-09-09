@@ -96,7 +96,7 @@ export function useOrdenes() {
                         url += `?fecha=${fechaStr}`;
                   }
 
-                  const res = await axios.get(url);
+                  const res = await axios.get(url,{ headers:{"x-authentication": localStorage.getItem('authToken') }}) ;
                   const enviados = res.data.items || [];
 
                   const pendientesMapeados = locales.map(mapearPendiente);
@@ -158,7 +158,7 @@ export function useOrdenes() {
                         datosParaEnvio.observation = orden.originalData.observation.trim();
                   }
 
-                  const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio);
+                  const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio,{ headers:{"x-authentication": localStorage.getItem('authToken')}});
                   const nuevoId = response.data.idPedido || response.data.id;
 
                   // Actualizar localStorage

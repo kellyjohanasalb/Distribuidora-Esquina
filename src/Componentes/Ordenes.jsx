@@ -159,7 +159,7 @@ const OrdersView = () => {
         setShowDetailsModal(true);
 
         try {
-            const response = await axios.get(`${baseURL}/api/pedidos/${order.idPedido || order.id}`);
+            const response = await axios.get(`${baseURL}/api/pedidos/${order.idPedido || order.id}`, {headers: {"x-authentication": localStorage.getItem('authToken') }});
             const data = response.data;
 
             // Normalizar nombres de campos para manejar diferentes formatos del API
@@ -541,75 +541,75 @@ const OrdersView = () => {
                                 </div>
 
                                 {/* Vista móvil - MODIFICAR EL NOMBRE DEL CLIENTE */}
-                               <div className="d-block d-md-none">
-  {todasOrdenes.length > 0 ? (
-    todasOrdenes.map((order) => (
-      <div
-        key={order.id}
-        className={`card mb-3 ${order.status === 'Pendiente' ? 'border-warning' : 'border-success'}`}
-        style={{ borderRadius: '12px' }}
-      >
-        <div className="card-body p-3">
-          {/* Encabezado con ID y Estado */}
-          <div className="d-flex justify-content-between align-items-start mb-2">
-            <div>
-              <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
-              {order.fechaAlta && (
-                <small className="text-muted">
-                  📅 {formatDate(order.fechaAlta)}
-                </small>
-              )}
-            </div>
-            <span className={`badge px-2 py-1 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
-              {order.status}
-            </span>
-          </div>
-          
-          {/* Información del cliente */}
-          <div className="mb-2">
-            <div className="text-muted small">Cliente:</div>
-            <div
-              className={`fw-semibold ${order.status === 'Enviado' ? 'text-primary' : ''}`}
-              style={{
-                cursor: order.status === 'Enviado' ? 'pointer' : 'default',
-                textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
-              }}
-              onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
-              title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
-            >
-              {order.name}
-            </div>
-          </div>
-          
-          {/* Valor del pedido */}
-          <div className="mb-3">
-            <div className="text-muted small">Valor:</div>
-            <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
-          </div>
-          
-          {/* Botón de acción */}
-          <div className="d-grid gap-2">
-            {order.status === 'Pendiente' ? (
-              <button
-                className="btn btn-success btn-sm"
-                onClick={() => handleSendOrder(order)}
-                disabled={isLoading || !isConnected}
-              >
-                <Send size={16} className="me-1" />
-                Enviar
-              </button>
-            ) : (
-              <button
-                className="btn btn-outline-primary btn-sm"
-                onClick={() => handleViewOrderDetails(order)}
-              >
-                <Package size={16} className="me-1" />
-                Ver Detalles
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+                                <div className="d-block d-md-none">
+                                    {todasOrdenes.length > 0 ? (
+                                        todasOrdenes.map((order) => (
+                                            <div
+                                                key={order.id}
+                                                className={`card mb-3 ${order.status === 'Pendiente' ? 'border-warning' : 'border-success'}`}
+                                                style={{ borderRadius: '12px' }}
+                                            >
+                                                <div className="card-body p-3">
+                                                    {/* Encabezado con ID y Estado */}
+                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                        <div>
+                                                            <h6 className="mb-0 fw-bold text-primary">#{order.id}</h6>
+                                                            {order.fechaAlta && (
+                                                                <small className="text-muted">
+                                                                    📅 {formatDate(order.fechaAlta)}
+                                                                </small>
+                                                            )}
+                                                        </div>
+                                                        <span className={`badge px-2 py-1 ${order.status === 'Pendiente' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Información del cliente */}
+                                                    <div className="mb-2">
+                                                        <div className="text-muted small">Cliente:</div>
+                                                        <div
+                                                            className={`fw-semibold ${order.status === 'Enviado' ? 'text-primary' : ''}`}
+                                                            style={{
+                                                                cursor: order.status === 'Enviado' ? 'pointer' : 'default',
+                                                                textDecoration: order.status === 'Enviado' ? 'underline' : 'none'
+                                                            }}
+                                                            onClick={() => order.status === 'Enviado' && handleViewOrderDetails(order)}
+                                                            title={order.status === 'Enviado' ? 'Ver detalles del pedido' : ''}
+                                                        >
+                                                            {order.name}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Valor del pedido */}
+                                                    <div className="mb-3">
+                                                        <div className="text-muted small">Valor:</div>
+                                                        <div className="fw-semibold text-success">{formatCurrency(order.value)}</div>
+                                                    </div>
+
+                                                    {/* Botón de acción */}
+                                                    <div className="d-grid gap-2">
+                                                        {order.status === 'Pendiente' ? (
+                                                            <button
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={() => handleSendOrder(order)}
+                                                                disabled={isLoading || !isConnected}
+                                                            >
+                                                                <Send size={16} className="me-1" />
+                                                                Enviar
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                className="btn btn-outline-primary btn-sm"
+                                                                onClick={() => handleViewOrderDetails(order)}
+                                                            >
+                                                                <Package size={16} className="me-1" />
+                                                                Ver Detalles
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))
                                     ) : (
                                         !loading && (

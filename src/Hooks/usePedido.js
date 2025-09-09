@@ -211,7 +211,7 @@ const limpiarPedido = () => {
       const res = await axios.post(
         "https://remito-send-back.vercel.app/api/pedidos",
         body,
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json", "x-authentication": localStorage.getItem('authToken') }  }
       );
 
       console.log("✅ Pedido guardado:", res.data);
