@@ -181,7 +181,7 @@ const limpiarPedido = () => {
     const clienteAUsar = bodyPersonalizado?.clientName || cliente;
     const pedidoAUsar = bodyPersonalizado?.products || pedido;
     const observacionAUsar = bodyPersonalizado?.observation || observacionGeneral;
-
+console.log("Depuración - pedidoAUsar:", pedidoAUsar);
     // 1️⃣ Validaciones antes de enviar
     if (!clienteAUsar?.trim()) {
       console.warn("⚠️ Debes ingresar un nombre de cliente");
@@ -198,12 +198,12 @@ const limpiarPedido = () => {
       clientName: clienteAUsar.trim(),
       fechaAlta: new Date().toISOString(),
       observation: observacionAUsar?.trim() || null,
-      products: pedidoAUsar.map((p) => ({
-        idArticulo: p.idArticulo,
-        cantidad: p.cantidad,
-        precio: Math.max(Number(p.precio) || 1, 1),
-        observation: p.observacion?.trim() || null
-      }))
+ products: pedidoAUsar.map((p) => ({
+  idArticulo: p.idArticulo,
+  cantidad: p.cantidad,
+  precio: Math.max(Number(p.precio) || 1, 1),
+  observation: p.observacion?.trim() || null // ← Esto es correcto
+}))
     };
 
     try {

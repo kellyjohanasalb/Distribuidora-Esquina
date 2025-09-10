@@ -57,6 +57,8 @@ const DistribuidoraEsquina = () => {
     });
   });
 
+
+
   // Verificar si hay borrador disponible al cargar el componente
   useEffect(() => {
     const borrador = localStorage.getItem('pedidoBorrador');
@@ -141,24 +143,25 @@ const DistribuidoraEsquina = () => {
 };
 
 
-  const agregarAlPedido = (item) => {
-    const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
-    if (productoExistente) {
-      actualizarProducto(productoExistente.id, {
-        cantidad: productoExistente.cantidad + 1
-      });
-    } else {
-      agregarProducto({
-        id: item.idArticulo,
-        idArticulo: item.idArticulo,
-        codigo: item.codigo,
-        articulo: item.descripcion,
-        cantidad: 1,
-        observacion: '',
-      });
-    }
-    handleBusquedaChange({ target: { value: '' } });
-  };
+ const agregarAlPedido = (item) => {
+  const productoExistente = pedido.find(p => p.idArticulo === item.idArticulo);
+  if (productoExistente) {
+    actualizarProducto(productoExistente.idArticulo, {
+      cantidad: productoExistente.cantidad + 1
+    });
+  } else {
+    agregarProducto({
+      id: item.idArticulo,
+      idArticulo: item.idArticulo,
+      codigo: item.codigo,
+      articulo: item.descripcion,
+      cantidad: 1,
+      observacion: '', // Asegurar que se inicialice con string vacío
+      precio: item.precioVenta || null,
+    });
+  }
+  handleBusquedaChange({ target: { value: '' } });
+};
 
   const agregarYCerrar = (item) => {
     agregarAlPedido(item);
@@ -266,51 +269,84 @@ const DistribuidoraEsquina = () => {
     }
   };
 
+ 
+
   // Función para enviar pedido (estado enviado)
-  const enviarPedido = async () => {
-    if (!puedeEnviar()) {
-      if (!isOnline) {
-        alert("No hay conexión a internet.");
-        return;
-      }
-      if (!esPedidoValido()) {
-        alert("El pedido no es válido.");
-        return;
-      }
+// Agrega esta función generateUUID al principio de tu componente Pedido.jsx
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0,
+          v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Luego modifica la función enviarPedido:
+const enviarPedido = async () => {
+  if (!puedeEnviar()) {
+    if (!isOnline) {
+      alert("No hay conexión a internet.");
       return;
     }
-    const confirmacion = window.confirm(`¿Enviar este pedido? Cliente: ${cliente}`);
-    if (!confirmacion) return;
-    setIsEnviando(true);
-    try {
-      const productosMapeados = pedido.map(p => {
-        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-        return {
-          idArticulo: p.idArticulo,
-          cantidad: p.cantidad,
-          precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
-          observation: p.observacion?.trim() || null
-        };
-      });
-      const body = {
-        clientName: cliente.trim(),
-        products: productosMapeados,
-        fechaAlta: new Date().toISOString(),
-        observation: observacionGeneral?.trim() || null
-      };
-      await guardarPedido(body);
-      limpiarPedido();
-
-      // ✅ Mostrar mensaje de éxito y permanecer en la página
-      alert(`✅ Pedido enviado exitosamente para ${cliente}. Puedes crear un nuevo pedido.`);
-
-    } catch (error) {
-      console.error("❌ Error completo:", error);
-      alert("Error al enviar el pedido.");
-    } finally {
-      setIsEnviando(false);
+    if (!esPedidoValido()) {
+      alert("El pedido no es válido.");
+      return;
     }
-  };
+    return;
+  }
+  
+  const confirmacion = window.confirm(`¿Enviar este pedido? Cliente: ${cliente}`);
+  if (!confirmacion) return;
+  
+  setIsEnviando(true);
+  try {
+    console.log("📦 Productos en el pedido:", pedido);
+
+    // Mapear productos CORRECTAMENTE incluyendo observaciones
+    const productosMapeados = pedido.map(p => {
+      const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+      
+      return {
+        idArticulo: p.idArticulo,
+        cantidad: p.cantidad,
+        precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
+        observation: p.observacion || null
+      };
+    });
+
+    const body = {
+      frontId: generateUUID(), // AÑADIR ESTA LÍNEA
+      clientName: cliente.trim(),
+      products: productosMapeados,
+      fechaAlta: new Date().toISOString(),
+      observation: observacionGeneral?.trim() || null
+    };
+
+    console.log("📤 Body completo a enviar:", JSON.stringify(body, null, 2));
+
+    // Enviar directamente con axios
+    const res = await axios.post(
+      "https://remito-send-back.vercel.app/api/pedidos",
+      body,
+      { headers: { 
+        "Content-Type": "application/json", 
+        "x-authentication": localStorage.getItem('authToken') 
+      }}
+    );
+
+    console.log("✅ Pedido guardado:", res.data);
+    
+    // Limpiar el pedido
+    limpiarPedido();
+    alert(`✅ Pedido enviado exitosamente para ${cliente}.`);
+
+  } catch (error) {
+    console.error("❌ Error completo:", error);
+    alert("Error al enviar el pedido: " + (error.response?.data?.message || error.message));
+  } finally {
+    setIsEnviando(false);
+  }
+};
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
@@ -736,14 +772,14 @@ const DistribuidoraEsquina = () => {
 
                           </td>
                           <td style={{ width: '200px' }}>
-                            <input
+  <input
   type="text"
   className="form-control form-control-sm observacion-producto"
-  value={item.observacion}
+  value={item.observacion || ''}
   maxLength={512}
   onChange={(e) =>
     actualizarProducto(item.idArticulo, {
-      observacion: e.target.value,
+      observacion: e.target.value, // Asegurar que guarda en observacion
     })
   }
   placeholder="Observación (opcional)"

@@ -546,47 +546,90 @@ h1 {
 
 /* Agregar estos estilos al final del archivo */
 /* 🎨 Fondo más claro del contenedor de filtros */
+/* ========================
+   📱 FILTROS DE FECHA
+======================== */
 .filtro-fecha-card {
-  background-color: #fff9e6 !important; /* amarillo claro suave */
+  background-color: #fff9e6 !important;
   border: 1px solid #ffe066 !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 1rem !important;
 }
 
+.filtro-fecha-card .card-body {
+  background-color: transparent !important;
+  padding: 1rem !important;
+}
 
-/* 🎨 Botones personalizados para filtros */
+.filtro-fecha-card .d-flex.flex-wrap.gap-2 {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+}
+
+/* Botones */
+.btn-filtro,
+.btn-filtro-activo {
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  white-space: nowrap !important;
+}
+
 .btn-filtro {
   background-color: transparent !important;
   border: 1px solid #ffd43b !important;
   color: #000 !important;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  font-weight: 500 !important;
 }
 
 .btn-filtro:hover {
   background-color: #ffe066 !important;
-  color: #000 !important;
 }
 
 .btn-filtro-activo {
   background-color: #ffcc00 !important;
   border: 1px solid #ffcc00 !important;
   color: #000 !important;
-  font-weight: 600;
+  font-weight: 600 !important;
 }
 
-/* 🎨 Input de fecha */
+/* Inputs de fecha */
 .input-fecha {
   background-color: #fff !important;
   color: #000 !important;
   border: 1px solid #ffd43b !important;
+  border-radius: 0.375rem !important;
+  padding: 0.375rem 0.75rem !important;
+  font-size: 0.875rem !important;
 }
 
-/* Forzar el texto del selector de fecha en todos los navegadores */
+/* Forzar texto negro */
 .input-fecha::-webkit-datetime-edit,
 .input-fecha::-webkit-datetime-edit-text,
 .input-fecha::-webkit-datetime-edit-month-field,
 .input-fecha::-webkit-datetime-edit-day-field,
 .input-fecha::-webkit-datetime-edit-year-field {
   color: #000 !important;
+}
+
+/* ========================
+   👤 CLIENTE LABEL
+======================== */
+.ordenes-cliente-label {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+}
+
+.d-flex.align-items-center.rounded-pill {
+  padding: 0.25rem 0.75rem !important;
+}
+
+.rounded-circle.overflow-hidden {
+  width: 32px !important;
+  height: 32px !important;
 }
 
 /* Estilos para el input de búsqueda */
@@ -763,26 +806,128 @@ input[type="text"].form-control.observacion-producto {
   opacity: 1 !important;
 }
 
-/* NUEVO: Estilos para el buscador para asegurar texto negro */
+/* NUEVO: Estilos específicos para el buscador principal - CORREGIDO */
 .buscador-input-pedido {
   color: #000000 !important;
-  background-color: white !important;
+  background-color: #ffffff !important; /* 👈 fondo blanco fijo */
   caret-color: #000000 !important;
+  font-weight: 500 !important;
+  /* Para que no se agrande */
+  height: 36px !important;
+  padding: 4px 8px !important;
+  line-height: 1.2 !important;
 }
+
+
 
 .buscador-input-pedido::placeholder {
   color: #6c757d !important;
-  opacity: 1 !important;
+  opacity: 0.8 !important;
 }
 
 /* Para navegadores WebKit (Chrome, Safari) */
 .buscador-input-pedido::-webkit-input-placeholder {
   color: #6c757d !important;
-  opacity: 1 !important;
+  opacity: 0.8 !important;
 }
 
 /* Para Firefox */
 .buscador-input-pedido::-moz-placeholder {
   color: #6c757d !important;
+  opacity: 0.8 !important;
+}
+
+/* Para Internet Explorer */
+.buscador-input-pedido:-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 0.8 !important;
+}
+
+/* Para Microsoft Edge */
+.buscador-input-pedido::-ms-input-placeholder {
+  color: #6c757d !important;
+  opacity: 0.8 !important;
+}
+
+/* Estilos adicionales para asegurar visibilidad */
+.buscador-input-pedido:focus {
+  color: #000000 !important;
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.buscador-input-pedido:active {
+  color: #000000 !important;
+  background-color: transparent !important;
+}
+
+/* Responsive para móvil y tablet */
+@media (max-width: 991.98px) {
+  .buscador-input-pedido {
+    font-size: 0.9rem !important;
+    color: #000000 !important;
+    font-weight: 500 !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .buscador-input-pedido {
+    font-size: 0.85rem !important;
+    color: #000000 !important;
+    font-weight: 500 !important;
+  }
+}
+
+/* Forzar estilos del input buscador */
+input.form-control.buscador-input-pedido {
+  color: #000 !important;              /* texto negro */
+  background-color: #fff !important;   /* fondo blanco */
+  caret-color: #000 !important;        /* cursor visible */
+  font-weight: 500 !important;
+  height: 36px !important;
+  padding: 4px 10px !important;
+  line-height: 1.2 !important;
+}
+
+/* placeholder también visible */
+input.form-control.buscador-input-pedido::placeholder {
+  color: #6c757d !important; /* gris Bootstrap */
   opacity: 1 !important;
+}
+
+/* Ajustes específicos para el badge de cliente */
+@media (max-width: 991.98px) {
+  .ordenes-cliente-label {
+    font-size: 0.65rem !important;
+  }
+  
+  .d-flex.align-items-center.rounded-pill {
+    padding: 0.2rem 0.5rem !important;
+    margin-right: 0.5rem !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ordenes-cliente-label {
+    display: none !important;
+  }
+  
+  .d-flex.align-items-center.rounded-pill {
+    padding: 0.3rem !important;
+    margin-right: 0.3rem !important;
+  }
+  
+  .d-flex.align-items-center.rounded-pill span {
+    margin-right: 0 !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Ajustar el avatar de usuario en móviles */
+@media (max-width: 767.98px) {
+  .rounded-circle.overflow-hidden {
+    width: 32px !important;
+    height: 32px !important;
+  }
 }

@@ -48,7 +48,7 @@ const mapearPendiente = (pedido) => ({
                   idArticulo: p.idArticulo,
                   cantidad: p.cantidad,
                   precio: p.precio || 1,
-                  observation: p.observation || null
+                   observation: p.observation || p.observacion || null
             })),
             fechaAlta: normalizarFecha(pedido.fechaAlta),
             observation: pedido.observation || "Sin observaciones"
@@ -63,7 +63,10 @@ const mapearEnviado = (pedido) => ({
       status: "Enviado",
       fechaAlta: normalizarFecha(pedido.fechaPedido), // Usar fechaPedido primero
       observation: pedido.observation,
-      products: pedido.products || pedido.productos
+  products: (pedido.products || pedido.productos || []).map(producto => ({
+    ...producto,
+    observation: producto.observation || producto.observacion || null // Añadir esta línea
+  }))
 });
 
 export function useOrdenes() {

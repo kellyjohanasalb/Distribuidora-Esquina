@@ -165,6 +165,7 @@ const OrdersView = () => {
             // Normalizar nombres de campos para manejar diferentes formatos del API
             const normalizedData = {
                 ...data,
+              
                 // Usar el campo correcto de la base de datos
                 fechaAlta: data.fechaPedido || data.fechPredIds || data['fechap@clio'] || data.fechaAlta,
                 clientName: data.clientName || data.name,
@@ -397,18 +398,20 @@ const OrdersView = () => {
                                     </div>
 
                                     <div className="col-auto">
-                                        <div className="d-flex align-items-center">
+  <div className="d-flex align-items-center flex-nowrap">
                                             <div className={`badge ${isConnected ? 'bg-success' : 'bg-danger'} me-3`}>
                                                 {isConnected ? '🟢 En línea' : '🔴 Sin conexión'}
                                             </div>
 
-                                            <div
-                                                className="d-flex align-items-center rounded-pill px-3 py-1 me-3"
-                                                style={{ backgroundColor: '#298143' }}
-                                            >
-                                                <span className="me-2" style={{ fontSize: '1.2rem' }}>👤</span>
-                                                <small className="fw-semibold text-white ordenes-cliente-label">Cliente</small>
-                                            </div>
+<div
+  className="d-flex align-items-center rounded-pill px-2 py-1 me-2"
+  style={{ backgroundColor: '#298143' }}
+>
+  <span className="me-1" style={{ fontSize: '0.9rem' }}>👤</span>
+  <small className="fw-semibold text-white" style={{ fontSize: '0.7rem' }}>
+    Cliente
+  </small>
+</div>
 
                                             <div
                                                 className="rounded-circle overflow-hidden"
@@ -847,12 +850,11 @@ const OrdersView = () => {
                                                                 {formatCurrency((product.cantidad || 0) * parseFloat(product.precio || 0))}
                                                             </td>
                                                             <td>
-                                                                {product.observation &&
-                                                                    product.observation.trim() !== "" ? (
-                                                                    <small className="text-muted">
-                                                                        {product.observation}
-                                                                    </small>
-                                                                ) : (
+                                                                {product.observation && product.observation.trim() !== "" ? (
+    <small className="text-muted">
+      {product.observation}
+    </small>
+  ) : (
                                                                     <small className="text-muted">Sin observaciones</small>
                                                                 )}
                                                             </td>
@@ -936,17 +938,7 @@ const OrdersView = () => {
 
             {showModal && <div className="modal-backdrop fade show"></div>}
 
-            {/* Botón de simulación de conexión - MANTENER EL EXISTENTE */}
-            <div className="position-fixed" style={{ bottom: '100px', right: '15px', zIndex: 1000 }}>
-                <button
-                    className={`btn btn-sm ${isConnected ? 'btn-success' : 'btn-danger'}`}
-                    onClick={() => setIsConnected(!isConnected)}
-                    style={{ width: '40px', height: '40px' }}
-                    title={isConnected ? 'Simular desconexión' : 'Simular conexión'}
-                >
-                    {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
-                </button>
-            </div>
+           
         </div>
     );
 };
