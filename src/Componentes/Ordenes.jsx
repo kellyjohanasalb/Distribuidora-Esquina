@@ -6,13 +6,15 @@ import axios from 'axios';
 import '../index.css';
 
 const OrdersView = () => {
-    const {
-        ordenes,
-        loading,
-        cargarOrdenes,
-        enviarPedidoBackend,
-        enviarTodosPendientes
-    } = useOrdenes();
+ const {
+    ordenes,
+    loading,
+    cargarOrdenes,
+    cargarOrdenesHoy,        // Añade esta línea
+    cargarOrdenesPorFecha,   // Añade esta línea
+    enviarPedidoBackend,
+    enviarTodosPendientes
+} = useOrdenes();
 
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -51,6 +53,24 @@ const OrdersView = () => {
         };
     }, []);
 
+    useEffect(() => {
+  const loadOrdersForFilter = async () => {
+    try {
+      if (filterType === 'today') {
+        await cargarOrdenesHoy();
+      } else if (filterType === 'date') {
+        await cargarOrdenesPorFecha(selectedDate);
+      } else if (filterType === 'all') {
+        await cargarOrdenes();
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    }
+  };
+
+  loadOrdersForFilter();
+}, [filterType, selectedDate, cargarOrdenes, cargarOrdenesHoy, cargarOrdenesPorFecha]);
+
     const formatCurrency = useCallback((value) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
@@ -59,64 +79,66 @@ const OrdersView = () => {
         }).format(value || 0);
     }, []);
 
-    const formatDate = useCallback((dateString) => {
-        try {
-            // Manejar tanto formato ISO como otros formatos de fecha
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return 'Fecha inválida';
-            }
-            return date.toLocaleDateString('es-CO', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-        } catch (error) {
-            console.error('Error formateando fecha:', error);
-            return 'Fecha inválida';
-        }
-    }, []);
+   const formatDate = useCallback((dateString) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
+    
+    // Ajustar a la zona horaria local para mostrar correctamente
+    const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+    
+    return adjustedDate.toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return 'Fecha inválida';
+  }
+}, []);
 
-    const isToday = useCallback((dateString) => {
-        const today = new Date().toDateString();
-        const orderDate = new Date(dateString).toDateString();
-        return today === orderDate;
-    }, []);
+   const isToday = useCallback((dateString) => {
+  try {
+    const today = new Date();
+    const orderDate = new Date(dateString);
+    
+    // Comparar en UTC para evitar problemas de zona horaria
+    const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const utcOrderDate = Date.UTC(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+    
+    return utcToday === utcOrderDate;
+  } catch (error) {
+    console.error('Error en isToday:', error);
+    return false;
+  }
+}, []);
+
+   
 
     // Reemplaza la función isSameDate con esta versión mejorada
-    const isSameDate = useCallback((dateString, compareDate) => {
-        try {
-            if (!dateString || !compareDate) return false;
+const isSameDate = useCallback((dateString, compareDate) => {
+  try {
+    if (!dateString || !compareDate) return false;
 
-            // Convertir ambas fechas a la misma zona horaria (UTC)
-            const date1 = new Date(dateString);
-            const date2 = new Date(compareDate);
+    // Crear objetos Date y ajustar a mediodía para evitar problemas de zona horaria
+    const date1 = new Date(dateString);
+    const date2 = new Date(compareDate);
+    
+    // Ajustar ambas fechas a UTC para comparación neutral de zona horaria
+    const utcDate1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+    const utcDate2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+    
+    return utcDate1 === utcDate2;
+  } catch (error) {
+    console.error('Error en isSameDate:', error);
+    return false;
+  }
+}, []);
 
-            if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
-                console.error('Fecha inválida:', dateString, compareDate);
-                return false;
-            }
 
-            // Ajustar ambas fechas a UTC para comparación
-            const utcDate1 = Date.UTC(
-                date1.getUTCFullYear(),
-                date1.getUTCMonth(),
-                date1.getUTCDate()
-            );
-
-            const utcDate2 = Date.UTC(
-                date2.getUTCFullYear(),
-                date2.getUTCMonth(),
-                date2.getUTCDate()
-            );
-
-            // Comparar las fechas UTC
-            return utcDate1 === utcDate2;
-        } catch (error) {
-            console.error('Error en isSameDate:', error);
-            return false;
-        }
-    }, []);
 
     // Agrega este useEffect justo después de la definición de isSameDate
     useEffect(() => {
@@ -194,54 +216,84 @@ const OrdersView = () => {
     }, []);
 
     // Actualiza la función getFilteredOrders
-    const getFilteredOrders = useCallback(() => {
-        let filtered = [...ordenes];
-        console.log('Aplicando filtro. Tipo:', filterType, 'Fecha:', selectedDate);
+ const getFilteredOrders = useCallback(() => {
+  let filtered = [...ordenes];
+  console.log('=== INICIO FILTRADO ===');
+  console.log('Aplicando filtro. Tipo:', filterType, 'Fecha seleccionada:', selectedDate);
+  console.log('Total órdenes antes del filtro:', filtered.length);
 
-        // Si no hay conexión, solo mostrar pendientes
-        if (!isConnected) {
-            filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
-            console.log('Sin conexión. Mostrando solo pendientes:', filtered.length);
+  // Si no hay conexión, solo mostrar pendientes
+  if (!isConnected) {
+    filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
+    console.log('Sin conexión. Mostrando solo pendientes:', filtered.length);
+  }
+
+  // Aplicar filtros de fecha
+  switch (filterType) {
+    case 'today':
+      filtered = filtered.filter(o => {
+        // Pendientes siempre se muestran
+        if (o.status?.toLowerCase() === 'pendiente') return true;
+        // Enviados solo si son de hoy
+        return o.fechaAlta && isToday(o.fechaAlta);
+      });
+      console.log('Filtro hoy. Resultados:', filtered.length);
+      break;
+      
+    case 'date':
+      console.log('Aplicando filtro por fecha específica:', selectedDate);
+      filtered = filtered.filter(o => {
+        // Pendientes siempre se muestran
+        if (o.status?.toLowerCase() === 'pendiente') {
+          console.log('Orden pendiente incluida:', o.id);
+          return true;
         }
-
-        // Aplicar filtros de fecha
-        switch (filterType) {
-            case 'today':
-                filtered = filtered.filter(o => {
-                    // Pendientes siempre se muestran
-                    if (o.status?.toLowerCase() === 'pendiente') return true;
-                    // Enviados solo si son de hoy
-                    return o.fechaAlta && isToday(o.fechaAlta);
-                });
-                console.log('Filtro hoy. Resultados:', filtered.length);
-                break;
-            case 'date':
-                filtered = filtered.filter(o => {
-                    // Pendientes siempre se muestran
-                    if (o.status?.toLowerCase() === 'pendiente') return true;
-                    // Enviados solo si son de la fecha seleccionada
-                    return o.fechaAlta && isSameDate(o.fechaAlta, selectedDate);
-                });
-                console.log('Filtro fecha específica. Resultados:', filtered.length);
-                break;
-            case 'all':
-                // Mostrar todo (ya filtrado por conexión arriba)
-                console.log('Filtro todos. Resultados:', filtered.length);
-                break;
-            default:
-                break;
+        // Enviados solo si son de la fecha seleccionada
+        if (o.fechaAlta) {
+          const coincide = isSameDate(o.fechaAlta, selectedDate);
+          console.log(`Orden ${o.id} - fechaAlta: ${o.fechaAlta}, coincide: ${coincide}`);
+          return coincide;
         }
+        return false;
+      });
+      console.log('Filtro fecha específica. Resultados finales:', filtered.length);
+      break;
+      
+    case 'all':
+      console.log('Filtro todos. Resultados:', filtered.length);
+      break;
+      
+    default:
+      break;
+  }
 
-        // Ordenar: pendientes primero, luego por ID descendente
-        return filtered.sort((a, b) => {
-            const aStatus = a.status?.toLowerCase();
-            const bStatus = b.status?.toLowerCase();
+  console.log('=== FIN FILTRADO ===');
+  
+  // Ordenar: pendientes primero, luego por ID descendente
+  return filtered.sort((a, b) => {
+    const aStatus = a.status?.toLowerCase();
+    const bStatus = b.status?.toLowerCase();
 
-            if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
-            if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
-            return (b.id || 0) - (a.id || 0);
-        });
-    }, [ordenes, isConnected, filterType, selectedDate, isToday, isSameDate]);
+    if (aStatus === 'pendiente' && bStatus !== 'pendiente') return -1;
+    if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
+    return (b.id || 0) - (a.id || 0);
+  });
+}, [ordenes, isConnected, filterType, selectedDate, isToday, isSameDate]);
+
+useEffect(() => {
+  if (ordenes.length > 0) {
+    console.log("=== ANÁLISIS DE FECHAS EN ÓRDENES ===");
+    ordenes.slice(0, 3).forEach((orden, index) => {
+      console.log(`Orden ${index + 1}:`, {
+        id: orden.id,
+        fechaAlta: orden.fechaAlta,
+        fechaAltaTipo: typeof orden.fechaAlta,
+        fechaAltaParseada: orden.fechaAlta ? new Date(orden.fechaAlta) : null,
+        fechaAltaFormateada: orden.fechaAlta ? formatDate(orden.fechaAlta) : null
+      });
+    });
+  }
+}, [ordenes, formatDate]);
 
     const dismissAlert = useCallback(() => {
         setAlert({ show: false, type: '', message: '' });
@@ -491,12 +543,15 @@ const OrdersView = () => {
                                                     </div>
                                                     <div className="col-auto">
                                                         <input
-                                                            type="date"
-                                                            className="form-control form-control-sm input-fecha"
-                                                            value={selectedDate}
-                                                            onChange={(e) => setSelectedDate(e.target.value)}
-                                                            max={new Date().toISOString().split('T')[0]}
-                                                        />
+  type="date"
+  className="form-control form-control-sm input-fecha"
+  value={selectedDate}
+  onChange={(e) => {
+    setSelectedDate(e.target.value);
+    console.log('Fecha seleccionada:', e.target.value); // Para depuración
+  }}
+  max={new Date().toISOString().split('T')[0]}
+/>
                                                     </div>
                                                     <div className="col-auto">
                                                         <button
