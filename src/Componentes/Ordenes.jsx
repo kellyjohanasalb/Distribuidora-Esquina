@@ -388,18 +388,6 @@ useEffect(() => {
         setShowDateFilter(false);
     };
 
-    if (loading && ordenes.length === 0) {
-        return (
-            <div className="min-vh-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: '#f7dc6f' }}>
-                <div className="text-center">
-                    <div className="spinner-border text-success" role="status">
-                        <span className="visually-hidden">Cargando...</span>
-                    </div>
-                    <p className="mt-2 text-success fw-semibold">Cargando órdenes...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-vh-100" style={{ backgroundColor: '#f7dc6f' }}>
