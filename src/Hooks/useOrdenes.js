@@ -158,35 +158,21 @@ const cargarOrdenesPorFecha = useCallback(async (fecha) => {
 
   try {
     const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-    
-    // Filtrar pendientes por fecha
-    const pendientesMapeados = locales
-      .filter(pedido => {
-        const fechaPedido = toLocalDateString(pedido.fechaAlta);
-        return fechaPedido === fecha;
-      })
-      .map(mapearPendiente);
+    const pendientesMapeados = locales.map(mapearPendiente);
 
     if (!navigator.onLine) {
       setOrdenes(pendientesMapeados);
       return pendientesMapeados;
     }
 
-    const url = `${baseURL}/api/pedidos`;
+    // ENVIAR LA FECHA AL BACKEND PARA QUE FILTRE
+    const url = `${baseURL}/api/pedidos?fecha=${fecha}`;
     const res = await axios.get(url, { 
       headers: { "x-authentication": localStorage.getItem('authToken') }
     });
 
-    const todosLosPedidos = res.data.items || [];
-
-    // Filtrar enviados por fecha
-    const enviados = todosLosPedidos.filter(pedido => {
-      if (!pedido.fechaPedido) return false;
-      const fechaPedidoUTC = new Date(pedido.fechaPedido);
-      const fechaPedidoLocal = new Date(fechaPedidoUTC.getTime() - fechaPedidoUTC.getTimezoneOffset() * 60000);
-      const fechaPedidoFormateada = fechaPedidoLocal.toISOString().split('T')[0];
-      return fechaPedidoFormateada === fecha;
-    });
+    const enviados = res.data.items || [];
+    console.log(`✅ Pedidos encontrados: ${enviados.length}`);
 
     const enviadosMapeados = enviados.map(mapearEnviado);
     const resultado = [...enviadosMapeados, ...pendientesMapeados];
@@ -196,6 +182,7 @@ const cargarOrdenesPorFecha = useCallback(async (fecha) => {
   } catch (err) {
     console.error("❌ Error cargando órdenes:", err);
     setError(err.message || "Error al cargar órdenes");
+    setOrdenes([]);
     throw err;
   } finally {
     setLoading(false);
