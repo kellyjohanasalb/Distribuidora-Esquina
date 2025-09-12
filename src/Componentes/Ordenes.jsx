@@ -487,12 +487,12 @@ useEffect(() => {
                                                 >
                                                     📅 Hoy
                                                 </button>
-                                                <button
+                                               {/*  <button
                                                     className={`btn btn-sm ${filterType === 'date' ? 'btn-filtro-activo' : 'btn-filtro'}`}
                                                     onClick={() => setShowDateFilter(!showDateFilter)}
                                                 >
                                                     🗓️ Fecha específica
-                                                </button>
+                                                </button> */}
                                                 <button
                                                     className={`btn btn-sm ${filterType === 'all' ? 'btn-filtro-activo' : 'btn-filtro'}`}
                                                     onClick={() => handleFilterChange('all')}
