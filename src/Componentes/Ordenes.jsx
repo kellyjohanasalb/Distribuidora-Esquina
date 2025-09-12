@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Package, Send, X, Wifi, WifiOff, Calendar, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -5,15 +6,16 @@ import { useOrdenes } from '../Hooks/useOrdenes';
 import axios from 'axios';
 import '../index.css';
 
+
 const OrdersView = () => {
- const {
-    ordenes,
-    loading,
-    cargarOrdenes,
-    cargarOrdenesHoy,        // Añade esta línea
-    cargarOrdenesPorFecha,   // Añade esta línea
-    enviarPedidoBackend,
-    enviarTodosPendientes
+const {
+  ordenes,
+  loading,
+  cargarOrdenes,
+  cargarOrdenesHoy,
+  cargarOrdenesPorFecha, // Asegúrate de que esta función esté aquí
+  enviarPedidoBackend,
+  enviarTodosPendientes
 } = useOrdenes();
 
     const [showModal, setShowModal] = useState(false);
@@ -79,26 +81,6 @@ const OrdersView = () => {
         }).format(value || 0);
     }, []);
 
-   const formatDate = useCallback((dateString) => {
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 'Fecha inválida';
-    }
-    
-    // Ajustar a la zona horaria local para mostrar correctamente
-    const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
-    
-    return adjustedDate.toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  } catch (error) {
-    console.error('Error formateando fecha:', error);
-    return 'Fecha inválida';
-  }
-}, []);
 
    const isToday = useCallback((dateString) => {
   try {
@@ -116,59 +98,85 @@ const OrdersView = () => {
   }
 }, []);
 
-   
 
-    // Reemplaza la función isSameDate con esta versión mejorada
+  const formatDate = useCallback((dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Fecha inválida';
+
+      return date.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error);
+      return 'Fecha inválida';
+    }
+  }, []);
+
+
+  // Comparar solo año, mes y día en local
+
+// eslint-disable-next-line no-unused-vars
 const isSameDate = useCallback((dateString, compareDate) => {
   try {
     if (!dateString || !compareDate) return false;
 
-    // Crear objetos Date y ajustar a mediodía para evitar problemas de zona horaria
-    const date1 = new Date(dateString);
-    const date2 = new Date(compareDate);
+    // Convertir ambas fechas a objetos Date
+    const d1 = new Date(dateString);
+    const d2 = new Date(compareDate);
     
-    // Ajustar ambas fechas a UTC para comparación neutral de zona horaria
-    const utcDate1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
-    const utcDate2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
-    
-    return utcDate1 === utcDate2;
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+
+    // Ajustar ambas fechas a medianoche en la zona horaria local
+    const d1Local = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+    const d2Local = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+
+    return d1Local.getTime() === d2Local.getTime();
   } catch (error) {
     console.error('Error en isSameDate:', error);
     return false;
   }
 }, []);
 
+// Y en el useEffect de depuración, agregar:
+useEffect(() => {
+  if (filterType === 'date') {
+    console.log("=== INFORMACIÓN DE DEPURACIÓN AVANZADA ===");
+    console.log("Fecha seleccionada:", selectedDate);
+    console.log("Zona horaria del navegador:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+    console.log("Hora actual:", new Date().toString());
+    
+    // Mostrar información de las primeras 5 órdenes
+    ordenes.slice(0, 5).forEach((orden, index) => {
+      console.log(`Orden ${index}:`, {
+        id: orden.id,
+        fechaAlta: orden.fechaAlta,
+        status: orden.status,
+        name: orden.name
+      });
+    });
+  }
+}, [filterType, selectedDate, ordenes]);
 
+useEffect(() => {
+  console.log("🔍 Depuración - Verificando baseURL:", baseURL);
+  console.log("🔍 Depuración - Token de autenticación:", localStorage.getItem('authToken'));
+  
+  // Verificar el estado de la conexión
+  console.log("🔍 Depuración - Estado de conexión:", navigator.onLine);
+}, []);
 
     // Agrega este useEffect justo después de la definición de isSameDate
-    useEffect(() => {
-        console.log('=== DEPURACIÓN DE FECHAS ===');
-        console.log('Fecha seleccionada:', selectedDate);
-        console.log('Tipo de filtro:', filterType);
-        console.log('Total de órdenes:', ordenes.length);
-
-        if (filterType === 'date') {
-            const ordenesFiltradas = ordenes.filter(o => {
-                if (o.status?.toLowerCase() === 'pendiente') return true;
-                return o.fechaAlta && isSameDate(o.fechaAlta, selectedDate);
-            });
-
-            console.log('Órdenes que coinciden con la fecha:', ordenesFiltradas);
-
-            // Mostrar información detallada de cada orden
-            ordenes.forEach((order, index) => {
-                if (order.fechaAlta) {
-                    console.log(`Orden ${index}:`, {
-                        id: order.id,
-                        status: order.status,
-                        fechaAlta: order.fechaAlta,
-                        fechaFormateada: formatDate(order.fechaAlta),
-                        coincide: isSameDate(order.fechaAlta, selectedDate)
-                    });
-                }
-            });
-        }
-    }, [filterType, selectedDate, ordenes, isSameDate, formatDate]);
+ useEffect(() => {
+  if (filterType === 'date') {
+    console.log("=== INFORMACIÓN COMPLETA ===");
+    console.log("Fecha seleccionada:", selectedDate);
+    console.log("Hora actual:", new Date().toString());
+    console.log("Zona horaria:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }
+}, [filterType, selectedDate]);
 
     // NUEVAS FUNCIONES PARA MODAL DE DETALLES - AGREGAR AQUÍ
     const handleViewOrderDetails = useCallback(async (order) => {
@@ -216,59 +224,30 @@ const isSameDate = useCallback((dateString, compareDate) => {
     }, []);
 
     // Actualiza la función getFilteredOrders
- const getFilteredOrders = useCallback(() => {
+const getFilteredOrders = useCallback(() => {
   let filtered = [...ordenes];
-  console.log('=== INICIO FILTRADO ===');
-  console.log('Aplicando filtro. Tipo:', filterType, 'Fecha seleccionada:', selectedDate);
-  console.log('Total órdenes antes del filtro:', filtered.length);
-
+  
   // Si no hay conexión, solo mostrar pendientes
   if (!isConnected) {
     filtered = filtered.filter(o => o.status?.toLowerCase() === 'pendiente');
-    console.log('Sin conexión. Mostrando solo pendientes:', filtered.length);
   }
 
   // Aplicar filtros de fecha
   switch (filterType) {
     case 'today':
       filtered = filtered.filter(o => {
-        // Pendientes siempre se muestran
         if (o.status?.toLowerCase() === 'pendiente') return true;
-        // Enviados solo si son de hoy
-        return o.fechaAlta && isToday(o.fechaAlta);
+        return o.fechaPedido && isToday(o.fechaPedido);
       });
-      console.log('Filtro hoy. Resultados:', filtered.length);
       break;
       
     case 'date':
-      console.log('Aplicando filtro por fecha específica:', selectedDate);
-      filtered = filtered.filter(o => {
-        // Pendientes siempre se muestran
-        if (o.status?.toLowerCase() === 'pendiente') {
-          console.log('Orden pendiente incluida:', o.id);
-          return true;
-        }
-        // Enviados solo si son de la fecha seleccionada
-        if (o.fechaAlta) {
-          const coincide = isSameDate(o.fechaAlta, selectedDate);
-          console.log(`Orden ${o.id} - fechaAlta: ${o.fechaAlta}, coincide: ${coincide}`);
-          return coincide;
-        }
-        return false;
-      });
-      console.log('Filtro fecha específica. Resultados finales:', filtered.length);
-      break;
-      
-    case 'all':
-      console.log('Filtro todos. Resultados:', filtered.length);
-      break;
-      
-    default:
+      // Para filtro por fecha específica, los pedidos ya fueron filtrados
+      // por cargarOrdenesPorFecha, así que no necesitamos filtrar aquí
+      // Solo mantenemos las órdenes tal como vienen del hook
       break;
   }
 
-  console.log('=== FIN FILTRADO ===');
-  
   // Ordenar: pendientes primero, luego por ID descendente
   return filtered.sort((a, b) => {
     const aStatus = a.status?.toLowerCase();
@@ -278,7 +257,7 @@ const isSameDate = useCallback((dateString, compareDate) => {
     if (bStatus === 'pendiente' && aStatus !== 'pendiente') return 1;
     return (b.id || 0) - (a.id || 0);
   });
-}, [ordenes, isConnected, filterType, selectedDate, isToday, isSameDate]);
+}, [ordenes, isConnected, filterType, isToday]);
 
 useEffect(() => {
   if (ordenes.length > 0) {
@@ -530,13 +509,13 @@ useEffect(() => {
                                                         <label className="form-label mb-0">Seleccionar fecha:</label>
                                                     </div>
                                                     <div className="col-auto">
-                                                        <input
+ <input
   type="date"
   className="form-control form-control-sm input-fecha"
   value={selectedDate}
   onChange={(e) => {
     setSelectedDate(e.target.value);
-    console.log('Fecha seleccionada:', e.target.value); // Para depuración
+    console.log('Fecha seleccionada:', e.target.value);
   }}
   max={new Date().toISOString().split('T')[0]}
 />
@@ -662,11 +641,18 @@ useEffect(() => {
                                             <div className="text-center py-5">
                                                 <Package size={64} className="text-muted mb-3" />
                                                 <h5 className="text-muted">No hay órdenes para mostrar</h5>
-                                                <p className="text-muted">
-                                                    {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
-                                                        filterType === 'date' ? `No hay pedidos para el ${formatDate(selectedDate)}.` :
-                                                            'No hay pedidos disponibles.'}
-                                                </p>
+<p className="text-muted">
+  {filterType === 'today' ? 'No hay pedidos para el día de hoy.' :
+   filterType === 'date' ? `No hay pedidos para la fecha ${selectedDate}.` :
+   'No hay pedidos disponibles.'}
+   {filterType === 'date' && (
+     <div className="mt-2">
+       <small className="text-info">
+         💡 Nota: Se muestran tanto pedidos enviados como pendientes para esta fecha.
+       </small>
+     </div>
+   )}
+</p>
                                                 <Link to="/pedido" className="btn btn-success">
                                                     Crear nuevo pedido
                                                 </Link>

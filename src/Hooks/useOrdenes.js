@@ -31,6 +31,9 @@ const normalizarFecha = (fecha) => {
   return isNaN(fechaObj.getTime()) ? new Date().toISOString() : fechaObj.toISOString();
 };
 
+
+
+
 // Mapear funciones mejoradas con manejo de fechas
 const mapearPendiente = (pedido) => ({
   id: Number(pedido.idPedido || pedido.id),
@@ -60,7 +63,8 @@ const mapearEnviado = (pedido) => ({
   name: pedido.clientName || pedido.cliente || "Sin nombre",
   value: pedido.total || 0,
   status: "Enviado",
-  fechaAlta: normalizarFecha(pedido.fechaPedido),
+  fechaAlta: normalizarFecha(pedido.fechaPedido), // Usar fechaPedido en lugar de fechaAlta
+  fechaPedido: normalizarFecha(pedido.fechaPedido), // Mantener fechaPedido también
   observation: pedido.observation,
   products: (pedido.products || pedido.productos || []).map(producto => ({
     ...producto,
@@ -68,12 +72,26 @@ const mapearEnviado = (pedido) => ({
   }))
 });
 
+// 🔹 Convierte a YYYY-MM-DD en hora local
+export const toLocalDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  // Usar los métodos locales para evitar problemas de zona horaria
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+
+
 export function useOrdenes() {
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const baseURL = "https://remito-send-back.vercel.app";
+ const baseURL = "https://remito-send-back.vercel.app";
 
   // Función para cargar órdenes con mejor manejo de fechas
   const cargarOrdenes = useCallback(async (fechaFiltro = null) => {
@@ -131,56 +149,58 @@ export function useOrdenes() {
     }
   }, [baseURL]);
 
-  // Función para cargar órdenes por fecha específica
-  const cargarOrdenesPorFecha = useCallback(async (fecha) => {
-    setLoading(true);
-    setError(null);
+  
 
-    try {
-      const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-      const pendientesMapeados = locales.map(mapearPendiente);
+// Función cargarOrdenesPorFecha actualizada - SOLUCIÓN DEFINITIVA
+const cargarOrdenesPorFecha = useCallback(async (fecha) => {
+  setLoading(true);
+  setError(null);
 
-      if (!navigator.onLine) {
-        console.warn("🔴 Sin conexión: mostrando pedidos locales");
-        setOrdenes(pendientesMapeados);
-        return pendientesMapeados;
-      }
+  try {
+    const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+    
+    // Filtrar pendientes por fecha
+    const pendientesMapeados = locales
+      .filter(pedido => {
+        const fechaPedido = toLocalDateString(pedido.fechaAlta);
+        return fechaPedido === fecha;
+      })
+      .map(mapearPendiente);
 
-      // Construir URL con filtro de fecha
-      const fechaObj = new Date(fecha);
-      const fechaStr = fechaObj.toISOString().split('T')[0]; // YYYY-MM-DD
-      const url = `${baseURL}/api/pedidos?fecha=${fechaStr}`;
-
-      console.log("📅 Solicitando pedidos para la fecha:", fechaStr);
-      
-      const res = await axios.get(url, { 
-        headers: {"x-authentication": localStorage.getItem('authToken') } 
-      });
-      
-      const enviados = res.data.items || [];
-      const enviadosMapeados = enviados.map(mapearEnviado);
-
-      console.log("✅ Pedidos recibidos del backend:", enviadosMapeados);
-
-      // Combinar enviados del backend con pendientes locales
-      const todasLasOrdenes = [...enviadosMapeados, ...pendientesMapeados];
-      setOrdenes(todasLasOrdenes);
-      
-      return todasLasOrdenes;
-    } catch (err) {
-      console.error("❌ Error cargando órdenes por fecha:", err);
-      setError(err.message || "Error al cargar órdenes por fecha");
-      
-      // En caso de error, mostrar solo los pedidos locales
-      const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-      const pendientesMapeados = locales.map(mapearPendiente);
+    if (!navigator.onLine) {
       setOrdenes(pendientesMapeados);
-      
-      throw err;
-    } finally {
-      setLoading(false);
+      return pendientesMapeados;
     }
-  }, [baseURL]);
+
+    const url = `${baseURL}/api/pedidos`;
+    const res = await axios.get(url, { 
+      headers: { "x-authentication": localStorage.getItem('authToken') }
+    });
+
+    const todosLosPedidos = res.data.items || [];
+
+    // Filtrar enviados por fecha
+    const enviados = todosLosPedidos.filter(pedido => {
+      if (!pedido.fechaPedido) return false;
+      const fechaPedidoUTC = new Date(pedido.fechaPedido);
+      const fechaPedidoLocal = new Date(fechaPedidoUTC.getTime() - fechaPedidoUTC.getTimezoneOffset() * 60000);
+      const fechaPedidoFormateada = fechaPedidoLocal.toISOString().split('T')[0];
+      return fechaPedidoFormateada === fecha;
+    });
+
+    const enviadosMapeados = enviados.map(mapearEnviado);
+    const resultado = [...enviadosMapeados, ...pendientesMapeados];
+
+    setOrdenes(resultado);
+    return resultado;
+  } catch (err) {
+    console.error("❌ Error cargando órdenes:", err);
+    setError(err.message || "Error al cargar órdenes");
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, [baseURL]);
 
   // Función para cargar órdenes de hoy
   const cargarOrdenesHoy = useCallback(async () => {
