@@ -227,19 +227,24 @@ const DistribuidoraEsquina = () => {
       }, 0);
 
       // Mapear productos para guardar
-      const productosMapeados = pedido.map(p => {
-        const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
-        const precio = productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1;
-        const producto = {
-          idArticulo: p.idArticulo,
-          cantidad: p.cantidad,
-          precio,
-        };
-        if (p.observacion?.trim()) {
-          producto.observation = p.observacion.trim();
-        }
-        return producto;
-      });
+  const productosMapeados = pedido.map(p => {
+  const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+  const precio = productoEnCatalogo ? Math.max(1, parseFloat(productoEnCatalogo.precioVenta) || 1) : 1;
+  
+  const producto = {
+    idArticulo: p.idArticulo,
+    cantidad: p.cantidad,
+    precio: precio,
+  };
+  
+  if (p.observacion?.trim()) {
+    producto.observation = p.observacion.trim();
+  }
+  
+  return producto;
+});
+  
+ 
 
       // Construir cuerpo del pedido
       const body = {
@@ -270,9 +275,7 @@ const DistribuidoraEsquina = () => {
   };
 
  
-
-  // Función para enviar pedido (estado enviado)
-// Agrega esta función generateUUID al principio de tu componente Pedido.jsx
+// Función para generar UUID válido
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0,
@@ -281,7 +284,10 @@ const generateUUID = () => {
   });
 };
 
+
 // Luego modifica la función enviarPedido:
+// Reemplaza la función enviarPedido existente con esta versión corregida:
+
 const enviarPedido = async () => {
   if (!puedeEnviar()) {
     if (!isOnline) {
@@ -302,20 +308,27 @@ const enviarPedido = async () => {
   try {
     console.log("📦 Productos en el pedido:", pedido);
 
-    // Mapear productos CORRECTAMENTE incluyendo observaciones
+    // ✅ MAPEO CORREGIDO - Asegurar precios siempre positivos
     const productosMapeados = pedido.map(p => {
       const productoEnCatalogo = productos.find(prod => prod.idArticulo === p.idArticulo);
+      
+      // 🔧 Garantizar que el precio sea siempre un número positivo
+      let precio = 1; // Valor por defecto
+      if (productoEnCatalogo && productoEnCatalogo.precioVenta) {
+        const precioParseado = parseFloat(productoEnCatalogo.precioVenta);
+        precio = (precioParseado && precioParseado > 0) ? precioParseado : 1;
+      }
       
       return {
         idArticulo: p.idArticulo,
         cantidad: p.cantidad,
-        precio: productoEnCatalogo ? parseFloat(productoEnCatalogo.precioVenta) : 1,
-        observation: p.observacion || null
+        precio: precio, // ✅ Siempre será un número positivo
+        observation: p.observacion?.trim() || null
       };
     });
 
     const body = {
-      frontId: generateUUID(), // AÑADIR ESTA LÍNEA
+      frontId: generateUUID(),
       clientName: cliente.trim(),
       products: productosMapeados,
       fechaAlta: new Date().toISOString(),
@@ -328,10 +341,12 @@ const enviarPedido = async () => {
     const res = await axios.post(
       "https://remito-send-back.vercel.app/api/pedidos",
       body,
-      { headers: { 
-        "Content-Type": "application/json", 
-        "x-authentication": localStorage.getItem('authToken') 
-      }}
+      { 
+        headers: { 
+          "Content-Type": "application/json", 
+          "x-authentication": localStorage.getItem('authToken') 
+        }
+      }
     );
 
     console.log("✅ Pedido guardado:", res.data);
@@ -342,11 +357,31 @@ const enviarPedido = async () => {
 
   } catch (error) {
     console.error("❌ Error completo:", error);
-    alert("Error al enviar el pedido: " + (error.response?.data?.message || error.message));
+    
+    // Mostrar mensaje de error más detallado
+    let errorMessage = "Error al enviar el pedido";
+    if (error.response?.data) {
+      errorMessage += `: ${JSON.stringify(error.response.data)}`;
+    } else {
+      errorMessage += `: ${error.message}`;
+    }
+    
+    alert(errorMessage);
   } finally {
     setIsEnviando(false);
   }
 };
+
+// Añade esta verificación al inicio del componente
+useEffect(() => {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    console.error("❌ No hay token de autenticación");
+    alert('No está autenticado. Por favor, inicie sesión.');
+    // Redirigir al login si es necesario
+    // navigate('/login');
+  }
+}, []);
 
   return (
     <div style={{ backgroundColor: '#f7dc6f', minHeight: '100vh' }}>
