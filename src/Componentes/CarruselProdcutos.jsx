@@ -28,12 +28,10 @@ const CarruselProductos = () => {
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   });
 
-  // Función mejorada para validar URLs de imagen
+  // Validación URL de imagen (igual que tenías)
   const isValidImageUrl = useCallback((url) => {
     if (!url || typeof url !== 'string' || url.trim() === '') return false;
-    
     const cleanUrl = url.trim();
-    
     try {
       const parsedUrl = new URL(cleanUrl);
       if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
@@ -45,14 +43,12 @@ const CarruselProductos = () => {
     }
   }, []);
 
-  // Manejar errores de imagen
   const handleImageError = useCallback((productId, imageUrl) => {
     console.error(`❌ Error cargando imagen del producto ${productId}: ${imageUrl}`);
     setImageErrors(prev => new Set([...prev, productId]));
   }, []);
 
   const handleImageLoad = useCallback((productId, imageUrl) => {
-    console.log(`✅ Imagen cargada exitosamente para producto ${productId}: ${imageUrl}`);
     setImageErrors(prev => {
       const newSet = new Set(prev);
       newSet.delete(productId);
@@ -60,7 +56,7 @@ const CarruselProductos = () => {
     });
   }, []);
 
-  // Placeholders para cuando está cargando
+  // placeholders y limitar a 6 productos (si quieres exactamente 6)
   const placeholders = Array.from({ length: 6 }, (_, i) => ({
     id: `placeholder-${i}`,
     imagen: null,
@@ -69,25 +65,20 @@ const CarruselProductos = () => {
     esNuevo: true,
   }));
 
-  const items = (productos && productos.length > 0) ? productos : placeholders;
+  // <-- Aseguramos máximo 6 productos
+  const items = (productos && productos.length > 0) ? productos.slice(0, 6) : placeholders.slice(0, 6);
 
-  // Efecto para manejar el redimensionamiento de la ventana
+  // resize responsive (igual que tenías)
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowSize({ width, height: window.innerHeight });
-      
-      if (width >= 1200) {
-        setItemsToShow(4);
-      } else if (width >= 992) {
-        setItemsToShow(3);
-      } else if (width >= 768) {
-        setItemsToShow(2);
-      } else if (width >= 576) {
-        setItemsToShow(2);
-      } else {
-        setItemsToShow(1);
-      }
+
+      if (width >= 1200) setItemsToShow(4);
+      else if (width >= 992) setItemsToShow(3);
+      else if (width >= 768) setItemsToShow(2);
+      else if (width >= 576) setItemsToShow(2);
+      else setItemsToShow(1);
     };
 
     handleResize();
@@ -95,47 +86,42 @@ const CarruselProductos = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Auto-play del carrusel
+  // POSICIONES (desplazamiento por 1 item): número de pasos posibles
+  const maxSlides = Math.max(0, items.length - itemsToShow); // ej. con 6 items y 4 a la vista -> 2 (posiciones 0..2)
+  const indicatorsCount = maxSlides + 1;
+
+  // Mantener currentSlide válido si cambia itemsToShow/items
+  useEffect(() => {
+    if (currentSlide > maxSlides) {
+      setCurrentSlide(maxSlides);
+    }
+  }, [maxSlides, currentSlide]);
+
+  // Autoplay (usa maxSlides)
   useEffect(() => {
     if (items.length === 0 || loading) return;
-    
+    if (maxSlides <= 0) return;
     const interval = setInterval(() => {
-      setCurrentSlide(prev => {
-        const maxSlides = Math.max(0, items.length - itemsToShow);
-        return prev >= maxSlides ? 0 : prev + 1;
-      });
+      setCurrentSlide(prev => (prev >= maxSlides ? 0 : prev + 1));
     }, 4000);
-    
     return () => clearInterval(interval);
-  }, [items.length, itemsToShow, loading]);
+  }, [items.length, itemsToShow, loading, maxSlides]);
 
-  const nextSlide = () => {
-    const maxSlides = Math.max(0, items.length - itemsToShow);
-    setCurrentSlide(prev => (prev >= maxSlides ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    const maxSlides = Math.max(0, items.length - itemsToShow);
-    setCurrentSlide(prev => (prev <= 0 ? maxSlides : prev - 1));
-  };
-
+  const nextSlide = () => setCurrentSlide(prev => (prev >= maxSlides ? 0 : prev + 1));
+  const prevSlide = () => setCurrentSlide(prev => (prev <= 0 ? maxSlides : prev - 1));
   const goToSlide = (index) => setCurrentSlide(index);
 
-  const maxSlides = Math.max(0, items.length - itemsToShow);
-  const translateX = -(currentSlide * (100 / itemsToShow));
+  // translateX CORRECTO: porcentaje relativo al ancho del TRACK
+  // fórmula: movimiento por N items = (N / items.length) * 100% del track
+  const translateX = items.length > 0 ? `-${(currentSlide / items.length) * 100}%` : '0%';
 
-  // Valores responsivos - Tarjetas más compactas
+  // estilos responsivos igual que tenías
   const isSmallScreen = windowSize.width < 768;
   const isXSmallScreen = windowSize.width < 576;
-  
-  // Ajustar altura de la tarjeta para hacerla más compacta
   const cardHeight = isXSmallScreen ? '180px' : isSmallScreen ? '200px' : '220px';
   const imageHeight = isXSmallScreen ? '110px' : isSmallScreen ? '130px' : '150px';
   const badgeFontSize = isSmallScreen ? '0.55rem' : '0.6rem';
   const starSize = isSmallScreen ? 6 : 7;
-  const chevronSize = isSmallScreen ? 12 : 14;
-  const controlButtonSize = isSmallScreen ? '25px' : '30px';
-  const controlButtonPosition = isSmallScreen ? '-6px' : '-10px';
   const gapSize = isXSmallScreen ? '6px' : isSmallScreen ? '8px' : '10px';
   const itemWidth = `calc(${100 / itemsToShow}% - ${gapSize})`;
   const borderRadius = isSmallScreen ? '5px' : '6px';
@@ -144,7 +130,7 @@ const CarruselProductos = () => {
   return (
     <div className="py-3 mb-2" style={{ backgroundColor: '#f7dc6f' }}>
       <div className="container">
-        {/* Título de la sección */}
+        {/* Título */}
         <div className="text-center mb-3">
           <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
             <Sparkles className="text-success" size={16} />
@@ -152,8 +138,7 @@ const CarruselProductos = () => {
             <Sparkles className="text-success" size={16} />
           </div>
           <p className="text-muted small mb-0">Descubre nuestras últimas incorporaciones</p>
-          
-          {/* Estado de conexión mejorado */}
+
           {loading && (
             <div className="alert alert-info d-flex align-items-center small mt-2 py-1">
               <div className="spinner-border spinner-border-sm me-2" role="status">
@@ -162,16 +147,12 @@ const CarruselProductos = () => {
               <span>Conectando con el servidor...</span>
             </div>
           )}
-          
+
           {error && (
             <div className="alert alert-warning d-flex align-items-center small mt-2 py-1">
-              {isOnline ? (
-                <AlertCircle size={14} className="me-2 text-warning" />
-              ) : (
-                <WifiOff size={14} className="me-2 text-warning" />
-              )}
+              {isOnline ? <AlertCircle size={14} className="me-2 text-warning" /> : <WifiOff size={14} className="me-2 text-warning" />}
               <div className="text-start">
-                <strong style={{ fontSize: '0.8rem' }}>{isFromCache ? 'Modo offline:' : 'Error:'}</strong> 
+                <strong style={{ fontSize: '0.8rem' }}>{isFromCache ? 'Modo offline:' : 'Error:'}</strong>
                 <span style={{ fontSize: '0.8rem' }}> {error}</span>
               </div>
             </div>
@@ -191,7 +172,7 @@ const CarruselProductos = () => {
             <div
               className="d-flex"
               style={{
-                transform: `translateX(${translateX}%)`,
+                transform: `translateX(${translateX})`,
                 transition: loading ? 'none' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                 gap: gapSize
               }}
@@ -200,19 +181,18 @@ const CarruselProductos = () => {
                 const hasValidImage = isValidImageUrl(producto.imagen);
                 const hasImageError = imageErrors.has(producto.id);
                 const shouldShowImage = hasValidImage && !hasImageError;
-                
-                return (
-<div
-  key={producto.id}
-  className="flex-shrink-0 mx-auto" // 👈 centra la card en mobile
-  style={{ 
-    width: itemWidth,
-    aspectRatio: '1/1', // ✅ siempre cuadradas
-    maxHeight: isXSmallScreen ? '180px' : isSmallScreen ? '200px' : 'auto',
-    maxWidth: isXSmallScreen ? '220px' : isSmallScreen ? '240px' : 'none' // ✅ limita el ancho en mobile/tablet
-  }}
->
 
+                return (
+                  <div
+                    key={producto.id}
+                    className="flex-shrink-0 mx-auto"
+                    style={{
+                      width: itemWidth,
+                      aspectRatio: '1/1',
+                      maxHeight: isXSmallScreen ? '180px' : isSmallScreen ? '200px' : 'auto',
+                      maxWidth: isXSmallScreen ? '220px' : isSmallScreen ? '240px' : 'none'
+                    }}
+                  >
                     <div
                       className="card border-0 h-100 position-relative bg-white"
                       style={{
@@ -236,22 +216,12 @@ const CarruselProductos = () => {
                         }
                       }}
                     >
-                      {/* Badge de nuevo */}
                       <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
-                        <span
-                          className="badge bg-success text-white px-1 py-1 rounded-end"
-                          style={{
-                            fontSize: badgeFontSize,
-                            fontWeight: '600',
-                            letterSpacing: '0.3px'
-                          }}
-                        >
-                          <Star size={starSize} className="me-1" fill="currentColor" />
-                          NUEVO
+                        <span className="badge bg-success text-white px-1 py-1 rounded-end" style={{ fontSize: badgeFontSize, fontWeight: '600', letterSpacing: '0.3px' }}>
+                          <Star size={starSize} className="me-1" fill="currentColor" />NUEVO
                         </span>
                       </div>
 
-                      {/* Loading overlay */}
                       {loading && (
                         <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-50" style={{ zIndex: 3 }}>
                           <div className="spinner-border text-success" style={{ width: '1.5rem', height: '1.5rem' }} role="status">
@@ -260,73 +230,39 @@ const CarruselProductos = () => {
                         </div>
                       )}
 
-                      {/* Contenido de la imagen - ALTURA FIJA */}
-                      <div
-                        className="position-relative overflow-hidden w-100 d-flex align-items-center justify-content-center"
-                        style={{
-                          borderRadius: `${borderRadius} ${borderRadius} 0 0`,
-                          backgroundColor: '#f8f9fa',
-                          height: imageHeight,
-                          padding: '8px'
-                        }}
-                      >
+                      <div className="position-relative overflow-hidden w-100 d-flex align-items-center justify-content-center"
+                        style={{ borderRadius: `${borderRadius} ${borderRadius} 0 0`, backgroundColor: '#f8f9fa', height: imageHeight, padding: '8px' }}>
                         {shouldShowImage ? (
                           <img
                             src={producto.imagen}
                             alt={producto.descripcion}
                             className="h-100"
-                            style={{
-                              objectFit: 'contain',
-                              transition: 'transform 0.3s ease',
-                              maxWidth: '100%',
-                              maxHeight: '100%'
-                            }}
+                            style={{ objectFit: 'contain', transition: 'transform 0.3s ease', maxWidth: '100%', maxHeight: '100%' }}
                             onError={() => handleImageError(producto.id, producto.imagen)}
                             onLoad={() => handleImageLoad(producto.id, producto.imagen)}
-                            onMouseEnter={(e) => {
-                              if (!loading) {
-                                e.currentTarget.style.transform = 'scale(1.05)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!loading) {
-                                e.currentTarget.style.transform = 'scale(1)';
-                              }
-                            }}
+                            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = 'scale(1.05)'; }}
+                            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.transform = 'scale(1)'; }}
                           />
                         ) : (
-                          <div 
-                            className="w-100 h-100 d-flex align-items-center justify-content-center"
-                            style={{ padding: '5px' }}
-                          >
+                          <div className="w-100 h-100 d-flex align-items-center justify-content-center" style={{ padding: '5px' }}>
                             <ImagenPlaceholder />
                           </div>
                         )}
                       </div>
 
-                      {/* Información del producto - SOLO NOMBRE, SIN PRECIO */}
-                      <div
-                        className="w-100 p-1 text-center d-flex align-items-center justify-content-center"
-                        style={{
-                          height: `calc(${cardHeight} - ${imageHeight})`,
-                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                          borderRadius: '0 0 6px 6px'
-                        }}
-                      >
-                        <div
-                          className="fw-semibold"
-                          style={{
-                            fontSize: isSmallScreen ? '0.7rem' : '0.8rem',
-                            color: 'white',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            lineHeight: '1.2',
-                            padding: '0 4px'
-                          }}
-                        >
+                      <div className="w-100 p-1 text-center d-flex align-items-center justify-content-center"
+                        style={{ height: `calc(${cardHeight} - ${imageHeight})`, backgroundColor: 'rgba(0, 0, 0, 0.7)', borderRadius: '0 0 6px 6px' }}>
+                        <div className="fw-semibold" style={{
+                          fontSize: isSmallScreen ? '0.7rem' : '0.8rem',
+                          color: 'white',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: '1.2',
+                          padding: '0 4px'
+                        }}>
                           {producto.descripcion}
                         </div>
                       </div>
@@ -337,59 +273,31 @@ const CarruselProductos = () => {
             </div>
           </div>
 
-          {/* Controles de navegación */}
-          {maxSlides > 0 && !loading && (
+          {/* controles */}
+          {indicatorsCount > 1 && !loading && (
             <>
-             <button
-                className="btn position-absolute top-50 translate-middle-y shadow"
-                style={{
-                  left: '-12px',
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
-                  border: '2px solid #198754',
-                  zIndex: 3,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'white',
-                }}
+              <button className="btn position-absolute top-50 translate-middle-y shadow"
+                style={{ left: '-12px', width: '34px', height: '34px', borderRadius: '50%', border: '2px solid #198754', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}
                 onClick={prevSlide}
-                aria-label="Producto anterior"
-              >
+                aria-label="Producto anterior">
                 <ChevronLeft size={16} className="text-success" />
               </button>
 
-              <button
-                className="btn position-absolute top-50 translate-middle-y shadow"
-                style={{
-                  right: '-12px',
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
-                  border: '2px solid #198754',
-                  zIndex: 3,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'white',
-                }}
+              <button className="btn position-absolute top-50 translate-middle-y shadow"
+                style={{ right: '-12px', width: '34px', height: '34px', borderRadius: '50%', border: '2px solid #198754', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}
                 onClick={nextSlide}
-                aria-label="Siguiente producto"
-              >
+                aria-label="Siguiente producto">
                 <ChevronRight size={16} className="text-success" />
               </button>
             </>
           )}
         </div>
 
-        {/* Indicadores */}
-        {maxSlides > 0 && !loading && (
+        {/* indicadores */}
+        {indicatorsCount > 1 && !loading && (
           <div className="d-flex justify-content-center mt-2 gap-1">
-            {Array.from({ length: maxSlides + 1 }).map((_, index) => (
-              <button
-                key={index}
-                className="btn p-0 border-0"
+            {Array.from({ length: indicatorsCount }).map((_, index) => (
+              <button key={index} className="btn p-0 border-0"
                 style={{
                   width: indicatorSize,
                   height: indicatorSize,
