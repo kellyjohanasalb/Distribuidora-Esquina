@@ -340,44 +340,44 @@ const CarruselProductos = () => {
           {/* Controles de navegación */}
           {maxSlides > 0 && !loading && (
             <>
-              <button
-                className="btn btn-white position-absolute top-50 translate-middle-y shadow"
+             <button
+                className="btn position-absolute top-50 translate-middle-y shadow"
                 style={{
-                  left: controlButtonPosition,
-                  width: controlButtonSize,
-                  height: controlButtonSize,
+                  left: '-12px',
+                  width: '34px',
+                  height: '34px',
                   borderRadius: '50%',
                   border: '2px solid #198754',
                   zIndex: 3,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: 'white'
+                  backgroundColor: 'white',
                 }}
                 onClick={prevSlide}
                 aria-label="Producto anterior"
               >
-                <ChevronLeft size={chevronSize} className="text-success" />
+                <ChevronLeft size={16} className="text-success" />
               </button>
 
               <button
-                className="btn btn-white position-absolute top-50 translate-middle-y shadow"
+                className="btn position-absolute top-50 translate-middle-y shadow"
                 style={{
-                  right: controlButtonPosition,
-                  width: controlButtonSize,
-                  height: controlButtonSize,
+                  right: '-12px',
+                  width: '34px',
+                  height: '34px',
                   borderRadius: '50%',
                   border: '2px solid #198754',
                   zIndex: 3,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: 'white'
+                  backgroundColor: 'white',
                 }}
                 onClick={nextSlide}
                 aria-label="Siguiente producto"
               >
-                <ChevronRight size={chevronSize} className="text-success" />
+                <ChevronRight size={16} className="text-success" />
               </button>
             </>
           )}
