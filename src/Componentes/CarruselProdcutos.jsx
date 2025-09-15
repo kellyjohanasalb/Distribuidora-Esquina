@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Star, Sparkles, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import useProductosNuevos from '../Hooks/useProdcutosNuevos';
 
@@ -28,10 +28,17 @@ const CarruselProductos = () => {
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   });
 
-  // Validación URL de imagen (igual que tenías)
+  // Refs y estilo del track (usaremos px para que la última card no se corte)
+  const containerRef = useRef(null); // contenedor visible (overflow-hidden)
+  const trackRef = useRef(null);     // track que contiene los items
+  const [trackStyle, setTrackStyle] = useState({ transform: 'translateX(0px)' });
+
+  // Función mejorada para validar URLs de imagen
   const isValidImageUrl = useCallback((url) => {
     if (!url || typeof url !== 'string' || url.trim() === '') return false;
+    
     const cleanUrl = url.trim();
+    
     try {
       const parsedUrl = new URL(cleanUrl);
       if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
@@ -43,12 +50,14 @@ const CarruselProductos = () => {
     }
   }, []);
 
+  // Manejar errores de imagen
   const handleImageError = useCallback((productId, imageUrl) => {
     console.error(`❌ Error cargando imagen del producto ${productId}: ${imageUrl}`);
     setImageErrors(prev => new Set([...prev, productId]));
   }, []);
 
   const handleImageLoad = useCallback((productId, imageUrl) => {
+    console.log(`✅ Imagen cargada exitosamente para producto ${productId}: ${imageUrl}`);
     setImageErrors(prev => {
       const newSet = new Set(prev);
       newSet.delete(productId);
@@ -56,7 +65,7 @@ const CarruselProductos = () => {
     });
   }, []);
 
-  // placeholders y limitar a 6 productos (si quieres exactamente 6)
+  // Placeholders y límite a 6 productos (igual que tú querías)
   const placeholders = Array.from({ length: 6 }, (_, i) => ({
     id: `placeholder-${i}`,
     imagen: null,
@@ -65,20 +74,25 @@ const CarruselProductos = () => {
     esNuevo: true,
   }));
 
-  // <-- Aseguramos máximo 6 productos
   const items = (productos && productos.length > 0) ? productos.slice(0, 6) : placeholders.slice(0, 6);
 
-  // resize responsive (igual que tenías)
+  // Efecto para manejar el redimensionamiento de la ventana
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowSize({ width, height: window.innerHeight });
-
-      if (width >= 1200) setItemsToShow(4);
-      else if (width >= 992) setItemsToShow(3);
-      else if (width >= 768) setItemsToShow(2);
-      else if (width >= 576) setItemsToShow(2);
-      else setItemsToShow(1);
+      
+      if (width >= 1200) {
+        setItemsToShow(4);
+      } else if (width >= 992) {
+        setItemsToShow(3);
+      } else if (width >= 768) {
+        setItemsToShow(2);
+      } else if (width >= 576) {
+        setItemsToShow(2);
+      } else {
+        setItemsToShow(1);
+      }
     };
 
     handleResize();
@@ -90,7 +104,7 @@ const CarruselProductos = () => {
   const maxSlides = Math.max(0, items.length - itemsToShow); // ej. con 6 items y 4 a la vista -> 2 (posiciones 0..2)
   const indicatorsCount = maxSlides + 1;
 
-  // Mantener currentSlide válido si cambia itemsToShow/items
+  // Mantener currentSlide válido si cambian itemsToShow/items
   useEffect(() => {
     if (currentSlide > maxSlides) {
       setCurrentSlide(maxSlides);
@@ -111,11 +125,47 @@ const CarruselProductos = () => {
   const prevSlide = () => setCurrentSlide(prev => (prev <= 0 ? maxSlides : prev - 1));
   const goToSlide = (index) => setCurrentSlide(index);
 
-  // translateX CORRECTO: porcentaje relativo al ancho del TRACK
-  // fórmula: movimiento por N items = (N / items.length) * 100% del track
-  const translateX = items.length > 0 ? `-${(currentSlide / items.length) * 100}%` : '0%';
+  // ----------------------------
+  // Nuevo: cálculo en píxeles para que la última card se vea completa
+  // ----------------------------
+  useEffect(() => {
+    const track = trackRef.current;
+    const container = containerRef.current;
+    if (!track || !container) {
+      setTrackStyle({ transform: 'translateX(0px)' });
+      return;
+    }
 
-  // estilos responsivos igual que tenías
+    const children = Array.from(track.children);
+    if (children.length === 0) {
+      setTrackStyle({ transform: 'translateX(0px)' });
+      return;
+    }
+
+    // índice seguro (no pasarnos)
+    const index = Math.min(currentSlide, maxSlides);
+
+    // elemento objetivo: alinea su left con el left del contenedor
+    const target = children[index];
+    // offsetLeft del objetivo respecto al track
+    const offset = target.offsetLeft;
+
+    // shift máximo para que no mostremos espacio vacío después del último item
+    const maxShift = Math.max(0, track.scrollWidth - container.clientWidth);
+
+    // queremos desplazar exactamente hasta offset, pero sin pasar maxShift
+    let shift = offset;
+    if (shift > maxShift) shift = maxShift;
+
+    // aplica el transform en px — esto evita recortes
+    setTrackStyle({
+      transform: `translateX(-${shift}px)`,
+    });
+
+    // Forzar repaint si necesitas (normalmente no)
+  }, [currentSlide, itemsToShow, windowSize.width, items.length, loading, maxSlides]);
+
+  // estilos responsivos y tamaños (se mantienen como en tu versión)
   const isSmallScreen = windowSize.width < 768;
   const isXSmallScreen = windowSize.width < 576;
   const cardHeight = isXSmallScreen ? '180px' : isSmallScreen ? '200px' : '220px';
@@ -141,9 +191,7 @@ const CarruselProductos = () => {
 
           {loading && (
             <div className="alert alert-info d-flex align-items-center small mt-2 py-1">
-              <div className="spinner-border spinner-border-sm me-2" role="status">
-                <span className="visually-hidden">Cargando...</span>
-              </div>
+              <div className="spinner-border spinner-border-sm me-2" role="status"><span className="visually-hidden">Cargando...</span></div>
               <span>Conectando con el servidor...</span>
             </div>
           )}
@@ -162,6 +210,7 @@ const CarruselProductos = () => {
         {/* Carrusel */}
         <div className="position-relative" style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div
+            ref={containerRef}
             className="overflow-hidden"
             style={{
               borderRadius: '6px',
@@ -170,9 +219,11 @@ const CarruselProductos = () => {
             }}
           >
             <div
+              ref={trackRef}
               className="d-flex"
               style={{
-                transform: `translateX(${translateX})`,
+                // usamos el transform en px calculado arriba
+                ...trackStyle,
                 transition: loading ? 'none' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                 gap: gapSize
               }}
@@ -181,7 +232,7 @@ const CarruselProductos = () => {
                 const hasValidImage = isValidImageUrl(producto.imagen);
                 const hasImageError = imageErrors.has(producto.id);
                 const shouldShowImage = hasValidImage && !hasImageError;
-
+                
                 return (
                   <div
                     key={producto.id}
@@ -218,7 +269,8 @@ const CarruselProductos = () => {
                     >
                       <div className="position-absolute top-0 start-0" style={{ zIndex: 2 }}>
                         <span className="badge bg-success text-white px-1 py-1 rounded-end" style={{ fontSize: badgeFontSize, fontWeight: '600', letterSpacing: '0.3px' }}>
-                          <Star size={starSize} className="me-1" fill="currentColor" />NUEVO
+                          <Star size={starSize} className="me-1" fill="currentColor" />
+                          NUEVO
                         </span>
                       </div>
 
@@ -230,8 +282,7 @@ const CarruselProductos = () => {
                         </div>
                       )}
 
-                      <div className="position-relative overflow-hidden w-100 d-flex align-items-center justify-content-center"
-                        style={{ borderRadius: `${borderRadius} ${borderRadius} 0 0`, backgroundColor: '#f8f9fa', height: imageHeight, padding: '8px' }}>
+                      <div className="position-relative overflow-hidden w-100 d-flex align-items-center justify-content-center" style={{ borderRadius: `${borderRadius} ${borderRadius} 0 0`, backgroundColor: '#f8f9fa', height: imageHeight, padding: '8px' }}>
                         {shouldShowImage ? (
                           <img
                             src={producto.imagen}
@@ -250,8 +301,7 @@ const CarruselProductos = () => {
                         )}
                       </div>
 
-                      <div className="w-100 p-1 text-center d-flex align-items-center justify-content-center"
-                        style={{ height: `calc(${cardHeight} - ${imageHeight})`, backgroundColor: 'rgba(0, 0, 0, 0.7)', borderRadius: '0 0 6px 6px' }}>
+                      <div className="w-100 p-1 text-center d-flex align-items-center justify-content-center" style={{ height: `calc(${cardHeight} - ${imageHeight})`, backgroundColor: 'rgba(0, 0, 0, 0.7)', borderRadius: '0 0 6px 6px' }}>
                         <div className="fw-semibold" style={{
                           fontSize: isSmallScreen ? '0.7rem' : '0.8rem',
                           color: 'white',
@@ -273,31 +323,59 @@ const CarruselProductos = () => {
             </div>
           </div>
 
-          {/* controles */}
+          {/* Controles de navegación */}
           {indicatorsCount > 1 && !loading && (
             <>
-              <button className="btn position-absolute top-50 translate-middle-y shadow"
-                style={{ left: '-12px', width: '34px', height: '34px', borderRadius: '50%', border: '2px solid #198754', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}
+              <button
+                className="btn position-absolute top-50 translate-middle-y shadow"
+                style={{
+                  left: '-12px',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  border: '2px solid #198754',
+                  zIndex: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'white',
+                }}
                 onClick={prevSlide}
-                aria-label="Producto anterior">
+                aria-label="Producto anterior"
+              >
                 <ChevronLeft size={16} className="text-success" />
               </button>
 
-              <button className="btn position-absolute top-50 translate-middle-y shadow"
-                style={{ right: '-12px', width: '34px', height: '34px', borderRadius: '50%', border: '2px solid #198754', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}
+              <button
+                className="btn position-absolute top-50 translate-middle-y shadow"
+                style={{
+                  right: '-12px',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  border: '2px solid #198754',
+                  zIndex: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'white',
+                }}
                 onClick={nextSlide}
-                aria-label="Siguiente producto">
+                aria-label="Siguiente producto"
+              >
                 <ChevronRight size={16} className="text-success" />
               </button>
             </>
           )}
         </div>
 
-        {/* indicadores */}
+        {/* Indicadores */}
         {indicatorsCount > 1 && !loading && (
           <div className="d-flex justify-content-center mt-2 gap-1">
             {Array.from({ length: indicatorsCount }).map((_, index) => (
-              <button key={index} className="btn p-0 border-0"
+              <button
+                key={index}
+                className="btn p-0 border-0"
                 style={{
                   width: indicatorSize,
                   height: indicatorSize,
