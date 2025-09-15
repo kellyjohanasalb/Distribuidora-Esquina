@@ -202,11 +202,17 @@ const CarruselProductos = () => {
                 const shouldShowImage = hasValidImage && !hasImageError;
                 
                 return (
-                  <div
-                    key={producto.id}
-                    className="flex-shrink-0"
-                    style={{ width: itemWidth }}
-                  >
+<div
+  key={producto.id}
+  className="flex-shrink-0 mx-auto" // 👈 centra la card en mobile
+  style={{ 
+    width: itemWidth,
+    aspectRatio: '1/1', // ✅ siempre cuadradas
+    maxHeight: isXSmallScreen ? '180px' : isSmallScreen ? '200px' : 'auto',
+    maxWidth: isXSmallScreen ? '220px' : isSmallScreen ? '240px' : 'none' // ✅ limita el ancho en mobile/tablet
+  }}
+>
+
                     <div
                       className="card border-0 h-100 position-relative bg-white"
                       style={{
