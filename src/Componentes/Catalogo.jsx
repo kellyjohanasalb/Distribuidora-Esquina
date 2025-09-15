@@ -338,33 +338,37 @@ const Catalogo = () => {
           </div>
 
           {/* FILTROS MÓVILES - Solo visible en pantallas pequeñas */}
-          <div className={`d-lg-none mb-3 ${menuIsOpenSelect && windowWidth < 768 ? 'hidden-when-select-open' : ''}`}>
-            <div className="container">
-              {/* Categorías en móvil */}
-              <div className="row mb-3">
-                <div className="col-12">
-                  <div className="d-flex gap-2 overflow-auto pb-2 categorias-mobile"
-                    style={{ scrollbarWidth: 'thin' }}>
-                    <button
-                      className={`btn btn-todos flex-shrink-0 ${!filtroRubro ? 'active' : ''}`}
-                      onClick={() => handleRubroChange({ target: { value: '' } })}
-                    >
-                      Todos ({todosCatalogo.length})
-                    </button>
-                    {rubros.map((rubro) => {
-                      const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
-                      const isActive = filtroRubro === rubro.id.toString();
+   <div className={`d-lg-none mb-3 ${menuIsOpenSelect && windowWidth < 768 ? 'hidden-when-select-open' : ''}`}>
+  <div className="container">
+    <div className="row mb-3">
+      <div className="col-12">
+        <div className="categorias-container">
+          <div className="categorias-mobile">
+            <button
+              className={`btn-todos ${!filtroRubro ? 'active' : ''}`}
+              onClick={() => handleRubroChange({ target: { value: '' } })}
+            >
+              Todos <span className="badge bg-light text-dark rounded-pill ms-1">
+                {todosCatalogo.length}
+              </span>
+            </button>
+            {rubros.map((rubro) => {
+              const productosEnRubro = todosCatalogo.filter((p) => p.idRubro === rubro.id).length;
+              const isActive = filtroRubro === rubro.id.toString();
 
-                      return (
-                        <button
-                          key={rubro.id}
-                          className={`btn btn-categoria flex-shrink-0 ${isActive ? 'active' : ''}`}
-                          onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
-                        >
-                          {rubro.descripcion} ({productosEnRubro})
-                        </button>
-                      );
-                    })}
+              return (
+                <button
+                  key={rubro.id}
+                  className={`btn-categoria ${isActive ? 'active' : ''}`}
+                  onClick={() => handleRubroChange({ target: { value: rubro.id.toString() } })}
+                >
+                  {rubro.descripcion} <span className="badge bg-light text-dark rounded-pill ms-1">
+                    {productosEnRubro}
+                  </span>
+                </button>
+              );
+            })}
+                    </div>
                   </div>
                 </div>
               </div>
