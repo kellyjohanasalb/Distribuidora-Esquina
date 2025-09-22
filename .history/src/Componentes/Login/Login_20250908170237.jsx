@@ -43,7 +43,7 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch('https://remito-send-back-main.vercel.app/api/auth/login', {
+      const response = await fetch('https://remito-send-back.vercel.app/api/auth/login', {
         method: 'POST',
         headers: {
           'accept': 'application/json',

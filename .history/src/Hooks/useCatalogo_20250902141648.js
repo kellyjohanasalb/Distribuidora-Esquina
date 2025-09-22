@@ -55,7 +55,7 @@ const useCatalogo = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.get('https://remito-send-back-main.vercel.app/api/products/all');
+      const response = await axios.get('https://remito-send-back.vercel.app/api/products/all');
       
       const productosFormateados = response.data.map(producto => ({
         ...producto,
@@ -119,7 +119,7 @@ const useCatalogo = () => {
   const fetchRubros = async () => {
     if (!navigator.onLine) return;
     try {
-      const response = await axios.get('https://remito-send-back-main.vercel.app/api/rubros');
+      const response = await axios.get('https://remito-send-back.vercel.app/api/rubros');
       setRubros(response.data);
       localStorage.setItem('rubros', JSON.stringify(response.data));
     } catch (error) {

@@ -64,7 +64,7 @@ const OrdersView = () => {
         const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
         const [loadingDetails, setLoadingDetails] = useState(false);
 
-        const baseURL = "https://remito-send-back-main.vercel.app/"; // Definir baseURL
+        const baseURL = "https://remito-send-back.vercel.app"; // Definir baseURL
 
         // Cargar órdenes al iniciar usando el hook
         useEffect(() => {

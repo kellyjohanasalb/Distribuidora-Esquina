@@ -55,7 +55,7 @@ const useCatalogo = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.get('https://remito-send-back-main.vercel.app/api/products/all');
+      const response = await axios.get('https://remito-send-back.vercel.app/api/products/all');
       
       const productosFormateados = response.data.map(producto => ({
         ...producto,
