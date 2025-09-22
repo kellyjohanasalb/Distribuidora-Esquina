@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://remito-send-back.vercel.app',
+        target: 'https://remito-send-back-main.vercel.app/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
