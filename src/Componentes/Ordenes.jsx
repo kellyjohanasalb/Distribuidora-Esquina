@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+
 import { Modal } from 'react-native';
 import {
     useState,
@@ -64,7 +64,7 @@ const OrdersView = () => {
         const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
         const [loadingDetails, setLoadingDetails] = useState(false);
 
-        const baseURL = "https://remito-send-back-main.vercel.app/"; // Definir baseURL
+      const baseURL = import.meta.env.VITE_BACKEND_URL; // Definir baseURL
 
         // Cargar órdenes al iniciar usando el hook
         useEffect(() => {

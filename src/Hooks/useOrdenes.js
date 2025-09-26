@@ -91,7 +91,7 @@ export function useOrdenes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
- const baseURL = "https://remito-send-back-main.vercel.app/";
+ const baseURL = import.meta.env.VITE_BACKEND_URL;
 
   // Función para cargar órdenes con mejor manejo de fechas
   const cargarOrdenes = useCallback(async (fechaFiltro = null) => {

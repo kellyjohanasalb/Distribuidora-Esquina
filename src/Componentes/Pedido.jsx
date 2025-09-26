@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+
 import { Text, Image } from 'react-native';
 /* eslint-disable no-unused-vars */
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -216,7 +216,7 @@ const DistribuidoraEsquina = () => {
 
         try {
           // Intentar obtener máximo ID (online + offline)
-          const res = await axios.get("https://remito-send-back-main.vercel.app/api/pedidos");
+          const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}api/pedidos`);
           const enviados = res.data.items || [];
 
           // Calcular máximo ID considerando ambos orígenes
@@ -358,7 +358,7 @@ const DistribuidoraEsquina = () => {
 
         // Enviar directamente con axios
         const res = await axios.post(
-          "https://remito-send-back-main.vercel.app/api/pedidos",
+          `${import.meta.env.VITE_BACKEND_URL}api/pedidos`,
           body, {
             headers: {
               "Content-Type": "application/json",

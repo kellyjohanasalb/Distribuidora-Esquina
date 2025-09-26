@@ -106,8 +106,8 @@ export default function useProductosNuevos() {
         }
         
         // URL actualizada del nuevo endpoint
-        const baseURL = 'https://remito-send-back-main.vercel.app/';
-        const fullURL = `${baseURL}/api/featured-products`;
+        const baseURL = import.meta.env.VITE_BACKEND_URL;
+        const fullURL = `${baseURL}api/featured-products`;
         console.log('🌐 URL completa:', fullURL);
         
         const { data } = await axios.get(fullURL, {

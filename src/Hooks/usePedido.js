@@ -214,9 +214,9 @@ export function usePedido() {
 
     try {
       console.log("📤 Enviando al backend:", JSON.stringify(body, null, 2));
-      const res = await axios.post(
-        "https://remito-send-back-main.vercel.app/api/pedidos",
-        body, {
+     const res = await axios.post(
+  `${import.meta.env.VITE_BACKEND_URL}api/pedidos`,
+  body, {
           headers: {
             "Content-Type": "application/json",
             "x-authentication": localStorage.getItem('authToken')
