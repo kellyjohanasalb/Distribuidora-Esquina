@@ -5,6 +5,7 @@ import VistaPedidoPage from './Pages/vistaPedidoPage';
 import OrdersView from './Pages/ordersView';
 import LoginPage from './Pages/LoginPage';
 import ProtectedRoute from './Componentes/ProtectedRoute/ProtectedRoute.jsx';
+import ErrorBoundary from './Componentes/ErrorBoundaries.jsx';
 
 // Componente para redireccionar rutas incorrectas
 const RedirectToHome = () => {
@@ -54,7 +55,9 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

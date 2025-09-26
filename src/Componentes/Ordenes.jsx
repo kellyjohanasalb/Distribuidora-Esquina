@@ -410,21 +410,16 @@ const OrdersView = () => {
         };
 
 
-        return ( <
-                div className = "min-vh-100"
+        return ( < div className = "min-vh-100"
                 style = {
                     {
                         backgroundColor: '#f7dc6f'
                     }
                 } >
-                <
-                div className = "container-fluid px-2 px-md-4 py-3" >
-                <
-                div className = "row justify-content-center" >
-                <
-                div className = "col-12" >
-                <
-                div className = "card shadow-lg border-0"
+                < div className = "container-fluid px-2 px-md-4 py-3" >
+                <div className = "row justify-content-center" >
+                <div className = "col-12" >
+                <div className = "card shadow-lg border-0"
                 style = {
                     {
                         backgroundColor: '#f7dc6f',
@@ -433,21 +428,17 @@ const OrdersView = () => {
                     }
                 } > {
                     /* HEADER MODIFICADO - Logo visible en todos los dispositivos */
-                } <
-                div className = "card-header py-2 py-md-3"
+                } <div className = "card-header py-2 py-md-3"
                 style = {
                     {
                         backgroundColor: '#f7dc6f',
                         borderRadius: '15px 15px 0 0'
                     }
                 } >
-                <
-                div className = "row align-items-center" > {
+                <div className = "row align-items-center" > {
                     /* Logo - Visible en todos los dispositivos */
-                } <
-                div className = "col-auto" >
-                <
-                img src = "/logo-distruidora/logo.png"
+                } <div className = "col-auto" >
+                <img src = "/logo-distruidora/logo.png"
                 alt = "Distribuidora Esquina"
                 className = "logo-img d-none d-md-block" // Visible en desktop/tablet
                 style = {
@@ -455,8 +446,7 @@ const OrdersView = () => {
                         maxHeight: '120px'
                     }
                 }
-                /> <
-                img src = "/logo-distruidora/logo.png"
+                /> <img src = "/logo-distruidora/logo.png"
                 alt = "Distribuidora Esquina"
                 className = "d-md-none" // Visible en móvil
                 style = {
@@ -465,11 +455,9 @@ const OrdersView = () => {
                         borderRadius: '8px'
                     }
                 }
-                /> < /
-                div >
+                /> </div >
 
-                <
-                div className = "col" >
+                <div className = "col" >
                 <
                 h1 className = "mb-0 text-success fw-bold fs-6 fs-md-5" > Estados de órdenes < /h1> <
                 div className = "row mt-2" >
