@@ -14,10 +14,7 @@ node_modules
 dist
 dist-ssr
 
-# Local env files
-*.local
-.env
-.env.*        # Por si usas .env.development, .env.production, etc.
+
 
 # History / temporales
 .history/
