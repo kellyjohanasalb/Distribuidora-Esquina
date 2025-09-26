@@ -1,14 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { Text, Image } from 'react-native';
+
 import {
   useState,
   useEffect,
   useRef
 } from 'react';
-import {
-  Text,
-  Image
-} from 'react-native';
+
 /* eslint-disable no-unused-vars */
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
