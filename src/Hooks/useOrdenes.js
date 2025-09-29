@@ -109,7 +109,7 @@ export function useOrdenes() {
       }
 
       // Construir URL con filtro de fecha si se proporciona
-      let url = `${baseURL}/api/pedidos`;
+      let url = `${baseURL}api/pedidos`;
       if (fechaFiltro) {
         const fecha = new Date(fechaFiltro);
         const fechaStr = fecha.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -213,7 +213,7 @@ const cargarOrdenesPorFecha = useCallback(async (fecha) => {
         datosParaEnvio.observation = orden.originalData.observation.trim();
       }
 
-      const response = await axios.post(`${baseURL}/api/pedidos`, datosParaEnvio,{ headers:{"x-authentication": localStorage.getItem('authToken')}});
+      const response = await axios.post(`${baseURL}api/pedidos`, datosParaEnvio,{ headers:{"x-authentication": localStorage.getItem('authToken')}});
       const nuevoId = response.data.idPedido || response.data.id;
 
       // Actualizar localStorage

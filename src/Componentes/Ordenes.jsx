@@ -175,7 +175,7 @@ const OrdersView = () => {
         setShowDetailsModal(true);
 
         try {
-            const response = await axios.get(`${baseURL}/api/pedidos/${order.idPedido || order.id}`, {
+            const response = await axios.get(`${baseURL}api/pedidos/${order.idPedido || order.id}`, {
                 headers: {
                     "x-authentication": localStorage.getItem('authToken')
                 }
