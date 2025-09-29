@@ -94,67 +94,81 @@ export function useOrdenes() {
  const baseURL = import.meta.env.VITE_BACKEND_URL;
 
   // Función para cargar órdenes con mejor manejo de fechas
-  const cargarOrdenes = useCallback(async (fechaFiltro = null) => {
-    setLoading(true);
-    setError(null);
+ // Función para cargar órdenes (sin enviar fecha al backend)
+const cargarOrdenes = useCallback(async () => {
+  setLoading(true);
+  setError(null);
 
-    try {
-      const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+  try {
+    const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
 
-      if (!navigator.onLine) {
-        console.warn("🔴 Sin conexión: mostrando pedidos locales");
-        const pendientesMapeados = locales.map(mapearPendiente);
-        setOrdenes(pendientesMapeados);
-        return;
-      }
-
-      // Construir URL con filtro de fecha si se proporciona
-      let url = `${baseURL}api/pedidos`;
-      if (fechaFiltro) {
-        const fecha = new Date(fechaFiltro);
-        const fechaStr = fecha.toISOString().split('T')[0]; // YYYY-MM-DD
-        url += `?fecha=${fechaStr}`;
-      }
-
-      const res = await axios.get(url,{ headers:{"x-authentication": localStorage.getItem('authToken') }}) ;
-      const enviados = res.data.items || [];
-
+    if (!navigator.onLine) {
+      console.warn("🔴 Sin conexión: mostrando pedidos locales");
       const pendientesMapeados = locales.map(mapearPendiente);
-      const enviadosMapeados = enviados.map(mapearEnviado);
-
-      // Combinar enviados y pendientes, evitando duplicados
-      const todasLasOrdenes = [...enviadosMapeados];
-      pendientesMapeados.forEach(pendiente => {
-        const yaExiste = todasLasOrdenes.some(orden =>
-          Number(orden.id) === Number(pendiente.id) ||
-          Number(orden.idPedido) === Number(pendiente.idPedido)
-        );
-        if (!yaExiste) {
-          todasLasOrdenes.push(pendiente);
-        }
-      });
-
-      setOrdenes(todasLasOrdenes);
-    } catch (err) {
-      if (err.message.includes("Network Error") || err.code === 'NETWORK_ERROR') {
-        console.warn("🔴 Sin conexión: cargando pedidos locales");
-        const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
-        setOrdenes(locales.map(mapearPendiente));
-      } else {
-        setError(err.message || "Error al cargar órdenes");
-        console.error("Error cargando órdenes:", err);
-      }
-    } finally {
-      setLoading(false);
+      setOrdenes(pendientesMapeados);
+      return;
     }
-  }, [baseURL]);
 
-  
+    const url = `${baseURL}api/pedidos`; // 🔹 sin query params
+    const res = await axios.get(url, {
+      headers: { "x-authentication": localStorage.getItem('authToken') }
+    });
+
+    const enviados = res.data.items || [];
+
+    const pendientesMapeados = locales.map(mapearPendiente);
+    const enviadosMapeados = enviados.map(mapearEnviado);
+
+    // Combinar enviados y pendientes, evitando duplicados
+    const todasLasOrdenes = [...enviadosMapeados];
+    pendientesMapeados.forEach(pendiente => {
+      const yaExiste = todasLasOrdenes.some(orden =>
+        Number(orden.id) === Number(pendiente.id) ||
+        Number(orden.idPedido) === Number(pendiente.idPedido)
+      );
+      if (!yaExiste) {
+        todasLasOrdenes.push(pendiente);
+      }
+    });
+
+    setOrdenes(todasLasOrdenes);
+  } catch (err) {
+    if (err.message.includes("Network Error") || err.code === 'NETWORK_ERROR') {
+      console.warn("🔴 Sin conexión: cargando pedidos locales");
+      const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
+      setOrdenes(locales.map(mapearPendiente));
+    } else {
+      setError(err.message || "Error al cargar órdenes");
+      console.error("Error cargando órdenes:", err);
+    }
+  } finally {
+    setLoading(false);
+  }
+}, [baseURL]);
+
+  // Función auxiliar para probar diferentes formatos
+const buildFechaQuery = (fecha, formato = "iso-date") => {
+  const d = new Date(fecha);
+
+  switch (formato) {
+    case "dd-mm-yyyy":
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    case "iso-full":
+      return d.toISOString(); // YYYY-MM-DDTHH:mm:ss.sssZ
+    case "iso-date":
+    default:
+      return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  }
+};
 
 // Función cargarOrdenesPorFecha actualizada - SOLUCIÓN DEFINITIVA
 const cargarOrdenesPorFecha = useCallback(async (fecha) => {
   setLoading(true);
   setError(null);
+
+  const formatos = ["iso-date", "dd-mm-yyyy", "iso-full"]; // orden de prueba
+  let resultado = [];
+  let lastError = null;
 
   try {
     const locales = JSON.parse(localStorage.getItem("pedidosPendientes")) || [];
@@ -165,20 +179,35 @@ const cargarOrdenesPorFecha = useCallback(async (fecha) => {
       return pendientesMapeados;
     }
 
-    // ENVIAR LA FECHA AL BACKEND PARA QUE FILTRE
-    const url = `${baseURL}/api/pedidos?fecha=${fecha}`;
-    const res = await axios.get(url, { 
-      headers: { "x-authentication": localStorage.getItem('authToken') }
-    });
+    for (const formato of formatos) {
+      try {
+        const fechaStr = buildFechaQuery(fecha, formato);
+        const url = `${baseURL}api/pedidos?fecha=${encodeURIComponent(fechaStr)}`;
+        console.log(`📡 Probando formato "${formato}":`, url);
 
-    const enviados = res.data.items || [];
-    console.log(`✅ Pedidos encontrados: ${enviados.length}`);
+        const res = await axios.get(url, {
+          headers: { "x-authentication": localStorage.getItem('authToken') }
+        });
 
-    const enviadosMapeados = enviados.map(mapearEnviado);
-    const resultado = [...enviadosMapeados, ...pendientesMapeados];
+        const enviados = res.data.items || [];
+        console.log(`✅ Backend aceptó formato "${formato}". Pedidos encontrados: ${enviados.length}`);
 
-    setOrdenes(resultado);
-    return resultado;
+        const enviadosMapeados = enviados.map(mapearEnviado);
+        resultado = [...enviadosMapeados, ...pendientesMapeados];
+        setOrdenes(resultado);
+        return resultado; // ✅ se salió en el primer formato válido
+      } catch (err) {
+        lastError = err;
+        if (err.response?.status === 400) {
+          console.warn(`⚠️ Backend rechazó formato "${formato}" (400). Intentando siguiente...`);
+          continue; // prueba el siguiente formato
+        }
+        throw err; // si es otro error, lo propagamos
+      }
+    }
+
+    // Si ninguno funcionó
+    throw lastError || new Error("No se pudo cargar órdenes con ningún formato de fecha");
   } catch (err) {
     console.error("❌ Error cargando órdenes:", err);
     setError(err.message || "Error al cargar órdenes");
@@ -190,10 +219,17 @@ const cargarOrdenesPorFecha = useCallback(async (fecha) => {
 }, [baseURL]);
 
   // Función para cargar órdenes de hoy
-  const cargarOrdenesHoy = useCallback(async () => {
-    const hoy = new Date().toISOString().split('T')[0];
-    return await cargarOrdenes(hoy);
-  }, [cargarOrdenes]);
+const cargarOrdenesHoy = useCallback(async () => {
+  await cargarOrdenes(); // carga todos los pedidos
+  const hoy = new Date().toISOString().split('T')[0];
+  
+  setOrdenes(prev =>
+    prev.filter(pedido => {
+      const fechaPedido = new Date(pedido.fechaAlta || pedido.fechaPedido).toISOString().split('T')[0];
+      return fechaPedido === hoy;
+    })
+  );
+}, [cargarOrdenes]);
 
   // Función optimizada para enviar pedidos con mejor manejo de fechas
   const enviarPedidoBackend = useCallback(async (orden) => {
